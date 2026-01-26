@@ -147,4 +147,281 @@ struct StorageRingTests {
         // (0 + 12) % 5 = 2
         #expect(result.position.rawValue == 2)
     }
+
+    // MARK: - Linearize Move Tests
+
+    @Test("linearize move with empty count")
+    func linearizeMoveEmpty() throws {
+        let capacity: Index<Int>.Count = 5
+        let head: Index<Int> = .zero
+        let count: Index<Int>.Count = .zero
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deallocate()
+            destination.deallocate()
+        }
+
+        // Should not crash with empty count
+        Storage<Int>.Ring.linearize(
+            from: source,
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+    }
+
+    @Test("linearize move non-wrapped")
+    func linearizeMoveNonWrapped() throws {
+        let capacity: Index<Int>.Count = 5
+        let head: Index<Int> = .zero
+        let count: Index<Int>.Count = 3
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deallocate()
+            destination.deallocate()
+        }
+
+        // Initialize source: [10, 20, 30, -, -]
+        (source + 0).initialize(to: 10)
+        (source + 1).initialize(to: 20)
+        (source + 2).initialize(to: 30)
+
+        Storage<Int>.Ring.linearize(
+            from: source,
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+
+        // Destination should be: [10, 20, 30]
+        #expect(destination[0] == 10)
+        #expect(destination[1] == 20)
+        #expect(destination[2] == 30)
+
+        // Clean up destination
+        destination.deinitialize(count: 3)
+    }
+
+    @Test("linearize move wrapped")
+    func linearizeMoveWrapped() throws {
+        let capacity: Index<Int>.Count = 5
+        let head = Index<Int>(__unchecked: (), position: 3)
+        let count: Index<Int>.Count = 4
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deallocate()
+            destination.deallocate()
+        }
+
+        // Initialize source ring: [30, 40, -, 10, 20]
+        //                                    ^head
+        // Logical order: [10, 20, 30, 40]
+        (source + 0).initialize(to: 30)
+        (source + 1).initialize(to: 40)
+        (source + 3).initialize(to: 10)
+        (source + 4).initialize(to: 20)
+
+        Storage<Int>.Ring.linearize(
+            from: source,
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+
+        // Destination should be linearized: [10, 20, 30, 40]
+        #expect(destination[0] == 10)
+        #expect(destination[1] == 20)
+        #expect(destination[2] == 30)
+        #expect(destination[3] == 40)
+
+        // Clean up destination
+        destination.deinitialize(count: 4)
+    }
+
+    @Test("linearize move full buffer")
+    func linearizeMoveFullBuffer() throws {
+        let capacity: Index<Int>.Count = 4
+        let head = Index<Int>(__unchecked: (), position: 2)
+        let count: Index<Int>.Count = 4
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deallocate()
+            destination.deallocate()
+        }
+
+        // Initialize source ring: [30, 40, 10, 20]
+        //                                  ^head
+        // Logical order: [10, 20, 30, 40]
+        (source + 0).initialize(to: 30)
+        (source + 1).initialize(to: 40)
+        (source + 2).initialize(to: 10)
+        (source + 3).initialize(to: 20)
+
+        Storage<Int>.Ring.linearize(
+            from: source,
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+
+        // Destination should be linearized: [10, 20, 30, 40]
+        #expect(destination[0] == 10)
+        #expect(destination[1] == 20)
+        #expect(destination[2] == 30)
+        #expect(destination[3] == 40)
+
+        // Clean up destination
+        destination.deinitialize(count: 4)
+    }
+
+    // MARK: - Linearize Copy Tests
+
+    @Test("linearize copy with empty count")
+    func linearizeCopyEmpty() throws {
+        let capacity: Index<Int>.Count = 5
+        let head: Index<Int> = .zero
+        let count: Index<Int>.Count = .zero
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deallocate()
+            destination.deallocate()
+        }
+
+        // Should not crash with empty count
+        Storage<Int>.Ring.linearize(
+            from: UnsafePointer(source),
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+    }
+
+    @Test("linearize copy wrapped preserves source")
+    func linearizeCopyWrappedPreservesSource() throws {
+        let capacity: Index<Int>.Count = 5
+        let head = Index<Int>(__unchecked: (), position: 3)
+        let count: Index<Int>.Count = 4
+
+        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer {
+            source.deinitialize(count: 2)
+            (source + 3).deinitialize(count: 2)
+            source.deallocate()
+            destination.deinitialize(count: 4)
+            destination.deallocate()
+        }
+
+        // Initialize source ring: [30, 40, -, 10, 20]
+        //                                    ^head
+        (source + 0).initialize(to: 30)
+        (source + 1).initialize(to: 40)
+        (source + 3).initialize(to: 10)
+        (source + 4).initialize(to: 20)
+
+        Storage<Int>.Ring.linearize(
+            from: UnsafePointer(source),
+            head: head,
+            count: count,
+            capacity: capacity,
+            to: destination
+        )
+
+        // Destination should be linearized: [10, 20, 30, 40]
+        #expect(destination[0] == 10)
+        #expect(destination[1] == 20)
+        #expect(destination[2] == 30)
+        #expect(destination[3] == 40)
+
+        // Source should be unchanged (copy, not move)
+        #expect(source[0] == 30)
+        #expect(source[1] == 40)
+        #expect(source[3] == 10)
+        #expect(source[4] == 20)
+    }
+
+    // MARK: - Deinitialize Ring Tests
+
+    @Test("deinitialize ring with empty count")
+    func deinitializeRingEmpty() throws {
+        let capacity: Index<Int>.Count = 5
+        let head: Index<Int> = .zero
+        let count: Index<Int>.Count = .zero
+
+        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer { elements.deallocate() }
+
+        // Should not crash with empty count
+        Storage<Int>.Ring.deinitialize(
+            elements,
+            head: head,
+            count: count,
+            capacity: capacity
+        )
+    }
+
+    @Test("deinitialize ring non-wrapped")
+    func deinitializeRingNonWrapped() throws {
+        let capacity: Index<Int>.Count = 5
+        let head: Index<Int> = .zero
+        let count: Index<Int>.Count = 3
+
+        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer { elements.deallocate() }
+
+        // Initialize elements: [10, 20, 30, -, -]
+        (elements + 0).initialize(to: 10)
+        (elements + 1).initialize(to: 20)
+        (elements + 2).initialize(to: 30)
+
+        Storage<Int>.Ring.deinitialize(
+            elements,
+            head: head,
+            count: count,
+            capacity: capacity
+        )
+
+        // Elements should be deinitialized (no crash = success)
+    }
+
+    @Test("deinitialize ring wrapped")
+    func deinitializeRingWrapped() throws {
+        let capacity: Index<Int>.Count = 5
+        let head = Index<Int>(__unchecked: (), position: 3)
+        let count: Index<Int>.Count = 4
+
+        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        defer { elements.deallocate() }
+
+        // Initialize ring: [30, 40, -, 10, 20]
+        //                           ^head
+        (elements + 0).initialize(to: 30)
+        (elements + 1).initialize(to: 40)
+        (elements + 3).initialize(to: 10)
+        (elements + 4).initialize(to: 20)
+
+        Storage<Int>.Ring.deinitialize(
+            elements,
+            head: head,
+            count: count,
+            capacity: capacity
+        )
+
+        // Elements should be deinitialized (no crash = success)
+    }
 }

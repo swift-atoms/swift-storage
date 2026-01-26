@@ -276,4 +276,93 @@ struct StorageInlineTests {
         // Copy zero elements - should not crash
         inline.copy(to: heap, count: .zero)
     }
+
+    // MARK: - Ring Buffer Deinitialize Tests
+
+    @Test("deinitialize ring with empty count")
+    func deinitializeRingEmpty() throws {
+        var storage = Storage<Int>.Inline<8>()
+
+        // Should not crash with empty count
+        storage.deinitialize(head: .zero, count: .zero)
+    }
+
+    @Test("deinitialize ring non-wrapped")
+    func deinitializeRingNonWrapped() throws {
+        final class Tracker: @unchecked Sendable {
+            nonisolated(unsafe) static var deinitCount = 0
+            deinit { Tracker.deinitCount += 1 }
+        }
+
+        Tracker.deinitCount = 0
+
+        var storage = Storage<Tracker>.Inline<8>()
+
+        // Initialize elements at indices 0, 1, 2 (head at 0, non-wrapped)
+        for i in 0..<3 {
+            let index = Index<Tracker>(__unchecked: (), position: i)
+            storage.initialize(to: Tracker(), at: index)
+        }
+
+        storage.deinitialize(
+            head: .zero,
+            count: Index<Tracker>.Count(__unchecked: 3)
+        )
+
+        #expect(Tracker.deinitCount == 3)
+    }
+
+    @Test("deinitialize ring wrapped")
+    func deinitializeRingWrapped() throws {
+        final class Tracker: @unchecked Sendable {
+            nonisolated(unsafe) static var deinitCount = 0
+            deinit { Tracker.deinitCount += 1 }
+        }
+
+        Tracker.deinitCount = 0
+
+        var storage = Storage<Tracker>.Inline<4>()
+
+        // Simulate ring buffer with head at 2, 3 elements:
+        // Physical: [elem2, -, elem0, elem1]
+        //                      ^head
+        // Logical order: elem0, elem1, elem2
+        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 0))  // elem2
+        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 2))  // elem0
+        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 3))  // elem1
+
+        storage.deinitialize(
+            head: Index<Tracker>(__unchecked: (), position: 2),
+            count: Index<Tracker>.Count(__unchecked: 3)
+        )
+
+        #expect(Tracker.deinitCount == 3)
+    }
+
+    @Test("deinitialize ring full buffer")
+    func deinitializeRingFullBuffer() throws {
+        final class Tracker: @unchecked Sendable {
+            nonisolated(unsafe) static var deinitCount = 0
+            deinit { Tracker.deinitCount += 1 }
+        }
+
+        Tracker.deinitCount = 0
+
+        var storage = Storage<Tracker>.Inline<4>()
+
+        // Initialize all 4 slots with head at 3
+        // Physical: [elem1, elem2, elem3, elem0]
+        //                                 ^head
+        for i in 0..<4 {
+            let index = Index<Tracker>(__unchecked: (), position: i)
+            storage.initialize(to: Tracker(), at: index)
+        }
+
+        storage.deinitialize(
+            head: Index<Tracker>(__unchecked: (), position: 3),
+            count: Index<Tracker>.Count(__unchecked: 4)
+        )
+
+        #expect(Tracker.deinitCount == 4)
+    }
 }

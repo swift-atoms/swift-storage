@@ -140,6 +140,32 @@ extension Storage where Element: ~Copyable {
             }
         }
 
+        /// Deinitializes elements in ring buffer order.
+        ///
+        /// For inline storage used as a ring buffer. Overloads `deinitialize(count:)`
+        /// with ring-aware traversal indicated by `head` parameter.
+        ///
+        /// - Parameters:
+        ///   - head: Physical index of first element.
+        ///   - count: Number of elements to deinitialize.
+        /// - Precondition: Elements from head through count positions must be initialized.
+        @inlinable
+        public mutating func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
+            guard count > .zero else { return }
+            let stride = MemoryLayout<Element>.stride
+            let cap = capacity
+            var index = head
+            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(base)
+                for _ in 0..<count.rawValue {
+                    unsafe (rawBase + index.position.rawValue * stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                    index = Index(__unchecked: (), position: (index.position.rawValue + 1) % cap)
+                }
+            }
+        }
+
         /// Moves elements from this inline storage to heap storage.
         ///
         /// - Parameters:

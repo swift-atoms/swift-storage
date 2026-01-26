@@ -99,4 +99,93 @@ extension Storage.Ring {
     ) -> Index<Element> {
         Index(__unchecked: (), position: (head.position.rawValue + logicalIndex.position.rawValue) % capacity.rawValue)
     }
+
+    // MARK: - Bulk Operations
+
+    /// Moves elements from a ring buffer to linear storage.
+    ///
+    /// Elements are read from `head` position with wrapping at `capacity`,
+    /// and written linearly starting at destination index 0. Source elements
+    /// are deinitialized after moving.
+    ///
+    /// - Parameters:
+    ///   - source: Mutable pointer to source ring buffer elements.
+    ///   - head: Physical index of first element in ring.
+    ///   - count: Number of elements to move.
+    ///   - capacity: Source buffer capacity (for wrapping).
+    ///   - destination: Pointer to destination (linear, starting at 0).
+    @inlinable
+    public static func linearize(
+        from source: UnsafeMutablePointer<Element>,
+        head: Index<Element>,
+        count: Index<Element>.Count,
+        capacity: Index<Element>.Count,
+        to destination: UnsafeMutablePointer<Element>
+    ) {
+        guard count > .zero else { return }
+        var srcIndex = head
+        for dstIndex in 0..<count.rawValue {
+            unsafe (destination + dstIndex).initialize(
+                to: (source + srcIndex.position.rawValue).move()
+            )
+            srcIndex = successor(of: srcIndex, wrapping: capacity)
+        }
+    }
+
+    /// Deinitializes elements in a ring buffer.
+    ///
+    /// Elements are visited from `head` position with wrapping at capacity.
+    ///
+    /// - Parameters:
+    ///   - elements: Pointer to element storage.
+    ///   - head: Physical index of first element.
+    ///   - count: Number of elements to deinitialize.
+    ///   - capacity: Buffer capacity (for wrapping).
+    @inlinable
+    public static func deinitialize(
+        _ elements: UnsafeMutablePointer<Element>,
+        head: Index<Element>,
+        count: Index<Element>.Count,
+        capacity: Index<Element>.Count
+    ) {
+        guard count > .zero else { return }
+        var index = head
+        for _ in 0..<count.rawValue {
+            unsafe (elements + index.position.rawValue).deinitialize(count: 1)
+            index = successor(of: index, wrapping: capacity)
+        }
+    }
+}
+
+// MARK: - Copyable Ring Operations
+
+extension Storage.Ring where Element: Copyable {
+    /// Copies elements from a ring buffer to linear storage.
+    ///
+    /// Non-destructive variant. Source pointer immutability distinguishes
+    /// this overload from the move variant.
+    ///
+    /// - Parameters:
+    ///   - source: Immutable pointer to source ring buffer elements.
+    ///   - head: Physical index of first element in ring.
+    ///   - count: Number of elements to copy.
+    ///   - capacity: Source buffer capacity (for wrapping).
+    ///   - destination: Pointer to destination (linear, starting at 0).
+    @inlinable
+    public static func linearize(
+        from source: UnsafePointer<Element>,
+        head: Index<Element>,
+        count: Index<Element>.Count,
+        capacity: Index<Element>.Count,
+        to destination: UnsafeMutablePointer<Element>
+    ) {
+        guard count > .zero else { return }
+        var srcIndex = head
+        for dstIndex in 0..<count.rawValue {
+            unsafe (destination + dstIndex).initialize(
+                to: (source + srcIndex.position.rawValue).pointee
+            )
+            srcIndex = successor(of: srcIndex, wrapping: capacity)
+        }
+    }
 }
