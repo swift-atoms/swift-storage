@@ -19,12 +19,16 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../swift-index-primitives"),
+        .package(path: "../swift-pointer-primitives"),
+        .package(path: "../swift-range-primitives"),
     ],
     targets: [
         .target(
             name: "Storage Primitives",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
+                .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
         ),
         .testTarget(

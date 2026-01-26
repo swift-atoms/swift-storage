@@ -36,8 +36,19 @@ extension Storage where Element: ~Copyable {
         var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
         /// Creates uninitialized inline storage.
+        ///
+        /// - Precondition: Element stride must not exceed 64 bytes (inline slot size).
+        /// - Precondition: Element alignment must not exceed `Int` alignment.
         @inlinable
         public init() {
+            precondition(
+                MemoryLayout<Element>.stride <= 64,
+                "Element stride exceeds inline storage slot size (64 bytes)"
+            )
+            precondition(
+                MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment,
+                "Element alignment exceeds inline storage alignment"
+            )
             _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
         }
 
@@ -46,12 +57,15 @@ extension Storage where Element: ~Copyable {
         /// - Parameter index: The index of the element.
         /// - Returns: A pointer to the element.
         /// - Precondition: The element at `index` must be initialized.
+        /// - Note: This method is mutating to ensure pointer stability.
         @inlinable
-        public func pointer(at index: Index<Element>) -> UnsafePointer<Element> {
-            unsafe withUnsafePointer(to: _storage) { base in
-                unsafe UnsafeRawPointer(base)
+        public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
+            let stride = MemoryLayout<Element>.stride
+            return unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                let rawBase = unsafe UnsafeRawPointer(base)
+                let ptr = unsafe (rawBase + index.position.rawValue * stride)
                     .assumingMemoryBound(to: Element.self)
-                    .advanced(by: index.position.rawValue)
+                return unsafe Pointer<Element>(ptr)
             }
         }
 
@@ -61,11 +75,13 @@ extension Storage where Element: ~Copyable {
         /// - Returns: A mutable pointer to the element.
         /// - Precondition: The element at `index` must be initialized.
         @inlinable
-        public mutating func mutablePointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
-            unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                unsafe UnsafeMutableRawPointer(base)
+        public mutating func mutablePointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
+            let stride = MemoryLayout<Element>.stride
+            return unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(base)
+                let ptr = unsafe (rawBase + index.position.rawValue * stride)
                     .assumingMemoryBound(to: Element.self)
-                    .advanced(by: index.position.rawValue)
+                return unsafe Pointer<Element>.Mutable(ptr)
             }
         }
 
@@ -96,10 +112,81 @@ extension Storage where Element: ~Copyable {
         /// - Precondition: Elements at indices 0..<count must be initialized.
         @inlinable
         public mutating func deinitialize(count: Index<Element>.Count) {
+            let stride = MemoryLayout<Element>.stride
             _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                unsafe UnsafeMutableRawPointer(base)
-                    .assumingMemoryBound(to: Element.self)
-                    .deinitialize(count: count.rawValue)
+                let rawBase = unsafe UnsafeMutableRawPointer(base)
+                for i in 0..<count.rawValue {
+                    unsafe (rawBase + i * stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
+            }
+        }
+
+        /// Deinitializes elements in the specified range.
+        ///
+        /// - Parameter range: A lazy range of indices to deinitialize.
+        /// - Precondition: Elements in the range must be initialized.
+        @inlinable
+        public mutating func deinitialize(in range: Range.Lazy<Index<Element>>) {
+            let stride = MemoryLayout<Element>.stride
+            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(base)
+                range.forEach { index in
+                    unsafe (rawBase + index.position.rawValue * stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
+            }
+        }
+
+        /// Moves elements from this inline storage to heap storage.
+        ///
+        /// - Parameters:
+        ///   - heapStorage: The destination heap storage.
+        ///   - count: The number of elements to move.
+        /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
+        /// - Precondition: Elements at indices 0..<count must be uninitialized in heapStorage.
+        @inlinable
+        public mutating func move(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
+            guard count > .zero else { return }
+            let stride = MemoryLayout<Element>.stride
+            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
+                    let rawBase = unsafe UnsafeMutableRawPointer(base)
+                    (0..<count).forEach { index in
+                        let src = unsafe (rawBase + index.position.rawValue * stride)
+                            .assumingMemoryBound(to: Element.self)
+                        unsafe (dst + index.position.rawValue).initialize(to: src.move())
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Copyable Extensions for Inline Storage
+
+extension Storage.Inline where Element: Copyable {
+    /// Copies elements from this inline storage to heap storage.
+    ///
+    /// - Parameters:
+    ///   - heapStorage: The destination heap storage.
+    ///   - count: The number of elements to copy.
+    /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
+    /// - Precondition: Elements at indices 0..<count must be uninitialized in heapStorage.
+    @inlinable
+    public func copy(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
+        guard count > .zero else { return }
+        let stride = MemoryLayout<Element>.stride
+        _ = unsafe withUnsafePointer(to: _storage) { base in
+            unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
+                let rawBase = unsafe UnsafeRawPointer(base)
+                (0..<count).forEach { index in
+                    let src = unsafe (rawBase + index.position.rawValue * stride)
+                        .assumingMemoryBound(to: Element.self)
+                    unsafe (dst + index.position.rawValue).initialize(to: src.pointee)
+                }
             }
         }
     }

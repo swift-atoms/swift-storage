@@ -213,4 +213,168 @@ struct StorageTests {
 
         #expect(Tracker.deinitCount == 3)
     }
+
+    // MARK: - Create with Initializer Tests
+
+    @Test("create with initializing closure")
+    func createWithInitializer() throws {
+        let storage = Storage<Int>.create(capacity: Index<Int>.Count(__unchecked: 5)) { index in
+            index.position.rawValue * 2
+        }
+
+        #expect(storage.count.rawValue == 5)
+
+        // Verify all values
+        for i in (0..<5).reversed() {
+            let index = Index<Int>(__unchecked: (), position: i)
+            let value = storage.move(at: index)
+            #expect(value == i * 2)
+        }
+        storage.count = .zero
+    }
+
+    @Test("create with zero capacity")
+    func createWithZeroCapacity() throws {
+        let storage = Storage<Int>.create(capacity: .zero) { _ in 0 }
+        #expect(storage.count == .zero)
+    }
+
+    // MARK: - Deinitialize in Range Tests
+
+    @Test("deinitialize in range")
+    func deinitializeInRange() throws {
+        final class Tracker: @unchecked Sendable {
+            nonisolated(unsafe) static var deinitCount = 0
+            deinit { Tracker.deinitCount += 1 }
+        }
+
+        Tracker.deinitCount = 0
+
+        let storage = Storage<Tracker>.create(minimumCapacity: 10)
+        for i in 0..<5 {
+            let index = Index<Tracker>(__unchecked: (), position: i)
+            storage.initialize(to: Tracker(), at: index)
+        }
+        storage.count = Index<Tracker>.Count(__unchecked: 5)
+
+        // Deinitialize range 1..<4 (indices 1, 2, 3)
+        let rangeCount = Index<Tracker>.Count(__unchecked: 4)
+        let range = Range.Lazy(1..<rangeCount.rawValue) { pos in
+            Index<Tracker>(__unchecked: (), position: pos)
+        }
+        storage.deinitialize(in: range)
+
+        #expect(Tracker.deinitCount == 3)
+
+        // Clean up remaining elements (0 and 4)
+        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 0))
+        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 4))
+        storage.count = .zero
+    }
+
+    // MARK: - Move Convenience Tests
+
+    @Test("move to new storage uses count")
+    func moveToNewStorageConvenience() throws {
+        let source = Storage<Int>.create(minimumCapacity: 10)
+        let destination = Storage<Int>.create(minimumCapacity: 10)
+
+        // Initialize source
+        for i in 0..<5 {
+            let index = Index<Int>(__unchecked: (), position: i)
+            source.initialize(to: (i + 1) * 10, at: index)
+        }
+        source.count = Index<Int>.Count(__unchecked: 5)
+
+        // Move using convenience method
+        source.move(to: destination)
+        destination.count = Index<Int>.Count(__unchecked: 5)
+
+        // Verify destination
+        for i in (0..<5).reversed() {
+            let index = Index<Int>(__unchecked: (), position: i)
+            let value = destination.move(at: index)
+            #expect(value == (i + 1) * 10)
+        }
+        destination.count = .zero
+    }
+
+    // MARK: - Copy To Tests
+
+    @Test("copy to new storage")
+    func copyToNewStorage() throws {
+        let source = Storage<Int>.create(minimumCapacity: 10)
+        let destination = Storage<Int>.create(minimumCapacity: 10)
+
+        // Initialize source
+        for i in 0..<4 {
+            let index = Index<Int>(__unchecked: (), position: i)
+            source.initialize(to: i * 3, at: index)
+        }
+        source.count = Index<Int>.Count(__unchecked: 4)
+
+        // Copy to destination
+        source.copy(to: destination)
+        destination.count = Index<Int>.Count(__unchecked: 4)
+
+        // Verify source still has values
+        for i in (0..<4).reversed() {
+            let index = Index<Int>(__unchecked: (), position: i)
+            let value = source.move(at: index)
+            #expect(value == i * 3)
+        }
+        source.count = .zero
+
+        // Verify destination has copies
+        for i in (0..<4).reversed() {
+            let index = Index<Int>(__unchecked: (), position: i)
+            let value = destination.move(at: index)
+            #expect(value == i * 3)
+        }
+        destination.count = .zero
+    }
+
+    @Test("copy empty storage does nothing")
+    func copyEmptyToStorage() throws {
+        let source = Storage<Int>.create(minimumCapacity: 10)
+        let destination = Storage<Int>.create(minimumCapacity: 10)
+
+        // Source is empty
+        source.copy(to: destination)
+        // Should not crash
+    }
+
+    // MARK: - Pointer Type Tests
+
+    @Test("pointer returns Pointer.Mutable type")
+    func pointerReturnsMutableType() throws {
+        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let index: Index<Int> = .zero
+
+        storage.initialize(to: 42, at: index)
+        storage.count = .one
+
+        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
+        let value = unsafe ptr.pointee
+        #expect(value == 42)
+
+        _ = storage.move(at: index)
+        storage.count = .zero
+    }
+
+    @Test("read returns Pointer type")
+    func readReturnsImmutableType() throws {
+        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let index: Index<Int> = .zero
+
+        storage.initialize(to: 99, at: index)
+        storage.count = .one
+
+        let ptr: Pointer<Int> = unsafe storage.read(at: index)
+        let value = unsafe ptr.pointee
+        #expect(value == 99)
+
+        _ = storage.move(at: index)
+        storage.count = .zero
+    }
 }

@@ -11,6 +11,8 @@
 
 public import Index_Primitives
 public import Affine_Primitives
+public import Pointer_Primitives
+public import Range_Primitives
 @_spi(Internal) public import Identity_Primitives
 
 /// Canonical heap storage using ManagedBuffer.
@@ -69,6 +71,30 @@ extension Storage where Element: ~Copyable {
         let buffer = Storage<Element>.create(minimumCapacity: minimumCapacity.rawValue) { _ in 0 }
         return unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
     }
+
+    /// Creates storage with a specified capacity, initializing each element using a closure.
+    ///
+    /// - Parameters:
+    ///   - capacity: The number of elements to allocate and initialize.
+    ///   - initializer: A closure that produces the element for each index.
+    /// - Returns: A new storage instance with all elements initialized.
+    @inlinable
+    public static func create(
+        capacity: Index<Element>.Count,
+        initializingWith initializer: (Index<Element>) -> Element
+    ) -> Storage<Element> {
+        let storage = Storage<Element>.create(minimumCapacity: capacity.rawValue) { _ in 0 }
+        let typed = unsafe unsafeDowncast(storage, to: Storage<Element>.self)
+
+        _ = unsafe typed.withUnsafeMutablePointerToElements { elements in
+            (0..<capacity).forEach { index in
+                unsafe (elements + index.position.rawValue).initialize(to: initializer(index))
+            }
+        }
+        typed.header = capacity.rawValue
+
+        return typed
+    }
 }
 
 // MARK: - Element Access
@@ -81,8 +107,10 @@ extension Storage where Element: ~Copyable {
     /// - Warning: The caller must ensure the index is valid.
     @inlinable
     @unsafe
-    public func pointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafeMutablePointerToElements { unsafe $0 + index.position.rawValue }
+    public func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
+        unsafe withUnsafeMutablePointerToElements {
+            unsafe Pointer<Element>.Mutable($0 + index.position.rawValue)
+        }
     }
 
     /// Initializes storage at the given index with the provided value.
@@ -114,8 +142,10 @@ extension Storage where Element: ~Copyable {
     /// - Warning: The caller must ensure the index is valid.
     @inlinable
     @unsafe
-    public func read(at index: Index<Element>) -> UnsafePointer<Element> {
-        unsafe withUnsafeMutablePointerToElements { unsafe UnsafePointer($0 + index.position.rawValue) }
+    public func read(at index: Index<Element>) -> Pointer<Element> {
+        unsafe withUnsafeMutablePointerToElements {
+            unsafe Pointer<Element>(UnsafePointer($0 + index.position.rawValue))
+        }
     }
 }
 
@@ -155,6 +185,31 @@ extension Storage where Element: ~Copyable {
             }
         }
     }
+
+    /// Moves all initialized elements to a new storage instance.
+    ///
+    /// This is a convenience method that uses the receiver's `count` property.
+    ///
+    /// - Parameter newStorage: The destination storage.
+    /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
+    /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
+    @inlinable
+    public func move(to newStorage: Storage<Element>) {
+        move(to: newStorage, count: count)
+    }
+
+    /// Deinitializes elements in the specified range.
+    ///
+    /// - Parameter range: A lazy range of indices to deinitialize.
+    /// - Precondition: Elements in the range must be initialized.
+    @inlinable
+    public func deinitialize(in range: Range.Lazy<Index<Element>>) {
+        _ = unsafe withUnsafeMutablePointerToElements { elements in
+            range.forEach { index in
+                unsafe (elements + index.position.rawValue).deinitialize(count: 1)
+            }
+        }
+    }
 }
 
 // MARK: - Copyable Extensions
@@ -182,6 +237,24 @@ extension Storage where Element: Copyable {
         }
 
         return new
+    }
+
+    /// Copies all initialized elements to a new storage instance.
+    ///
+    /// - Parameter newStorage: The destination storage.
+    /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
+    /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
+    @inlinable
+    public func copy(to newStorage: Storage<Element>) {
+        let count = self.count
+        guard count > .zero else { return }
+        _ = unsafe withUnsafeMutablePointerToElements { src in
+            unsafe newStorage.withUnsafeMutablePointerToElements { dst in
+                for i in 0..<count.rawValue {
+                    unsafe (dst + i).initialize(to: src[i])
+                }
+            }
+        }
     }
 }
 
