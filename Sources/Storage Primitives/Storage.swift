@@ -152,6 +152,16 @@ extension Storage where Element: ~Copyable {
 // MARK: - Bulk Operations
 
 extension Storage where Element: ~Copyable {
+    /// Deinitializes all initialized elements (uses storage's tracked count).
+    ///
+    /// This is a convenience overload that uses the receiver's `count` property.
+    ///
+    /// - Precondition: Elements at indices 0..<count must be initialized.
+    @inlinable
+    public func deinitialize() {
+        deinitialize(count: count)
+    }
+
     /// Deinitializes elements from index 0 up to (but not including) count.
     ///
     /// - Parameter count: The number of elements to deinitialize.

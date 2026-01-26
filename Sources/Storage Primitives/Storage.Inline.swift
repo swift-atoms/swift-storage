@@ -35,6 +35,10 @@ extension Storage where Element: ~Copyable {
         @usableFromInline
         var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
+        /// Maximum element stride supported (64 bytes per slot).
+        @inlinable
+        public static var maxStride: Int { 64 }
+
         /// Creates uninitialized inline storage.
         ///
         /// - Precondition: Element stride must not exceed 64 bytes (inline slot size).
@@ -69,13 +73,33 @@ extension Storage where Element: ~Copyable {
             }
         }
 
+        /// Returns an immutable pointer for read-only access (non-mutating).
+        ///
+        /// Use this method when you need read-only access in a borrowing context
+        /// (e.g., from `makeIterator()`). For general use prefer `pointer(at:)`.
+        ///
+        /// - Parameter index: The index of the element.
+        /// - Returns: An immutable pointer to the element.
+        /// - Precondition: The element at `index` must be initialized.
+        @inlinable
+        @unsafe
+        public func read(at index: Index<Element>) -> Pointer<Element> {
+            let stride = MemoryLayout<Element>.stride
+            return unsafe withUnsafePointer(to: _storage) { base in
+                let rawBase = unsafe UnsafeRawPointer(base)
+                let ptr = unsafe (rawBase + index.position.rawValue * stride)
+                    .assumingMemoryBound(to: Element.self)
+                return unsafe Pointer<Element>(ptr)
+            }
+        }
+
         /// Returns a mutable pointer to the element at the given index.
         ///
         /// - Parameter index: The index of the element.
         /// - Returns: A mutable pointer to the element.
         /// - Precondition: The element at `index` must be initialized.
         @inlinable
-        public mutating func mutablePointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
+        public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
             let stride = MemoryLayout<Element>.stride
             return unsafe withUnsafeMutablePointer(to: &_storage) { base in
                 let rawBase = unsafe UnsafeMutableRawPointer(base)
@@ -93,7 +117,7 @@ extension Storage where Element: ~Copyable {
         /// - Precondition: The element at `index` must be uninitialized.
         @inlinable
         public mutating func initialize(to value: consuming Element, at index: Index<Element>) {
-            unsafe mutablePointer(at: index).initialize(to: value)
+            pointer(at: index).initialize(to: value)
         }
 
         /// Moves the element at the given index, deinitializing that slot.
@@ -103,18 +127,19 @@ extension Storage where Element: ~Copyable {
         /// - Precondition: The element at `index` must be initialized.
         @inlinable
         public mutating func move(at index: Index<Element>) -> Element {
-            unsafe mutablePointer(at: index).move()
+            pointer(at: index).move()
         }
 
         /// Deinitializes elements from index 0 up to (but not including) count.
         ///
         /// - Parameter count: The number of elements to deinitialize.
         /// - Precondition: Elements at indices 0..<count must be initialized.
+        /// - Note: Non-mutating to allow use from deinit contexts.
         @inlinable
-        public mutating func deinitialize(count: Index<Element>.Count) {
+        public func deinitialize(count: Index<Element>.Count) {
             let stride = MemoryLayout<Element>.stride
-            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                let rawBase = unsafe UnsafeMutableRawPointer(base)
+            _ = unsafe withUnsafePointer(to: _storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base))
                 for i in 0..<count.rawValue {
                     unsafe (rawBase + i * stride)
                         .assumingMemoryBound(to: Element.self)
@@ -127,11 +152,12 @@ extension Storage where Element: ~Copyable {
         ///
         /// - Parameter range: A lazy range of indices to deinitialize.
         /// - Precondition: Elements in the range must be initialized.
+        /// - Note: Non-mutating to allow use from deinit contexts.
         @inlinable
-        public mutating func deinitialize(in range: Range.Lazy<Index<Element>>) {
+        public func deinitialize(in range: Range.Lazy<Index<Element>>) {
             let stride = MemoryLayout<Element>.stride
-            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                let rawBase = unsafe UnsafeMutableRawPointer(base)
+            _ = unsafe withUnsafePointer(to: _storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base))
                 range.forEach { index in
                     unsafe (rawBase + index.position.rawValue * stride)
                         .assumingMemoryBound(to: Element.self)
@@ -149,14 +175,15 @@ extension Storage where Element: ~Copyable {
         ///   - head: Physical index of first element.
         ///   - count: Number of elements to deinitialize.
         /// - Precondition: Elements from head through count positions must be initialized.
+        /// - Note: Non-mutating to allow use from deinit contexts.
         @inlinable
-        public mutating func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
+        public func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
             guard count > .zero else { return }
             let stride = MemoryLayout<Element>.stride
             let cap = capacity
             var index = head
-            _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                let rawBase = unsafe UnsafeMutableRawPointer(base)
+            _ = unsafe withUnsafePointer(to: _storage) { base in
+                let rawBase = unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base))
                 for _ in 0..<count.rawValue {
                     unsafe (rawBase + index.position.rawValue * stride)
                         .assumingMemoryBound(to: Element.self)
