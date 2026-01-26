@@ -156,8 +156,8 @@ struct StorageRingTests {
         let head: Index<Int> = .zero
         let count: Index<Int>.Count = .zero
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
             source.deallocate()
             destination.deallocate()
@@ -179,17 +179,17 @@ struct StorageRingTests {
         let head: Index<Int> = .zero
         let count: Index<Int>.Count = 3
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
             source.deallocate()
             destination.deallocate()
         }
 
         // Initialize source: [10, 20, 30, -, -]
-        (source + 0).initialize(to: 10)
-        (source + 1).initialize(to: 20)
-        (source + 2).initialize(to: 30)
+        unsafe (source.base + 0).initialize(to: 10)
+        unsafe (source.base + 1).initialize(to: 20)
+        unsafe (source.base + 2).initialize(to: 30)
 
         Storage<Int>.Ring.linearize(
             from: source,
@@ -200,12 +200,12 @@ struct StorageRingTests {
         )
 
         // Destination should be: [10, 20, 30]
-        #expect(destination[0] == 10)
-        #expect(destination[1] == 20)
-        #expect(destination[2] == 30)
+        #expect(unsafe destination.base[0] == 10)
+        #expect(unsafe destination.base[1] == 20)
+        #expect(unsafe destination.base[2] == 30)
 
         // Clean up destination
-        destination.deinitialize(count: 3)
+        _ = destination.deinitialize(count: 3)
     }
 
     @Test("linearize move wrapped")
@@ -214,8 +214,8 @@ struct StorageRingTests {
         let head = Index<Int>(__unchecked: (), position: 3)
         let count: Index<Int>.Count = 4
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
             source.deallocate()
             destination.deallocate()
@@ -224,10 +224,10 @@ struct StorageRingTests {
         // Initialize source ring: [30, 40, -, 10, 20]
         //                                    ^head
         // Logical order: [10, 20, 30, 40]
-        (source + 0).initialize(to: 30)
-        (source + 1).initialize(to: 40)
-        (source + 3).initialize(to: 10)
-        (source + 4).initialize(to: 20)
+        unsafe (source.base + 0).initialize(to: 30)
+        unsafe (source.base + 1).initialize(to: 40)
+        unsafe (source.base + 3).initialize(to: 10)
+        unsafe (source.base + 4).initialize(to: 20)
 
         Storage<Int>.Ring.linearize(
             from: source,
@@ -238,13 +238,13 @@ struct StorageRingTests {
         )
 
         // Destination should be linearized: [10, 20, 30, 40]
-        #expect(destination[0] == 10)
-        #expect(destination[1] == 20)
-        #expect(destination[2] == 30)
-        #expect(destination[3] == 40)
+        #expect(unsafe destination.base[0] == 10)
+        #expect(unsafe destination.base[1] == 20)
+        #expect(unsafe destination.base[2] == 30)
+        #expect(unsafe destination.base[3] == 40)
 
         // Clean up destination
-        destination.deinitialize(count: 4)
+        _ = destination.deinitialize(count: 4)
     }
 
     @Test("linearize move full buffer")
@@ -253,8 +253,8 @@ struct StorageRingTests {
         let head = Index<Int>(__unchecked: (), position: 2)
         let count: Index<Int>.Count = 4
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
             source.deallocate()
             destination.deallocate()
@@ -263,10 +263,10 @@ struct StorageRingTests {
         // Initialize source ring: [30, 40, 10, 20]
         //                                  ^head
         // Logical order: [10, 20, 30, 40]
-        (source + 0).initialize(to: 30)
-        (source + 1).initialize(to: 40)
-        (source + 2).initialize(to: 10)
-        (source + 3).initialize(to: 20)
+        unsafe (source.base + 0).initialize(to: 30)
+        unsafe (source.base + 1).initialize(to: 40)
+        unsafe (source.base + 2).initialize(to: 10)
+        unsafe (source.base + 3).initialize(to: 20)
 
         Storage<Int>.Ring.linearize(
             from: source,
@@ -277,13 +277,13 @@ struct StorageRingTests {
         )
 
         // Destination should be linearized: [10, 20, 30, 40]
-        #expect(destination[0] == 10)
-        #expect(destination[1] == 20)
-        #expect(destination[2] == 30)
-        #expect(destination[3] == 40)
+        #expect(unsafe destination.base[0] == 10)
+        #expect(unsafe destination.base[1] == 20)
+        #expect(unsafe destination.base[2] == 30)
+        #expect(unsafe destination.base[3] == 40)
 
         // Clean up destination
-        destination.deinitialize(count: 4)
+        _ = destination.deinitialize(count: 4)
     }
 
     // MARK: - Linearize Copy Tests
@@ -294,8 +294,8 @@ struct StorageRingTests {
         let head: Index<Int> = .zero
         let count: Index<Int>.Count = .zero
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
             source.deallocate()
             destination.deallocate()
@@ -303,7 +303,7 @@ struct StorageRingTests {
 
         // Should not crash with empty count
         Storage<Int>.Ring.linearize(
-            from: UnsafePointer(source),
+            from: source.immutable,
             head: head,
             count: count,
             capacity: capacity,
@@ -317,25 +317,25 @@ struct StorageRingTests {
         let head = Index<Int>(__unchecked: (), position: 3)
         let count: Index<Int>.Count = 4
 
-        let source = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
-        let destination = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
+        let destination = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer {
-            source.deinitialize(count: 2)
-            (source + 3).deinitialize(count: 2)
+            _ = source.deinitialize(count: 2)
+            _ = unsafe Pointer<Int>.Mutable(source.base + 3).deinitialize(count: 2)
             source.deallocate()
-            destination.deinitialize(count: 4)
+            _ = destination.deinitialize(count: 4)
             destination.deallocate()
         }
 
         // Initialize source ring: [30, 40, -, 10, 20]
         //                                    ^head
-        (source + 0).initialize(to: 30)
-        (source + 1).initialize(to: 40)
-        (source + 3).initialize(to: 10)
-        (source + 4).initialize(to: 20)
+        unsafe (source.base + 0).initialize(to: 30)
+        unsafe (source.base + 1).initialize(to: 40)
+        unsafe (source.base + 3).initialize(to: 10)
+        unsafe (source.base + 4).initialize(to: 20)
 
         Storage<Int>.Ring.linearize(
-            from: UnsafePointer(source),
+            from: source.immutable,
             head: head,
             count: count,
             capacity: capacity,
@@ -343,16 +343,16 @@ struct StorageRingTests {
         )
 
         // Destination should be linearized: [10, 20, 30, 40]
-        #expect(destination[0] == 10)
-        #expect(destination[1] == 20)
-        #expect(destination[2] == 30)
-        #expect(destination[3] == 40)
+        #expect(unsafe destination.base[0] == 10)
+        #expect(unsafe destination.base[1] == 20)
+        #expect(unsafe destination.base[2] == 30)
+        #expect(unsafe destination.base[3] == 40)
 
         // Source should be unchanged (copy, not move)
-        #expect(source[0] == 30)
-        #expect(source[1] == 40)
-        #expect(source[3] == 10)
-        #expect(source[4] == 20)
+        #expect(unsafe source.base[0] == 30)
+        #expect(unsafe source.base[1] == 40)
+        #expect(unsafe source.base[3] == 10)
+        #expect(unsafe source.base[4] == 20)
     }
 
     // MARK: - Deinitialize Ring Tests
@@ -363,7 +363,7 @@ struct StorageRingTests {
         let head: Index<Int> = .zero
         let count: Index<Int>.Count = .zero
 
-        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let elements = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer { elements.deallocate() }
 
         // Should not crash with empty count
@@ -381,13 +381,13 @@ struct StorageRingTests {
         let head: Index<Int> = .zero
         let count: Index<Int>.Count = 3
 
-        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let elements = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer { elements.deallocate() }
 
         // Initialize elements: [10, 20, 30, -, -]
-        (elements + 0).initialize(to: 10)
-        (elements + 1).initialize(to: 20)
-        (elements + 2).initialize(to: 30)
+        unsafe (elements.base + 0).initialize(to: 10)
+        unsafe (elements.base + 1).initialize(to: 20)
+        unsafe (elements.base + 2).initialize(to: 30)
 
         Storage<Int>.Ring.deinitialize(
             elements,
@@ -405,15 +405,15 @@ struct StorageRingTests {
         let head = Index<Int>(__unchecked: (), position: 3)
         let count: Index<Int>.Count = 4
 
-        let elements = UnsafeMutablePointer<Int>.allocate(capacity: capacity.rawValue)
+        let elements = Pointer<Int>.Mutable.allocate(capacity: capacity)
         defer { elements.deallocate() }
 
         // Initialize ring: [30, 40, -, 10, 20]
         //                           ^head
-        (elements + 0).initialize(to: 30)
-        (elements + 1).initialize(to: 40)
-        (elements + 3).initialize(to: 10)
-        (elements + 4).initialize(to: 20)
+        unsafe (elements.base + 0).initialize(to: 30)
+        unsafe (elements.base + 1).initialize(to: 40)
+        unsafe (elements.base + 3).initialize(to: 10)
+        unsafe (elements.base + 4).initialize(to: 20)
 
         Storage<Int>.Ring.deinitialize(
             elements,

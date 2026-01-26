@@ -116,17 +116,17 @@ extension Storage.Ring {
     ///   - destination: Pointer to destination (linear, starting at 0).
     @inlinable
     public static func linearize(
-        from source: UnsafeMutablePointer<Element>,
+        from source: Pointer<Element>.Mutable,
         head: Index<Element>,
         count: Index<Element>.Count,
         capacity: Index<Element>.Count,
-        to destination: UnsafeMutablePointer<Element>
+        to destination: Pointer<Element>.Mutable
     ) {
         guard count > .zero else { return }
         var srcIndex = head
         for dstIndex in 0..<count.rawValue {
-            unsafe (destination + dstIndex).initialize(
-                to: (source + srcIndex.position.rawValue).move()
+            unsafe (destination.base + dstIndex).initialize(
+                to: (source.base + srcIndex.position.rawValue).move()
             )
             srcIndex = successor(of: srcIndex, wrapping: capacity)
         }
@@ -143,7 +143,7 @@ extension Storage.Ring {
     ///   - capacity: Buffer capacity (for wrapping).
     @inlinable
     public static func deinitialize(
-        _ elements: UnsafeMutablePointer<Element>,
+        _ elements: Pointer<Element>.Mutable,
         head: Index<Element>,
         count: Index<Element>.Count,
         capacity: Index<Element>.Count
@@ -151,7 +151,7 @@ extension Storage.Ring {
         guard count > .zero else { return }
         var index = head
         for _ in 0..<count.rawValue {
-            unsafe (elements + index.position.rawValue).deinitialize(count: 1)
+            unsafe (elements.base + index.position.rawValue).deinitialize(count: 1)
             index = successor(of: index, wrapping: capacity)
         }
     }
@@ -173,17 +173,17 @@ extension Storage.Ring where Element: Copyable {
     ///   - destination: Pointer to destination (linear, starting at 0).
     @inlinable
     public static func linearize(
-        from source: UnsafePointer<Element>,
+        from source: Pointer<Element>,
         head: Index<Element>,
         count: Index<Element>.Count,
         capacity: Index<Element>.Count,
-        to destination: UnsafeMutablePointer<Element>
+        to destination: Pointer<Element>.Mutable
     ) {
         guard count > .zero else { return }
         var srcIndex = head
         for dstIndex in 0..<count.rawValue {
-            unsafe (destination + dstIndex).initialize(
-                to: (source + srcIndex.position.rawValue).pointee
+            unsafe (destination.base + dstIndex).initialize(
+                to: (source.base + srcIndex.position.rawValue).pointee
             )
             srcIndex = successor(of: srcIndex, wrapping: capacity)
         }
