@@ -11,6 +11,7 @@
 
 import Testing
 import Storage_Primitives
+import Storage_Primitives_Test_Support
 
 @Suite("Storage.Header Tests")
 struct StorageHeaderTests {
@@ -205,10 +206,10 @@ struct StorageHeaderTests {
             #expect(empty == true)
         }
 
-        @Test("sentinel is negative")
+        @Test("sentinel is UInt.max")
         func sentinelValue() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
-            #expect(sentinel.position.rawValue == -1)
+            #expect(sentinel.position.rawValue == UInt.max)
         }
 
         @Test("isSentinel check")

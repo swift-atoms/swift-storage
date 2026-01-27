@@ -11,6 +11,7 @@
 
 import Testing
 import Storage_Primitives
+import Storage_Primitives_Test_Support
 
 @Suite("Storage.Contiguous Tests")
 struct StorageContiguousTests {

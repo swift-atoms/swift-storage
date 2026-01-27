@@ -11,6 +11,7 @@
 
 import Testing
 import Storage_Primitives
+import Storage_Primitives_Test_Support
 
 @Suite("Storage.Ring Tests")
 struct StorageRingTests {
@@ -27,16 +28,16 @@ struct StorageRingTests {
         #expect(index1.position.rawValue == 1)
 
         // Wrap at boundary
-        let index4 = Index<Int>(__unchecked: (), position: 4)
+        let index4: Index<Int> = 4
         let wrapped = Storage<Int>.Ring.successor(of: index4, wrapping: capacity)
         #expect(wrapped.position.rawValue == 0)
     }
 
-    @Test("successor via Index extension")
-    func successorExtension() throws {
+    @Test("successor via static method")
+    func successorStaticMethod() throws {
         let capacity: Index<Int>.Count = 5
-        let index: Index<Int> = Index(__unchecked: (), position: 4)
-        let next = index.successor(wrapping: capacity)
+        let index: Index<Int> = 4
+        let next = Storage<Int>.Ring.successor(of: index, wrapping: capacity)
         #expect(next.position.rawValue == 0)
     }
 
@@ -47,7 +48,7 @@ struct StorageRingTests {
         let capacity: Index<Int>.Count = 5
 
         // Normal retreat
-        let index2 = Index<Int>(__unchecked: (), position: 2)
+        let index2: Index<Int> = 2
         let index1 = Storage<Int>.Ring.predecessor(of: index2, wrapping: capacity)
         #expect(index1.position.rawValue == 1)
 
@@ -57,11 +58,11 @@ struct StorageRingTests {
         #expect(wrapped.position.rawValue == 4)
     }
 
-    @Test("predecessor via Index extension")
-    func predecessorExtension() throws {
+    @Test("predecessor via static method")
+    func predecessorStaticMethod() throws {
         let capacity: Index<Int>.Count = 5
         let index: Index<Int> = .zero
-        let prev = index.predecessor(wrapping: capacity)
+        let prev = Storage<Int>.Ring.predecessor(of: index, wrapping: capacity)
         #expect(prev.position.rawValue == 4)
     }
 
@@ -70,7 +71,7 @@ struct StorageRingTests {
     @Test("advanced by positive offset wraps")
     func advancedPositive() throws {
         let capacity: Index<Int>.Count = 5
-        let index = Index<Int>(__unchecked: (), position: 3)
+        let index: Index<Int> = 3
         let offset: Index<Int>.Offset = 4
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
@@ -81,7 +82,7 @@ struct StorageRingTests {
     @Test("advanced by negative offset wraps")
     func advancedNegative() throws {
         let capacity: Index<Int>.Count = 5
-        let index = Index<Int>(__unchecked: (), position: 1)
+        let index: Index<Int> = 1
         let offset: Index<Int>.Offset = -3
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
@@ -89,13 +90,13 @@ struct StorageRingTests {
         #expect(result.position.rawValue == 3)
     }
 
-    @Test("advanced via Index extension")
-    func advancedExtension() throws {
+    @Test("advanced via static method")
+    func advancedStaticMethod() throws {
         let capacity: Index<Int>.Count = 5
-        let index = Index<Int>(__unchecked: (), position: 2)
+        let index: Index<Int> = 2
         let offset: Index<Int>.Offset = 7
 
-        let result = index.advanced(by: offset, wrapping: capacity)
+        let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (2 + 7) % 5 = 4
         #expect(result.position.rawValue == 4)
     }
@@ -105,7 +106,7 @@ struct StorageRingTests {
     @Test("physical index from logical index")
     func physicalIndex() throws {
         let capacity: Index<Int>.Count = 5
-        let head = Index<Int>(__unchecked: (), position: 3)
+        let head: Index<Int> = 3
 
         // Logical 0 -> Physical 3 (head)
         let logical0: Index<Int> = .zero
@@ -113,12 +114,12 @@ struct StorageRingTests {
         #expect(physical0.position.rawValue == 3)
 
         // Logical 1 -> Physical 4
-        let logical1 = Index<Int>(__unchecked: (), position: 1)
+        let logical1: Index<Int> = 1
         let physical1 = Storage<Int>.Ring.physicalIndex(forLogical: logical1, head: head, capacity: capacity)
         #expect(physical1.position.rawValue == 4)
 
         // Logical 2 -> Physical 0 (wrapped)
-        let logical2 = Index<Int>(__unchecked: (), position: 2)
+        let logical2: Index<Int> = 2
         let physical2 = Storage<Int>.Ring.physicalIndex(forLogical: logical2, head: head, capacity: capacity)
         #expect(physical2.position.rawValue == 0)
     }
@@ -130,10 +131,10 @@ struct StorageRingTests {
         let capacity: Index<Int>.Count = 1
         let index: Index<Int> = .zero
 
-        let succ = index.successor(wrapping: capacity)
+        let succ = Storage<Int>.Ring.successor(of: index, wrapping: capacity)
         #expect(succ.position.rawValue == 0)
 
-        let pred = index.predecessor(wrapping: capacity)
+        let pred = Storage<Int>.Ring.predecessor(of: index, wrapping: capacity)
         #expect(pred.position.rawValue == 0)
     }
 
@@ -143,7 +144,7 @@ struct StorageRingTests {
         let index: Index<Int> = .zero
         let offset: Index<Int>.Offset = 12
 
-        let result = index.advanced(by: offset, wrapping: capacity)
+        let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (0 + 12) % 5 = 2
         #expect(result.position.rawValue == 2)
     }
@@ -211,7 +212,7 @@ struct StorageRingTests {
     @Test("linearize move wrapped")
     func linearizeMoveWrapped() throws {
         let capacity: Index<Int>.Count = 5
-        let head = Index<Int>(__unchecked: (), position: 3)
+        let head: Index<Int> = 3
         let count: Index<Int>.Count = 4
 
         let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
@@ -250,7 +251,7 @@ struct StorageRingTests {
     @Test("linearize move full buffer")
     func linearizeMoveFullBuffer() throws {
         let capacity: Index<Int>.Count = 4
-        let head = Index<Int>(__unchecked: (), position: 2)
+        let head: Index<Int> = 2
         let count: Index<Int>.Count = 4
 
         let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
@@ -314,7 +315,7 @@ struct StorageRingTests {
     @Test("linearize copy wrapped preserves source")
     func linearizeCopyWrappedPreservesSource() throws {
         let capacity: Index<Int>.Count = 5
-        let head = Index<Int>(__unchecked: (), position: 3)
+        let head: Index<Int> = 3
         let count: Index<Int>.Count = 4
 
         let source = Pointer<Int>.Mutable.allocate(capacity: capacity)
@@ -402,7 +403,7 @@ struct StorageRingTests {
     @Test("deinitialize ring wrapped")
     func deinitializeRingWrapped() throws {
         let capacity: Index<Int>.Count = 5
-        let head = Index<Int>(__unchecked: (), position: 3)
+        let head: Index<Int> = 3
         let count: Index<Int>.Count = 4
 
         let elements = Pointer<Int>.Mutable.allocate(capacity: capacity)

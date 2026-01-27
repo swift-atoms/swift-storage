@@ -11,6 +11,7 @@
 
 import Testing
 import Storage_Primitives
+import Storage_Primitives_Test_Support
 
 @Suite("Storage Tests")
 struct StorageTests {
@@ -49,18 +50,17 @@ struct StorageTests {
     @Test("initialize multiple elements")
     func initializeMultiple() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 5
 
-        for i in 0..<5 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            storage.initialize(to: i * 10, at: index)
+        (.zero..<count).forEach { index in
+            storage.initialize(to: Int(index.position.rawValue) * 10, at: index)
         }
-        storage.count = Index<Int>.Count(__unchecked: 5)
+        storage.count = count
 
         // Verify all values
-        for i in (0..<5).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == i * 10)
+            #expect(value == Int(index.position.rawValue) * 10)
         }
         storage.count = .zero
     }
@@ -70,7 +70,7 @@ struct StorageTests {
     @Test("pointer returns correct address")
     func pointerAccess() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
-        let index = Index<Int>(__unchecked: (), position: 3)
+        let index: Index<Int> = 3
 
         storage.initialize(to: 99, at: index)
 
@@ -102,14 +102,14 @@ struct StorageTests {
     @Test("deinitialize count elements")
     func deinitializeCount() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 5
 
-        for i in 0..<5 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            storage.initialize(to: i, at: index)
+        (.zero..<count).forEach { index in
+            storage.initialize(to: Int(index.position.rawValue), at: index)
         }
-        storage.count = Index<Int>.Count(__unchecked: 5)
+        storage.count = count
 
-        storage.deinitialize(count: Index<Int>.Count(__unchecked: 5))
+        storage.deinitialize(count: count)
         #expect(storage.count == .zero)
     }
 
@@ -117,23 +117,22 @@ struct StorageTests {
     func moveToNewStorage() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 3
 
         // Initialize source
-        for i in 0..<3 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            source.initialize(to: (i + 1) * 100, at: index)
+        (.zero..<count).forEach { index in
+            source.initialize(to: (Int(index.position.rawValue) + 1) * 100, at: index)
         }
-        source.count = Index<Int>.Count(__unchecked: 3)
+        source.count = count
 
         // Move to destination
-        source.move(to: destination, count: Index<Int>.Count(__unchecked: 3))
-        destination.count = Index<Int>.Count(__unchecked: 3)
+        source.move(to: destination, count: count)
+        destination.count = count
 
         // Verify destination has the values
-        for i in (0..<3).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (i + 1) * 100)
+            #expect(value == (Int(index.position.rawValue) + 1) * 100)
         }
         destination.count = .zero
     }
@@ -143,28 +142,26 @@ struct StorageTests {
     @Test("copy creates independent storage")
     func copyStorage() throws {
         let original = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 4
 
-        for i in 0..<4 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            original.initialize(to: i * 5, at: index)
+        (.zero..<count).forEach { index in
+            original.initialize(to: Int(index.position.rawValue) * 5, at: index)
         }
-        original.count = Index<Int>.Count(__unchecked: 4)
+        original.count = count
 
         let copied = original.copy()
 
         // Verify original still has values
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = original.move(at: index)
-            #expect(value == i * 5)
+            #expect(value == Int(index.position.rawValue) * 5)
         }
         original.count = .zero
 
         // Verify copy has the same values
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = copied.move(at: index)
-            #expect(value == i * 5)
+            #expect(value == Int(index.position.rawValue) * 5)
         }
         copied.count = .zero
     }
@@ -200,14 +197,14 @@ struct StorageTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 3
 
         do {
             let storage = Storage<Tracker>.create(minimumCapacity: 5)
-            for i in 0..<3 {
-                let index = Index<Tracker>(__unchecked: (), position: i)
+            (.zero..<count).forEach { index in
                 storage.initialize(to: Tracker(), at: index)
             }
-            storage.count = Index<Tracker>.Count(__unchecked: 3)
+            storage.count = count
             // storage goes out of scope here
         }
 
@@ -218,17 +215,17 @@ struct StorageTests {
 
     @Test("create with initializing closure")
     func createWithInitializer() throws {
-        let storage = Storage<Int>.create(capacity: Index<Int>.Count(__unchecked: 5)) { index in
+        let count: Index<Int>.Count = 5
+        let storage = Storage<Int>.create(capacity: count) { index in
             index.position.rawValue * 2
         }
 
-        #expect(storage.count.rawValue == 5)
+        #expect(storage.count == count)
 
         // Verify all values
-        for i in (0..<5).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == i * 2)
+            #expect(value == index.position.rawValue * 2)
         }
         storage.count = .zero
     }
@@ -249,26 +246,29 @@ struct StorageTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 5
 
         let storage = Storage<Tracker>.create(minimumCapacity: 10)
-        for i in 0..<5 {
-            let index = Index<Tracker>(__unchecked: (), position: i)
+        (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
-        storage.count = Index<Tracker>.Count(__unchecked: 5)
+        storage.count = count
 
         // Deinitialize range 1..<4 (indices 1, 2, 3)
-        let rangeCount = Index<Tracker>.Count(__unchecked: 4)
-        let range = Range.Lazy(1..<rangeCount.rawValue) { pos in
-            Index<Tracker>(__unchecked: (), position: pos)
+        let start: Range.Index = 1
+        let end: Range.Index = 4
+        let range = try Range.Lazy(start: start, end: end) { pos in
+            Index<Tracker>(try! Ordinal.Position(pos.position.rawValue))
         }
         storage.deinitialize(in: range)
 
         #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (0 and 4)
-        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 0))
-        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 4))
+        let idx0: Index<Tracker> = 0
+        let idx4: Index<Tracker> = 4
+        _ = storage.move(at: idx0)
+        _ = storage.move(at: idx4)
         storage.count = .zero
     }
 
@@ -278,23 +278,22 @@ struct StorageTests {
     func moveToNewStorageConvenience() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 5
 
         // Initialize source
-        for i in 0..<5 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            source.initialize(to: (i + 1) * 10, at: index)
+        (.zero..<count).forEach { index in
+            source.initialize(to: (Int(index.position.rawValue) + 1) * 10, at: index)
         }
-        source.count = Index<Int>.Count(__unchecked: 5)
+        source.count = count
 
         // Move using convenience method
         source.move(to: destination)
-        destination.count = Index<Int>.Count(__unchecked: 5)
+        destination.count = count
 
         // Verify destination
-        for i in (0..<5).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (i + 1) * 10)
+            #expect(value == (Int(index.position.rawValue) + 1) * 10)
         }
         destination.count = .zero
     }
@@ -305,31 +304,29 @@ struct StorageTests {
     func copyToNewStorage() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
+        let count: Index<Int>.Count = 4
 
         // Initialize source
-        for i in 0..<4 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            source.initialize(to: i * 3, at: index)
+        (.zero..<count).forEach { index in
+            source.initialize(to: Int(index.position.rawValue) * 3, at: index)
         }
-        source.count = Index<Int>.Count(__unchecked: 4)
+        source.count = count
 
         // Copy to destination
         source.copy(to: destination)
-        destination.count = Index<Int>.Count(__unchecked: 4)
+        destination.count = count
 
         // Verify source still has values
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = source.move(at: index)
-            #expect(value == i * 3)
+            #expect(value == Int(index.position.rawValue) * 3)
         }
         source.count = .zero
 
         // Verify destination has copies
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == i * 3)
+            #expect(value == Int(index.position.rawValue) * 3)
         }
         destination.count = .zero
     }

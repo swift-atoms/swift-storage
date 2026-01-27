@@ -15,7 +15,11 @@ let package = Package(
         .library(
             name: "Storage Primitives",
             targets: ["Storage Primitives"]
-        )
+        ),
+        .library(
+            name: "Storage Primitives Test Support",
+            targets: ["Storage Primitives Test Support"]
+        ),
     ],
     dependencies: [
         .package(path: "../swift-index-primitives"),
@@ -30,6 +34,14 @@ let package = Package(
                 .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
+        ),
+        .target(
+            name: "Storage Primitives Test Support",
+            dependencies: [
+                "Storage Primitives",
+                .product(name: "Pointer Primitives Test Support", package: "swift-pointer-primitives"),
+            ],
+            path: "Tests/Support"
         ),
         .testTarget(
             name: "Storage Primitives Tests",

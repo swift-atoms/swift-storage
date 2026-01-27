@@ -10,7 +10,6 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
-public import Affine_Primitives
 public import Pointer_Primitives
 public import Range_Primitives
 @_spi(Internal) public import Identity_Primitives

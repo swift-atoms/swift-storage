@@ -11,6 +11,7 @@
 
 import Testing
 import Storage_Primitives
+import Storage_Primitives_Test_Support
 
 @Suite("Storage.Inline Tests")
 struct StorageInlineTests {
@@ -39,17 +40,16 @@ struct StorageInlineTests {
     @Test("initialize multiple elements")
     func initializeMultiple() throws {
         var storage = Storage<Int>.Inline<8>()
+        let count: Index<Int>.Count = 8
 
-        for i in 0..<8 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            storage.initialize(to: i * 10, at: index)
+        (.zero..<count).forEach { index in
+            storage.initialize(to: Int(index.position.rawValue) * 10, at: index)
         }
 
         // Move in reverse to verify all initialized
-        for i in (0..<8).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == i * 10)
+            #expect(value == Int(index.position.rawValue) * 10)
         }
     }
 
@@ -58,7 +58,7 @@ struct StorageInlineTests {
     @Test("pointer returns correct address")
     func pointerAccess() throws {
         var storage = Storage<Int>.Inline<8>()
-        let index = Index<Int>(__unchecked: (), position: 3)
+        let index: Index<Int> = 3
 
         storage.initialize(to: 99, at: index)
 
@@ -88,15 +88,15 @@ struct StorageInlineTests {
     @Test("deinitialize count elements")
     func deinitializeCount() throws {
         var storage = Storage<Int>.Inline<8>()
+        let count: Index<Int>.Count = 4
 
         // Initialize first 4 elements
-        for i in 0..<4 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            storage.initialize(to: i, at: index)
+        (.zero..<count).forEach { index in
+            storage.initialize(to: Int(index.position.rawValue), at: index)
         }
 
         // Deinitialize all 4
-        storage.deinitialize(count: Index<Int>.Count(__unchecked: 4))
+        storage.deinitialize(count: count)
         // No crash means success - elements are deinitialized
     }
 
@@ -159,12 +159,13 @@ struct StorageInlineTests {
         }
 
         var storage = Storage<LargeElement>.Inline<2>()
+        let idx1: Index<LargeElement> = 1
 
         storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
-        storage.initialize(to: LargeElement(a: 4, b: 5, c: 6), at: Index<LargeElement>(__unchecked: (), position: 1))
+        storage.initialize(to: LargeElement(a: 4, b: 5, c: 6), at: idx1)
 
         let first = storage.move(at: .zero)
-        let second = storage.move(at: Index<LargeElement>(__unchecked: (), position: 1))
+        let second = storage.move(at: idx1)
 
         #expect(first.a == 1 && first.b == 2 && first.c == 3)
         #expect(second.a == 4 && second.b == 5 && second.c == 6)
@@ -180,24 +181,28 @@ struct StorageInlineTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 5
 
         var storage = Storage<Tracker>.Inline<8>()
-        for i in 0..<5 {
-            let index = Index<Tracker>(__unchecked: (), position: i)
+        (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
 
         // Deinitialize range 1..<4 (indices 1, 2, 3)
-        let range = Range.Lazy(1..<4) { pos in
-            Index<Tracker>(__unchecked: (), position: pos)
+        let start: Range.Index = 1
+        let end: Range.Index = 4
+        let range = try Range.Lazy(start: start, end: end) { pos in
+            Index<Tracker>(try! Ordinal.Position(pos.position.rawValue))
         }
         storage.deinitialize(in: range)
 
         #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (0 and 4)
-        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 0))
-        _ = storage.move(at: Index<Tracker>(__unchecked: (), position: 4))
+        let idx0: Index<Tracker> = 0
+        let idx4: Index<Tracker> = 4
+        _ = storage.move(at: idx0)
+        _ = storage.move(at: idx4)
     }
 
     // MARK: - Move to Heap Storage Tests
@@ -205,23 +210,23 @@ struct StorageInlineTests {
     @Test("move to heap storage")
     func moveToHeapStorage() throws {
         var inline = Storage<Int>.Inline<8>()
-        let heap = Storage<Int>.create(minimumCapacity: Index<Int>.Count(__unchecked: 8))
+        let capacity: Index<Int>.Count = 8
+        let count: Index<Int>.Count = 4
+        let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Initialize inline storage
-        for i in 0..<4 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            inline.initialize(to: (i + 1) * 100, at: index)
+        (.zero..<count).forEach { index in
+            inline.initialize(to: (Int(index.position.rawValue) + 1) * 100, at: index)
         }
 
         // Move to heap
-        inline.move(to: heap, count: Index<Int>.Count(__unchecked: 4))
-        heap.count = Index<Int>.Count(__unchecked: 4)
+        inline.move(to: heap, count: count)
+        heap.count = count
 
         // Verify heap has the values
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == (i + 1) * 100)
+            #expect(value == (Int(index.position.rawValue) + 1) * 100)
         }
         heap.count = .zero
     }
@@ -229,7 +234,8 @@ struct StorageInlineTests {
     @Test("move zero elements to heap storage")
     func moveZeroToHeapStorage() throws {
         var inline = Storage<Int>.Inline<8>()
-        let heap = Storage<Int>.create(minimumCapacity: Index<Int>.Count(__unchecked: 8))
+        let capacity: Index<Int>.Count = 8
+        let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Move zero elements - should not crash
         inline.move(to: heap, count: .zero)
@@ -240,30 +246,29 @@ struct StorageInlineTests {
     @Test("copy to heap storage")
     func copyToHeapStorage() throws {
         var inline = Storage<Int>.Inline<8>()
-        let heap = Storage<Int>.create(minimumCapacity: Index<Int>.Count(__unchecked: 8))
+        let capacity: Index<Int>.Count = 8
+        let count: Index<Int>.Count = 4
+        let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Initialize inline storage
-        for i in 0..<4 {
-            let index = Index<Int>(__unchecked: (), position: i)
-            inline.initialize(to: i * 5, at: index)
+        (.zero..<count).forEach { index in
+            inline.initialize(to: Int(index.position.rawValue) * 5, at: index)
         }
 
         // Copy to heap
-        inline.copy(to: heap, count: Index<Int>.Count(__unchecked: 4))
-        heap.count = Index<Int>.Count(__unchecked: 4)
+        inline.copy(to: heap, count: count)
+        heap.count = count
 
         // Verify inline still has original values
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = inline.move(at: index)
-            #expect(value == i * 5)
+            #expect(value == Int(index.position.rawValue) * 5)
         }
 
         // Verify heap has copies
-        for i in (0..<4).reversed() {
-            let index = Index<Int>(__unchecked: (), position: i)
+        (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == i * 5)
+            #expect(value == Int(index.position.rawValue) * 5)
         }
         heap.count = .zero
     }
@@ -271,7 +276,8 @@ struct StorageInlineTests {
     @Test("copy zero elements to heap storage")
     func copyZeroToHeapStorage() throws {
         let inline = Storage<Int>.Inline<8>()
-        let heap = Storage<Int>.create(minimumCapacity: Index<Int>.Count(__unchecked: 8))
+        let capacity: Index<Int>.Count = 8
+        let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Copy zero elements - should not crash
         inline.copy(to: heap, count: .zero)
@@ -295,19 +301,16 @@ struct StorageInlineTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 3
 
         var storage = Storage<Tracker>.Inline<8>()
 
         // Initialize elements at indices 0, 1, 2 (head at 0, non-wrapped)
-        for i in 0..<3 {
-            let index = Index<Tracker>(__unchecked: (), position: i)
+        (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
 
-        storage.deinitialize(
-            head: .zero,
-            count: Index<Tracker>.Count(__unchecked: 3)
-        )
+        storage.deinitialize(head: .zero, count: count)
 
         #expect(Tracker.deinitCount == 3)
     }
@@ -320,6 +323,11 @@ struct StorageInlineTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 3
+        let head: Index<Tracker> = 2
+        let idx0: Index<Tracker> = 0
+        let idx2: Index<Tracker> = 2
+        let idx3: Index<Tracker> = 3
 
         var storage = Storage<Tracker>.Inline<4>()
 
@@ -327,14 +335,11 @@ struct StorageInlineTests {
         // Physical: [elem2, -, elem0, elem1]
         //                      ^head
         // Logical order: elem0, elem1, elem2
-        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 0))  // elem2
-        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 2))  // elem0
-        storage.initialize(to: Tracker(), at: Index<Tracker>(__unchecked: (), position: 3))  // elem1
+        storage.initialize(to: Tracker(), at: idx0)  // elem2
+        storage.initialize(to: Tracker(), at: idx2)  // elem0
+        storage.initialize(to: Tracker(), at: idx3)  // elem1
 
-        storage.deinitialize(
-            head: Index<Tracker>(__unchecked: (), position: 2),
-            count: Index<Tracker>.Count(__unchecked: 3)
-        )
+        storage.deinitialize(head: head, count: count)
 
         #expect(Tracker.deinitCount == 3)
     }
@@ -347,21 +352,19 @@ struct StorageInlineTests {
         }
 
         Tracker.deinitCount = 0
+        let count: Index<Tracker>.Count = 4
+        let head: Index<Tracker> = 3
 
         var storage = Storage<Tracker>.Inline<4>()
 
         // Initialize all 4 slots with head at 3
         // Physical: [elem1, elem2, elem3, elem0]
         //                                 ^head
-        for i in 0..<4 {
-            let index = Index<Tracker>(__unchecked: (), position: i)
+        (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
 
-        storage.deinitialize(
-            head: Index<Tracker>(__unchecked: (), position: 3),
-            count: Index<Tracker>.Count(__unchecked: 4)
-        )
+        storage.deinitialize(head: head, count: count)
 
         #expect(Tracker.deinitCount == 4)
     }
