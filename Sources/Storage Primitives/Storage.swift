@@ -43,20 +43,99 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     @inlinable
     public var count: Index<Element>.Count {
         @inline(__always)
-        get { .init(__unchecked: header) }
+        get { Index<Element>.Count(__unchecked: (), header) }
         @inline(__always)
-        set { header = newValue.rawValue }
+        set { header = Int(newValue.count.rawValue) }
     }
 
     deinit {
-        let count = header
-        guard count > 0 else { return }
+        let count = self.count
+        guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { elements in
-            for i in 0..<count {
-                unsafe (elements + i).deinitialize(count: 1)
+            (.zero..<count).forEach { index in
+                unsafe (elements + index).deinitialize(count: 1)
             }
         }
     }
+    
+    /// Namespace for storage header types.
+    ///
+    /// Headers track the metadata required for different storage layouts:
+    ///
+    /// - ``Header/Count``: Element count for contiguous storage (Array, Stack)
+    /// - ``Header/Ring``: Head/tail/count for circular buffers (Queue, Deque)
+    /// - ``Header/Arena``: Free list management for arena storage (List)
+    public enum Header {}
+    
+    /// Fixed-capacity inline storage.
+    ///
+    /// Provides stack-allocated storage with compile-time capacity. Elements are
+    /// stored inline without heap allocation, making this suitable for small,
+    /// fixed-size collections.
+    ///
+    /// ## Layout
+    ///
+    /// Storage is backed by `InlineArray` with 64-byte slots, sufficient for most
+    /// element types. Elements are accessed via raw pointer operations to support
+    /// move-only types.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// var storage = Storage<Int>.Inline<8>()
+    /// storage.initialize(to: 42, at: .zero)
+    /// let value = storage.move(at: .zero)
+    /// ```
+    ///
+    /// - Important: Caller is responsible for tracking which indices are initialized.
+    public struct Inline<let capacity: Int>: ~Copyable {
+        @usableFromInline
+        var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+
+        /// The slot stride (64 bytes per slot).
+        @usableFromInline
+        static var slotStride: Index<UInt8>.Count { Index<UInt8>.Count.init(__unchecked: (), 64) }
+
+        /// Maximum element stride supported (64 bytes per slot).
+        @inlinable
+        public static var maxStride: Int { 64 }
+
+        /// Creates uninitialized inline storage.
+        ///
+        /// - Precondition: Element stride must not exceed 64 bytes (inline slot size).
+        /// - Precondition: Element alignment must not exceed `Int` alignment.
+        @inlinable
+        public init() {
+            precondition(
+                MemoryLayout<Element>.stride <= 64,
+                "Element stride exceeds inline storage slot size (64 bytes)"
+            )
+            precondition(
+                MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment,
+                "Element alignment exceeds inline storage alignment"
+            )
+            _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+        }
+    }
+    
+    /// Circular buffer storage operations.
+    ///
+    /// Operations for ring buffer storage where elements wrap around the capacity
+    /// boundary. Used by Queue and Deque.
+    ///
+    /// ## Ring Buffer Semantics
+    ///
+    /// Ring buffers maintain a circular view over contiguous storage. Elements are
+    /// logically ordered from head to tail, but physically wrap at capacity:
+    ///
+    /// ```
+    /// Physical:  [ 2 | 3 | 4 | 0 | 1 ]
+    ///                        ^head
+    /// Logical:   [ 0 | 1 | 2 | 3 | 4 ]
+    /// ```
+    ///
+    /// All operations maintain the invariant that results are in `0..<capacity`.
+    public enum Ring {}
 }
 
 // MARK: - Creation
@@ -68,7 +147,7 @@ extension Storage where Element: ~Copyable {
     /// - Returns: A new storage instance with at least the requested capacity.
     @inlinable
     public static func create(minimumCapacity: Index<Element>.Count) -> Storage<Element> {
-        let buffer = Storage<Element>.create(minimumCapacity: minimumCapacity.rawValue) { _ in 0 }
+        let buffer = Storage<Element>.create(minimumCapacity: Int(minimumCapacity.count.rawValue)) { _ in 0 }
         return unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
     }
 
@@ -83,15 +162,15 @@ extension Storage where Element: ~Copyable {
         capacity: Index<Element>.Count,
         initializingWith initializer: (Index<Element>) -> Element
     ) -> Storage<Element> {
-        let storage = Storage<Element>.create(minimumCapacity: capacity.rawValue) { _ in 0 }
+        let storage = Storage<Element>.create(minimumCapacity: Int(capacity.count.rawValue)) { _ in 0 }
         let typed = unsafe unsafeDowncast(storage, to: Storage<Element>.self)
 
         _ = unsafe typed.withUnsafeMutablePointerToElements { elements in
-            (0..<capacity).forEach { index in
-                unsafe (elements + index.position.rawValue).initialize(to: initializer(index))
+            (.zero..<capacity).forEach { index in
+                unsafe (elements + index).initialize(to: initializer(index))
             }
         }
-        typed.header = capacity.rawValue
+        typed.header = Int(capacity.count.rawValue)
 
         return typed
     }
@@ -109,7 +188,7 @@ extension Storage where Element: ~Copyable {
     @unsafe
     public func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
         unsafe withUnsafeMutablePointerToElements {
-            unsafe Pointer<Element>.Mutable($0 + index.position.rawValue)
+            unsafe Pointer<Element>.Mutable($0 + index)
         }
     }
 
@@ -144,7 +223,7 @@ extension Storage where Element: ~Copyable {
     @unsafe
     public func read(at index: Index<Element>) -> Pointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
-            unsafe Pointer<Element>(UnsafePointer($0 + index.position.rawValue))
+            unsafe Pointer<Element>(UnsafePointer($0 + index))
         }
     }
 }
@@ -170,8 +249,8 @@ extension Storage where Element: ~Copyable {
     public func deinitialize(count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { elements in
-            for i in 0..<count.rawValue {
-                unsafe (elements + i).deinitialize(count: 1)
+            (.zero..<count).forEach { index in
+                unsafe (elements + index).deinitialize(count: 1)
             }
         }
         header = 0
@@ -189,8 +268,8 @@ extension Storage where Element: ~Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
-                for i in 0..<count.rawValue {
-                    unsafe (dst + i).initialize(to: (src + i).move())
+                (.zero..<count).forEach { index in
+                    unsafe (dst + index).initialize(to: (src + index).move())
                 }
             }
         }
@@ -216,7 +295,7 @@ extension Storage where Element: ~Copyable {
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafeMutablePointerToElements { elements in
             range.forEach { index in
-                unsafe (elements + index.position.rawValue).deinitialize(count: 1)
+                unsafe (elements + index).deinitialize(count: 1)
             }
         }
     }
@@ -236,12 +315,12 @@ extension Storage where Element: Copyable {
         }
 
         let new = Storage<Element>.create(minimumCapacity: count)
-        new.header = count.rawValue
+        new.header = Int(count.count.rawValue)
 
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe new.withUnsafeMutablePointerToElements { dst in
-                for i in 0..<count.rawValue {
-                    unsafe (dst + i).initialize(to: src[i])
+                (.zero..<count).forEach { index in
+                    unsafe (dst + index).initialize(to: src[index])
                 }
             }
         }
@@ -260,8 +339,8 @@ extension Storage where Element: Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
-                for i in 0..<count.rawValue {
-                    unsafe (dst + i).initialize(to: src[i])
+                (.zero..<count).forEach { index in
+                    unsafe (dst + index).initialize(to: src[index])
                 }
             }
         }

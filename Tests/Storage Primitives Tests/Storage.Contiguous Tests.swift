@@ -26,7 +26,7 @@ struct StorageContiguousTests {
 
     @Test("successor via Index extension")
     func successorExtension() throws {
-        let index = Index<Int>(__unchecked: (), position: 5)
+        let index = Index<Int>(__unchecked: (), 5)
         let next = index.successor()
         #expect(next.position.rawValue == 6)
     }
@@ -44,21 +44,21 @@ struct StorageContiguousTests {
 
     @Test("predecessor decrements position")
     func predecessorDecrements() throws {
-        let index = Index<Int>(__unchecked: (), position: 5)
+        let index = Index<Int>(__unchecked: (), 5)
         let prev = Storage<Int>.Contiguous.predecessor(of: index)
         #expect(prev.position.rawValue == 4)
     }
 
     @Test("predecessor via Index extension")
     func predecessorExtension() throws {
-        let index = Index<Int>(__unchecked: (), position: 10)
+        let index = Index<Int>(__unchecked: (), 10)
         let prev = index.predecessor()
         #expect(prev.position.rawValue == 9)
     }
 
     @Test("predecessor to zero")
     func predecessorToZero() throws {
-        let index = Index<Int>(__unchecked: (), position: 1)
+        let index = Index<Int>(__unchecked: (), 1)
         let zero = index.predecessor()
         #expect(zero.position.rawValue == 0)
     }
@@ -67,7 +67,7 @@ struct StorageContiguousTests {
 
     @Test("successor then predecessor returns original")
     func roundTrip() throws {
-        let original = Index<Int>(__unchecked: (), position: 42)
+        let original = Index<Int>(__unchecked: (), 42)
         let incremented = original.successor()
         let decremented = incremented.predecessor()
         #expect(decremented == original)
@@ -75,7 +75,7 @@ struct StorageContiguousTests {
 
     @Test("predecessor then successor returns original")
     func reverseRoundTrip() throws {
-        let original = Index<Int>(__unchecked: (), position: 42)
+        let original = Index<Int>(__unchecked: (), 42)
         let decremented = original.predecessor()
         let incremented = decremented.successor()
         #expect(incremented == original)

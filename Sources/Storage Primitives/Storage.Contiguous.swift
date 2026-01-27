@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import Index_Primitives
+
 // MARK: - Contiguous Index Operations
 
 extension Storage where Element: ~Copyable {
@@ -19,7 +21,7 @@ extension Storage where Element: ~Copyable {
     /// - Complexity: O(1)
     @inlinable
     public static func successor(of index: Index<Element>) -> Index<Element> {
-        Index(__unchecked: (), position: index.position.rawValue + 1)
+        try! index + .one
     }
 
     /// Returns the previous index without wrapping.
@@ -30,6 +32,6 @@ extension Storage where Element: ~Copyable {
     /// - Complexity: O(1)
     @inlinable
     public static func predecessor(of index: Index<Element>) -> Index<Element> {
-        Index(__unchecked: (), position: index.position.rawValue - 1)
+        try! index - .one
     }
 }

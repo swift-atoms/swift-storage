@@ -9,28 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage {
-    /// Circular buffer storage operations.
-    ///
-    /// Operations for ring buffer storage where elements wrap around the capacity
-    /// boundary. Used by Queue and Deque.
-    ///
-    /// ## Ring Buffer Semantics
-    ///
-    /// Ring buffers maintain a circular view over contiguous storage. Elements are
-    /// logically ordered from head to tail, but physically wrap at capacity:
-    ///
-    /// ```
-    /// Physical:  [ 2 | 3 | 4 | 0 | 1 ]
-    ///                        ^head
-    /// Logical:   [ 0 | 1 | 2 | 3 | 4 ]
-    /// ```
-    ///
-    /// All operations maintain the invariant that results are in `0..<capacity`.
-    public enum Ring {}
-}
-
-extension Storage.Ring {
+extension Storage.Ring where Element: ~Copyable {
     /// Advances an index by one position, wrapping at capacity.
     ///
     /// - Parameters:
@@ -43,7 +22,8 @@ extension Storage.Ring {
         of index: Index<Element>,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        Index(__unchecked: (), position: (index.position.rawValue + 1) % capacity.rawValue)
+        // Use typed arithmetic: (index + 1) % capacity
+        (try! index + .one) % capacity
     }
 
     /// Retreats an index by one position, wrapping at capacity.
@@ -58,7 +38,8 @@ extension Storage.Ring {
         of index: Index<Element>,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        Index(__unchecked: (), position: (index.position.rawValue - 1 + capacity.rawValue) % capacity.rawValue)
+        // Add capacity before subtracting to handle wraparound
+        (try! index + capacity - .one) % capacity
     }
 
     /// Advances an index by an offset, wrapping at capacity.
@@ -75,9 +56,13 @@ extension Storage.Ring {
         by offset: Index<Element>.Offset,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        let cap = capacity.rawValue
-        let raw = (index.position.rawValue + offset.rawValue % cap + cap) % cap
-        return Index(__unchecked: (), position: raw)
+        // Normalize offset to positive range, then add and wrap
+        let cap = Int(capacity.count.rawValue)
+        let offsetValue = offset.vector.rawValue
+        let normalizedOffset = ((offsetValue % cap) + cap) % cap
+        let indexValue = Int(index.position.rawValue)
+        let result = (indexValue + normalizedOffset) % cap
+        return try! Index(result)
     }
 
     /// Calculates the physical index from a logical index in a ring buffer.
@@ -97,7 +82,8 @@ extension Storage.Ring {
         head: Index<Element>,
         capacity: Index<Element>.Count
     ) -> Index<Element> {
-        Index(__unchecked: (), position: (head.position.rawValue + logicalIndex.position.rawValue) % capacity.rawValue)
+        // Use typed arithmetic: (head + logicalIndex.position) % capacity
+        (try! head + Index.Offset(Int(logicalIndex.position.rawValue))) % capacity
     }
 
     // MARK: - Bulk Operations
@@ -124,9 +110,9 @@ extension Storage.Ring {
     ) {
         guard count > .zero else { return }
         var srcIndex = head
-        for dstIndex in 0..<count.rawValue {
+        (.zero..<count).forEach { dstIndex in
             unsafe (destination.base + dstIndex).initialize(
-                to: (source.base + srcIndex.position.rawValue).move()
+                to: (source.base + srcIndex).move()
             )
             srcIndex = successor(of: srcIndex, wrapping: capacity)
         }
@@ -150,42 +136,10 @@ extension Storage.Ring {
     ) {
         guard count > .zero else { return }
         var index = head
-        for _ in 0..<count.rawValue {
-            unsafe (elements.base + index.position.rawValue).deinitialize(count: 1)
+        (.zero..<count).forEach { _ in
+            unsafe (elements.base + index).deinitialize(count: 1)
             index = successor(of: index, wrapping: capacity)
         }
     }
 }
 
-// MARK: - Copyable Ring Operations
-
-extension Storage.Ring where Element: Copyable {
-    /// Copies elements from a ring buffer to linear storage.
-    ///
-    /// Non-destructive variant. Source pointer immutability distinguishes
-    /// this overload from the move variant.
-    ///
-    /// - Parameters:
-    ///   - source: Immutable pointer to source ring buffer elements.
-    ///   - head: Physical index of first element in ring.
-    ///   - count: Number of elements to copy.
-    ///   - capacity: Source buffer capacity (for wrapping).
-    ///   - destination: Pointer to destination (linear, starting at 0).
-    @inlinable
-    public static func linearize(
-        from source: Pointer<Element>,
-        head: Index<Element>,
-        count: Index<Element>.Count,
-        capacity: Index<Element>.Count,
-        to destination: Pointer<Element>.Mutable
-    ) {
-        guard count > .zero else { return }
-        var srcIndex = head
-        for dstIndex in 0..<count.rawValue {
-            unsafe (destination.base + dstIndex).initialize(
-                to: (source.base + srcIndex.position.rawValue).pointee
-            )
-            srcIndex = successor(of: srcIndex, wrapping: capacity)
-        }
-    }
-}

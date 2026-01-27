@@ -46,10 +46,10 @@ extension Storage.Header {
 
         /// Sentinel value indicating no element or end of free list.
         ///
-        /// Uses position -1 which is invalid for normal indices.
+        /// Uses UInt.max which is invalid for normal indices.
         @inlinable
         public static var sentinel: Index<Element> {
-            Index(__unchecked: (), position: -1)
+            Index(__unchecked: (), Ordinal.Position(UInt.max))
         }
 
         /// Creates an empty arena header.

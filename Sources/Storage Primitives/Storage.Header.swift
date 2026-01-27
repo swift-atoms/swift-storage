@@ -10,12 +10,5 @@
 // ===----------------------------------------------------------------------===//
 
 extension Storage {
-    /// Namespace for storage header types.
-    ///
-    /// Headers track the metadata required for different storage layouts:
-    ///
-    /// - ``Header/Count``: Element count for contiguous storage (Array, Stack)
-    /// - ``Header/Ring``: Head/tail/count for circular buffers (Queue, Deque)
-    /// - ``Header/Arena``: Free list management for arena storage (List)
-    public enum Header {}
+    
 }

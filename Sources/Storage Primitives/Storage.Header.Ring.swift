@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage.Header {
+extension Storage.Ring {
     /// Header for ring buffer storage.
     ///
     /// Tracks head (dequeue position), tail (enqueue position), and count.
@@ -30,7 +30,7 @@ extension Storage.Header {
     ///              ^tail      ^head
     /// Logical:   [ A | B | X ]
     /// ```
-    public struct Ring: ~Copyable, Sendable {
+    public struct Header: ~Copyable, Sendable {
         /// Physical position of next element to dequeue.
         public var head: Index<Element>
 
@@ -74,7 +74,7 @@ extension Storage.Header {
         @inlinable
         public mutating func advanceHead(capacity: Index<Element>.Count) {
             head = Storage<Element>.Ring.successor(of: head, wrapping: capacity)
-            count = Index<Element>.Count(__unchecked: count.rawValue - 1)
+            count = count.subtract.saturating(.one)
         }
 
         /// Advances tail after enqueue, wrapping at capacity.
@@ -84,7 +84,7 @@ extension Storage.Header {
         @inlinable
         public mutating func advanceTail(capacity: Index<Element>.Count) {
             tail = Storage<Element>.Ring.successor(of: tail, wrapping: capacity)
-            count = Index<Element>.Count(__unchecked: count.rawValue + 1)
+            count = count + .one
         }
 
         /// Retreats head before enqueue at front, wrapping at capacity.
@@ -96,7 +96,7 @@ extension Storage.Header {
         @inlinable
         public mutating func retreatHead(capacity: Index<Element>.Count) {
             head = Storage<Element>.Ring.predecessor(of: head, wrapping: capacity)
-            count = Index<Element>.Count(__unchecked: count.rawValue + 1)
+            count = count + .one
         }
 
         /// Retreats tail before dequeue from back, wrapping at capacity.
@@ -108,7 +108,7 @@ extension Storage.Header {
         @inlinable
         public mutating func retreatTail(capacity: Index<Element>.Count) {
             tail = Storage<Element>.Ring.predecessor(of: tail, wrapping: capacity)
-            count = Index<Element>.Count(__unchecked: count.rawValue - 1)
+            count = count.subtract.saturating(.one)
         }
     }
 }

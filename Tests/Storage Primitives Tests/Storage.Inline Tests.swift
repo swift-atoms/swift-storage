@@ -76,7 +76,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 50, at: index)
 
-        let ptr = unsafe storage.mutablePointer(at: index)
+        let ptr = unsafe storage.pointer(at: index)
         unsafe ptr.pointee = 100
 
         let value = storage.move(at: index)
