@@ -22,7 +22,7 @@ extension Storage.Inline where Element: Copyable {
             unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
                 let address = unsafe Memory.Address(base)
                 (.zero..<count).forEach { index in
-                    let src = unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+                    let src = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     unsafe (dst + index).initialize(to: src.pointee)
                 }
             }

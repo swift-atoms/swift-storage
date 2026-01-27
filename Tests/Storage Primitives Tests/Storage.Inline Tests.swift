@@ -20,7 +20,7 @@ struct StorageInlineTests {
 
     @Test("inline storage can be created")
     func creation() throws {
-        let storage = Storage<Int>.Inline<8>()
+        let storage = try Storage<Int>.Inline<8>()
         _ = storage
     }
 
@@ -28,7 +28,7 @@ struct StorageInlineTests {
 
     @Test("initialize and move element")
     func initializeAndMove() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
         storage.initialize(to: 42, at: index)
@@ -39,7 +39,7 @@ struct StorageInlineTests {
 
     @Test("initialize multiple elements")
     func initializeMultiple() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let count: Index<Int>.Count = 8
 
         (.zero..<count).forEach { index in
@@ -57,13 +57,13 @@ struct StorageInlineTests {
 
     @Test("pointer returns correct address")
     func pointerAccess() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = 3
 
         storage.initialize(to: 99, at: index)
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        let pointee = unsafe ptr.pointee
+        let ptr: Pointer<Int>.Mutable = storage.pointer(at: index)
+        let pointee = ptr.pointee
         #expect(pointee == 99)
 
         _ = storage.move(at: index)
@@ -71,13 +71,13 @@ struct StorageInlineTests {
 
     @Test("mutable pointer allows modification")
     func mutablePointerAccess() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
         storage.initialize(to: 50, at: index)
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        unsafe ptr.pointee = 100
+        let ptr: Pointer<Int>.Mutable = storage.pointer(at: index)
+        ptr.pointee = 100
 
         let value = storage.move(at: index)
         #expect(value == 100)
@@ -87,7 +87,7 @@ struct StorageInlineTests {
 
     @Test("deinitialize count elements")
     func deinitializeCount() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let count: Index<Int>.Count = 4
 
         // Initialize first 4 elements
@@ -104,8 +104,8 @@ struct StorageInlineTests {
 
     @Test("different element types have separate storage")
     func typeSafety() throws {
-        var intStorage = Storage<Int>.Inline<4>()
-        var doubleStorage = Storage<Double>.Inline<4>()
+        var intStorage = try Storage<Int>.Inline<4>()
+        var doubleStorage = try Storage<Double>.Inline<4>()
 
         intStorage.initialize(to: 42, at: .zero)
         doubleStorage.initialize(to: 3.14, at: .zero)
@@ -121,13 +121,13 @@ struct StorageInlineTests {
 
     @Test("pointer returns Pointer type")
     func pointerReturnsImmutableType() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
         storage.initialize(to: 42, at: index)
 
-        let ptr: Pointer<Int> = unsafe storage.pointer(at: index)
-        let value = unsafe ptr.pointee
+        let ptr: Pointer<Int> = storage.pointer(at: index)
+        let value = ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -135,13 +135,13 @@ struct StorageInlineTests {
 
     @Test("mutablePointer returns Pointer.Mutable type")
     func mutablePointerReturnsMutableType() throws {
-        var storage = Storage<Int>.Inline<8>()
+        var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
         storage.initialize(to: 42, at: index)
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        let value = unsafe ptr.pointee
+        let ptr: Pointer<Int>.Mutable = storage.pointer(at: index)
+        let value = ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -158,7 +158,7 @@ struct StorageInlineTests {
             var c: Int
         }
 
-        var storage = Storage<LargeElement>.Inline<2>()
+        var storage = try Storage<LargeElement>.Inline<2>()
         let idx1: Index<LargeElement> = 1
 
         storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
@@ -177,13 +177,13 @@ struct StorageInlineTests {
     func deinitializeInRange() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 5
 
-        var storage = Storage<Tracker>.Inline<8>()
+        var storage = try Storage<Tracker>.Inline<8>()
         (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
@@ -196,7 +196,7 @@ struct StorageInlineTests {
         }
         storage.deinitialize(in: range)
 
-        #expect(Tracker.deinitCount == 3)
+        unsafe #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (0 and 4)
         let idx0: Index<Tracker> = 0
@@ -209,7 +209,7 @@ struct StorageInlineTests {
 
     @Test("move to heap storage")
     func moveToHeapStorage() throws {
-        var inline = Storage<Int>.Inline<8>()
+        var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage<Int>.create(minimumCapacity: capacity)
@@ -233,7 +233,7 @@ struct StorageInlineTests {
 
     @Test("move zero elements to heap storage")
     func moveZeroToHeapStorage() throws {
-        var inline = Storage<Int>.Inline<8>()
+        var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.create(minimumCapacity: capacity)
 
@@ -245,7 +245,7 @@ struct StorageInlineTests {
 
     @Test("copy to heap storage")
     func copyToHeapStorage() throws {
-        var inline = Storage<Int>.Inline<8>()
+        var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage<Int>.create(minimumCapacity: capacity)
@@ -275,7 +275,7 @@ struct StorageInlineTests {
 
     @Test("copy zero elements to heap storage")
     func copyZeroToHeapStorage() throws {
-        let inline = Storage<Int>.Inline<8>()
+        let inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.create(minimumCapacity: capacity)
 
@@ -287,7 +287,7 @@ struct StorageInlineTests {
 
     @Test("deinitialize ring with empty count")
     func deinitializeRingEmpty() throws {
-        var storage = Storage<Int>.Inline<8>()
+        let storage = try Storage<Int>.Inline<8>()
 
         // Should not crash with empty count
         storage.deinitialize(head: .zero, count: .zero)
@@ -297,13 +297,13 @@ struct StorageInlineTests {
     func deinitializeRingNonWrapped() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 3
 
-        var storage = Storage<Tracker>.Inline<8>()
+        var storage = try Storage<Tracker>.Inline<8>()
 
         // Initialize elements at indices 0, 1, 2 (head at 0, non-wrapped)
         (.zero..<count).forEach { index in
@@ -312,24 +312,24 @@ struct StorageInlineTests {
 
         storage.deinitialize(head: .zero, count: count)
 
-        #expect(Tracker.deinitCount == 3)
+        unsafe #expect(Tracker.deinitCount == 3)
     }
 
     @Test("deinitialize ring wrapped")
     func deinitializeRingWrapped() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 3
         let head: Index<Tracker> = 2
         let idx0: Index<Tracker> = 0
         let idx2: Index<Tracker> = 2
         let idx3: Index<Tracker> = 3
 
-        var storage = Storage<Tracker>.Inline<4>()
+        var storage = try Storage<Tracker>.Inline<4>()
 
         // Simulate ring buffer with head at 2, 3 elements:
         // Physical: [elem2, -, elem0, elem1]
@@ -341,21 +341,21 @@ struct StorageInlineTests {
 
         storage.deinitialize(head: head, count: count)
 
-        #expect(Tracker.deinitCount == 3)
+        unsafe #expect(Tracker.deinitCount == 3)
     }
 
     @Test("deinitialize ring full buffer")
     func deinitializeRingFullBuffer() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 4
         let head: Index<Tracker> = 3
 
-        var storage = Storage<Tracker>.Inline<4>()
+        var storage = try Storage<Tracker>.Inline<4>()
 
         // Initialize all 4 slots with head at 3
         // Physical: [elem1, elem2, elem3, elem0]
@@ -366,6 +366,6 @@ struct StorageInlineTests {
 
         storage.deinitialize(head: head, count: count)
 
-        #expect(Tracker.deinitCount == 4)
+        unsafe #expect(Tracker.deinitCount == 4)
     }
 }

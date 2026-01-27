@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Index_Primitives
+import Ordinal_Primitives
 
 // MARK: - Contiguous Index Operations
 
@@ -21,17 +22,19 @@ extension Storage where Element: ~Copyable {
     /// - Complexity: O(1)
     @inlinable
     public static func successor(of index: Index<Element>) -> Index<Element> {
-        try! index + .one
+        index + Index<Element>.Count.one
     }
 
     /// Returns the previous index without wrapping.
     ///
     /// - Parameter index: The current index.
     /// - Returns: The predecessor index.
-    /// - Precondition: index.position > 0
+    /// - Throws: `Ordinal.Position.Error` if index is zero.
     /// - Complexity: O(1)
     @inlinable
-    public static func predecessor(of index: Index<Element>) -> Index<Element> {
-        try! index - .one
+    public static func predecessor(
+        of index: Index<Element>
+    ) throws(Ordinal.Position.Error) -> Index<Element> {
+        try index - Index<Element>.Offset.one
     }
 }

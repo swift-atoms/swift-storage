@@ -21,7 +21,7 @@ extension Storage.Inline where Element: ~Copyable {
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
             let address = unsafe Memory.Address.Mutable(base)
-            return unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
+            return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
         }
     }
 
@@ -38,7 +38,7 @@ extension Storage.Inline where Element: ~Copyable {
     public func read(at index: Index<Element>) -> Pointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
             let address = unsafe Memory.Address(base)
-            return unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
         }
     }
 
@@ -51,7 +51,7 @@ extension Storage.Inline where Element: ~Copyable {
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
             let address = unsafe Memory.Address.Mutable(base)
-            return unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
         }
     }
 
@@ -144,11 +144,11 @@ extension Storage.Inline where Element: ~Copyable {
     public mutating func move(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
+            unsafe heapStorage.withUnsafeMutablePointerToElements { destination in
                 let address = unsafe Memory.Address.Mutable(base)
                 (.zero..<count).forEach { index in
-                    let src: Pointer<Element>.Mutable = unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    unsafe (dst + index).initialize(to: src.move())
+                    let source: Pointer<Element>.Mutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+                    unsafe (destination + index).initialize(to: source.move())
                 }
             }
         }

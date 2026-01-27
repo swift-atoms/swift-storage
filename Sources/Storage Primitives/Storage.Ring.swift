@@ -22,8 +22,8 @@ extension Storage.Ring where Element: ~Copyable {
         of index: Index<Element>,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        // Use typed arithmetic: (index + 1) % capacity
-        (try! index + .one) % capacity
+        // Total: Index + Count never throws
+        (index + Index<Element>.Count.one) % capacity
     }
 
     /// Retreats an index by one position, wrapping at capacity.
@@ -38,8 +38,8 @@ extension Storage.Ring where Element: ~Copyable {
         of index: Index<Element>,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        // Add capacity before subtracting to handle wraparound
-        (try! index + capacity - .one) % capacity
+        // Total: (capacity - 1) via monus, then Index + Count, then modulo
+        (index + capacity.subtract.saturating(Index<Element>.Count.one)) % capacity
     }
 
     /// Advances an index by an offset, wrapping at capacity.

@@ -28,7 +28,7 @@ struct StorageContiguousTests {
     @Test("successor via Index extension")
     func successorExtension() throws {
         let index = Index<Int>(__unchecked: (), 5)
-        let next = try index + .one
+        let next = index + .one
         #expect(next.position.rawValue == 6)
     }
 
@@ -36,7 +36,7 @@ struct StorageContiguousTests {
     func multipleSuccessors() throws {
         var index: Index<Int> = .zero
         for i in 1...10 {
-            index = try index + .one
+            index = index + .one
             #expect(index.position.rawValue == i)
         }
     }
@@ -46,7 +46,7 @@ struct StorageContiguousTests {
     @Test("predecessor decrements position")
     func predecessorDecrements() throws {
         let index = Index<Int>(__unchecked: (), 5)
-        let prev = Storage<Int>.Contiguous.predecessor(of: index)
+        let prev = try Storage<Int>.Contiguous.predecessor(of: index)
         #expect(prev.position.rawValue == 4)
     }
 
@@ -69,7 +69,7 @@ struct StorageContiguousTests {
     @Test("successor then predecessor returns original")
     func roundTrip() throws {
         let original = Index<Int>(__unchecked: (), 42)
-        let incremented = try original + .one
+        let incremented = original + .one
         let decremented = try incremented - .one
         #expect(decremented == original)
     }
@@ -78,7 +78,7 @@ struct StorageContiguousTests {
     func reverseRoundTrip() throws {
         let original = Index<Int>(__unchecked: (), 42)
         let decremented = try original - .one
-        let incremented = try decremented + .one
+        let incremented = decremented + .one
         #expect(incremented == original)
     }
 }

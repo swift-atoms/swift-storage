@@ -75,7 +75,7 @@ struct StorageTests {
         storage.initialize(to: 99, at: index)
 
         let ptr = unsafe storage.pointer(at: index)
-        let pointee = unsafe ptr.pointee
+        let pointee = ptr.pointee
         #expect(pointee == 99)
 
         _ = storage.move(at: index)
@@ -90,7 +90,7 @@ struct StorageTests {
         storage.count = .one
 
         let ptr = unsafe storage.read(at: index)
-        let value = unsafe ptr.pointee
+        let value = ptr.pointee
         #expect(value == 77)
 
         _ = storage.move(at: index)
@@ -193,10 +193,10 @@ struct StorageTests {
         // Use a class to track deinitialization
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 3
 
         do {
@@ -208,7 +208,7 @@ struct StorageTests {
             // storage goes out of scope here
         }
 
-        #expect(Tracker.deinitCount == 3)
+        unsafe #expect(Tracker.deinitCount == 3)
     }
 
     // MARK: - Create with Initializer Tests
@@ -242,10 +242,10 @@ struct StorageTests {
     func deinitializeInRange() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
-            deinit { Tracker.deinitCount += 1 }
+            deinit { unsafe Tracker.deinitCount += 1 }
         }
 
-        Tracker.deinitCount = 0
+        unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 5
 
         let storage = Storage<Tracker>.create(minimumCapacity: 10)
@@ -262,7 +262,7 @@ struct StorageTests {
         }
         storage.deinitialize(in: range)
 
-        #expect(Tracker.deinitCount == 3)
+        unsafe #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (0 and 4)
         let idx0: Index<Tracker> = 0
@@ -352,7 +352,7 @@ struct StorageTests {
         storage.count = .one
 
         let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        let value = unsafe ptr.pointee
+        let value = ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -368,7 +368,7 @@ struct StorageTests {
         storage.count = .one
 
         let ptr: Pointer<Int> = unsafe storage.read(at: index)
-        let value = unsafe ptr.pointee
+        let value = ptr.pointee
         #expect(value == 99)
 
         _ = storage.move(at: index)

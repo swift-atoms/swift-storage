@@ -100,20 +100,32 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
         @inlinable
         public static var maxStride: Int { 64 }
 
+        /// Errors that can occur when creating inline storage.
+        public enum Error: Swift.Error, Sendable {
+            /// Element stride exceeds the inline storage slot size.
+            case strideExceedsSlotSize(stride: Int, maxSlotSize: Int)
+            /// Element alignment exceeds the inline storage alignment.
+            case alignmentExceedsStorageAlignment(alignment: Int, maxAlignment: Int)
+        }
+
         /// Creates uninitialized inline storage.
         ///
-        /// - Precondition: Element stride must not exceed 64 bytes (inline slot size).
-        /// - Precondition: Element alignment must not exceed `Int` alignment.
+        /// - Throws: `Error.strideExceedsSlotSize` if element stride exceeds 64 bytes.
+        /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
         @inlinable
-        public init() {
-            precondition(
-                MemoryLayout<Element>.stride <= 64,
-                "Element stride exceeds inline storage slot size (64 bytes)"
-            )
-            precondition(
-                MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment,
-                "Element alignment exceeds inline storage alignment"
-            )
+        public init() throws(Error) {
+            guard MemoryLayout<Element>.stride <= 64 else {
+                throw .strideExceedsSlotSize(
+                    stride: MemoryLayout<Element>.stride,
+                    maxSlotSize: 64
+                )
+            }
+            guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
+                throw .alignmentExceedsStorageAlignment(
+                    alignment: MemoryLayout<Element>.alignment,
+                    maxAlignment: MemoryLayout<Int>.alignment
+                )
+            }
             _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
         }
     }
@@ -201,7 +213,7 @@ extension Storage where Element: ~Copyable {
     @inlinable
     public func initialize(to element: consuming Element, at index: Index<Element>) {
         let ptr = unsafe pointer(at: index)
-        unsafe ptr.initialize(to: element)
+        ptr.initialize(to: element)
     }
 
     /// Moves the element at the given index, deinitializing that slot.
