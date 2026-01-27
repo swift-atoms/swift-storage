@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Affine_Primitives
 public import Index_Primitives
 public import Pointer_Primitives
 public import Range_Primitives
@@ -93,7 +94,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
 
         /// The slot stride (64 bytes per slot).
         @usableFromInline
-        static var slotStride: Index<UInt8>.Count { Index<UInt8>.Count.init(__unchecked: (), 64) }
+        static var slotStride: Affine.Discrete.Ratio<Element, UInt8> { .init(64) }
 
         /// Maximum element stride supported (64 bytes per slot).
         @inlinable

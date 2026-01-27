@@ -22,13 +22,13 @@ struct StorageContiguousTests {
     func successorIncrements() throws {
         let index: Index<Int> = .zero
         let next = Storage<Int>.Contiguous.successor(of: index)
-        #expect(next.position.rawValue == 1)
+        #expect(next == 1)
     }
 
     @Test("successor via Index extension")
     func successorExtension() throws {
         let index = Index<Int>(__unchecked: (), 5)
-        let next = index.successor()
+        let next = try index + .one
         #expect(next.position.rawValue == 6)
     }
 
@@ -36,7 +36,7 @@ struct StorageContiguousTests {
     func multipleSuccessors() throws {
         var index: Index<Int> = .zero
         for i in 1...10 {
-            index = index.successor()
+            index = try index + .one
             #expect(index.position.rawValue == i)
         }
     }
@@ -53,14 +53,14 @@ struct StorageContiguousTests {
     @Test("predecessor via Index extension")
     func predecessorExtension() throws {
         let index = Index<Int>(__unchecked: (), 10)
-        let prev = index.predecessor()
+        let prev = try index - .one
         #expect(prev.position.rawValue == 9)
     }
 
     @Test("predecessor to zero")
     func predecessorToZero() throws {
         let index = Index<Int>(__unchecked: (), 1)
-        let zero = index.predecessor()
+        let zero = try index - .one
         #expect(zero.position.rawValue == 0)
     }
 
@@ -69,16 +69,16 @@ struct StorageContiguousTests {
     @Test("successor then predecessor returns original")
     func roundTrip() throws {
         let original = Index<Int>(__unchecked: (), 42)
-        let incremented = original.successor()
-        let decremented = incremented.predecessor()
+        let incremented = try original + .one
+        let decremented = try incremented - .one
         #expect(decremented == original)
     }
 
     @Test("predecessor then successor returns original")
     func reverseRoundTrip() throws {
         let original = Index<Int>(__unchecked: (), 42)
-        let decremented = original.predecessor()
-        let incremented = decremented.successor()
+        let decremented = try original - .one
+        let incremented = try decremented + .one
         #expect(incremented == original)
     }
 }

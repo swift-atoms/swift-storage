@@ -31,7 +31,8 @@ struct StorageHeaderTests {
 
         @Test("initialization with count")
         func initWithCount() throws {
-            let header = Storage<Int>.Header.Count(count: Index<Int>.Count(__unchecked: 5))
+            let count: Index<Int>.Count = 5
+            let header = Storage<Int>.Header.Count(count: count)
             #expect(header.count.rawValue == 5)
             let empty = header.isEmpty
             #expect(empty == false)
@@ -40,19 +41,20 @@ struct StorageHeaderTests {
         @Test("count can be modified")
         func modifyCount() throws {
             var header = Storage<Int>.Header.Count()
-            header.count = Index<Int>.Count(__unchecked: 10)
+            let newCount: Index<Int>.Count = 10
+            header.count = newCount
             #expect(header.count.rawValue == 10)
         }
     }
 
     // MARK: - Ring Header Tests
 
-    @Suite("Storage.Header.Ring")
+    @Suite("Storage.Ring.Header")
     struct RingHeaderTests {
 
         @Test("default initialization")
         func defaultInit() throws {
-            let header = Storage<Int>.Header.Ring()
+            let header = Storage<Int>.Ring.Header()
             #expect(header.head == .zero)
             #expect(header.tail == .zero)
             #expect(header.count == .zero)
@@ -62,10 +64,13 @@ struct StorageHeaderTests {
 
         @Test("initialization with values")
         func initWithValues() throws {
-            let header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 3),
-                tail: Index(__unchecked: (), position: 1),
-                count: Index<Int>.Count(__unchecked: 3)
+            let head: Index<Int> = 3
+            let tail: Index<Int> = 1
+            let count: Index<Int>.Count = 3
+            let header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             #expect(header.head.position.rawValue == 3)
             #expect(header.tail.position.rawValue == 1)
@@ -74,10 +79,13 @@ struct StorageHeaderTests {
 
         @Test("advanceHead after dequeue")
         func advanceHead() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 2),
-                tail: Index(__unchecked: (), position: 0),
-                count: Index<Int>.Count(__unchecked: 3)
+            let head: Index<Int> = 2
+            let tail: Index<Int> = 0
+            let count: Index<Int>.Count = 3
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -89,10 +97,13 @@ struct StorageHeaderTests {
 
         @Test("advanceHead wraps at capacity")
         func advanceHeadWraps() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 4),
-                tail: Index(__unchecked: (), position: 2),
-                count: Index<Int>.Count(__unchecked: 3)
+            let head: Index<Int> = 4
+            let tail: Index<Int> = 2
+            let count: Index<Int>.Count = 3
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -104,10 +115,13 @@ struct StorageHeaderTests {
 
         @Test("advanceTail after enqueue")
         func advanceTail() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 0),
-                tail: Index(__unchecked: (), position: 2),
-                count: Index<Int>.Count(__unchecked: 2)
+            let head: Index<Int> = 0
+            let tail: Index<Int> = 2
+            let count: Index<Int>.Count = 2
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -119,10 +133,13 @@ struct StorageHeaderTests {
 
         @Test("advanceTail wraps at capacity")
         func advanceTailWraps() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 3),
-                tail: Index(__unchecked: (), position: 4),
-                count: Index<Int>.Count(__unchecked: 1)
+            let head: Index<Int> = 3
+            let tail: Index<Int> = 4
+            let count: Index<Int>.Count = 1
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -134,10 +151,13 @@ struct StorageHeaderTests {
 
         @Test("retreatHead for prepend")
         func retreatHead() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 2),
-                tail: Index(__unchecked: (), position: 3),
-                count: Index<Int>.Count(__unchecked: 1)
+            let head: Index<Int> = 2
+            let tail: Index<Int> = 3
+            let count: Index<Int>.Count = 1
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -149,10 +169,12 @@ struct StorageHeaderTests {
 
         @Test("retreatHead wraps at zero")
         func retreatHeadWraps() throws {
-            var header = Storage<Int>.Header.Ring(
+            let tail: Index<Int> = 1
+            let count: Index<Int>.Count = 1
+            var header = Storage<Int>.Ring.Header(
                 head: .zero,
-                tail: Index(__unchecked: (), position: 1),
-                count: Index<Int>.Count(__unchecked: 1)
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -164,10 +186,13 @@ struct StorageHeaderTests {
 
         @Test("retreatTail for pop-back")
         func retreatTail() throws {
-            var header = Storage<Int>.Header.Ring(
-                head: Index(__unchecked: (), position: 0),
-                tail: Index(__unchecked: (), position: 3),
-                count: Index<Int>.Count(__unchecked: 3)
+            let head: Index<Int> = 0
+            let tail: Index<Int> = 3
+            let count: Index<Int>.Count = 3
+            var header = Storage<Int>.Ring.Header(
+                head: head,
+                tail: tail,
+                count: count
             )
             let capacity: Index<Int>.Count = 5
 
@@ -199,7 +224,8 @@ struct StorageHeaderTests {
 
         @Test("initialization with capacity")
         func initWithCapacity() throws {
-            let header = Storage<Int>.Header.Arena(capacity: Index<Int>.Count(__unchecked: 16))
+            let capacity: Index<Int>.Count = 16
+            let header = Storage<Int>.Header.Arena(capacity: capacity)
             #expect(header.capacity.rawValue == 16)
             #expect(header.count == .zero)
             let empty = header.isEmpty
@@ -215,7 +241,7 @@ struct StorageHeaderTests {
         @Test("isSentinel check")
         func isSentinelCheck() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
-            let normal = Index<Int>(__unchecked: (), position: 5)
+            let normal: Index<Int> = 5
 
             let isSent = Storage<Int>.Header.Arena.isSentinel(sentinel)
             #expect(isSent == true)
@@ -229,7 +255,8 @@ struct StorageHeaderTests {
             let hasFree1 = header.hasFreeSlots
             #expect(hasFree1 == false)
 
-            header.freeHead = Index(__unchecked: (), position: 0)
+            let freeIndex: Index<Int> = 0
+            header.freeHead = freeIndex
             let hasFree2 = header.hasFreeSlots
             #expect(hasFree2 == true)
         }

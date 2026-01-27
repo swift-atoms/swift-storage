@@ -62,7 +62,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 99, at: index)
 
-        let ptr = unsafe storage.pointer(at: index)
+        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
         let pointee = unsafe ptr.pointee
         #expect(pointee == 99)
 
@@ -76,7 +76,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 50, at: index)
 
-        let ptr = unsafe storage.pointer(at: index)
+        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
         unsafe ptr.pointee = 100
 
         let value = storage.move(at: index)
@@ -140,7 +140,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 42, at: index)
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.mutablePointer(at: index)
+        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
         let value = unsafe ptr.pointee
         #expect(value == 42)
 
@@ -192,7 +192,7 @@ struct StorageInlineTests {
         let start: Range.Index = 1
         let end: Range.Index = 4
         let range = try Range.Lazy(start: start, end: end) { pos in
-            Index<Tracker>(try! Ordinal.Position(pos.position.rawValue))
+            try! Index<Tracker>(Int(pos.position.rawValue))
         }
         storage.deinitialize(in: range)
 

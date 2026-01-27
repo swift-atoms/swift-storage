@@ -215,8 +215,8 @@ struct StorageTests {
 
     @Test("create with initializing closure")
     func createWithInitializer() throws {
-        let count: Index<Int>.Count = 5
-        let storage = Storage<Int>.create(capacity: count) { index in
+        let count: Index<UInt>.Count = 5
+        let storage = Storage<UInt>.create(capacity: count) { index in
             index.position.rawValue * 2
         }
 
@@ -258,7 +258,7 @@ struct StorageTests {
         let start: Range.Index = 1
         let end: Range.Index = 4
         let range = try Range.Lazy(start: start, end: end) { pos in
-            Index<Tracker>(try! Ordinal.Position(pos.position.rawValue))
+            try! Index<Tracker>(Int(pos.position.rawValue))
         }
         storage.deinitialize(in: range)
 

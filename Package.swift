@@ -45,7 +45,10 @@ let package = Package(
         ),
         .testTarget(
             name: "Storage Primitives Tests",
-            dependencies: ["Storage Primitives"]
+            dependencies: [
+                .target(name: "Storage Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
         )
     ],
     swiftLanguageModes: [.v6]

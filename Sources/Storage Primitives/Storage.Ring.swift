@@ -56,13 +56,13 @@ extension Storage.Ring where Element: ~Copyable {
         by offset: Index<Element>.Offset,
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
-        // Normalize offset to positive range, then add and wrap
-        let cap = Int(capacity.count.rawValue)
-        let offsetValue = offset.vector.rawValue
+        // Normalize negative offsets to positive range [0, capacity)
+        let cap = Int(capacity.rawValue.rawValue)
+        let offsetValue = offset.rawValue.rawValue
         let normalizedOffset = ((offsetValue % cap) + cap) % cap
-        let indexValue = Int(index.position.rawValue)
-        let result = (indexValue + normalizedOffset) % cap
-        return try! Index(result)
+        // Use total Index + Count arithmetic (never throws)
+        let normalizedCount = Index<Element>.Count(Cardinal.Count(UInt(normalizedOffset)))
+        return (index + normalizedCount) % capacity
     }
 
     /// Calculates the physical index from a logical index in a ring buffer.
@@ -82,8 +82,9 @@ extension Storage.Ring where Element: ~Copyable {
         head: Index<Element>,
         capacity: Index<Element>.Count
     ) -> Index<Element> {
-        // Use typed arithmetic: (head + logicalIndex.position) % capacity
-        (try! head + Index.Offset(Int(logicalIndex.position.rawValue))) % capacity
+        // Convert logical index to count (always non-negative)
+        let logicalCount = Index<Element>.Count(Cardinal.Count(logicalIndex.position.rawValue))
+        return (head + logicalCount) % capacity
     }
 
     // MARK: - Bulk Operations
