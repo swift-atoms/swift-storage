@@ -29,12 +29,12 @@ extension Storage where Element: ~Copyable {
     ///
     /// - Parameter index: The current index.
     /// - Returns: The predecessor index.
-    /// - Throws: `Ordinal.Position.Error` if index is zero.
+    /// - Throws: `Ordinal.Error` if index is zero.
     /// - Complexity: O(1)
     @inlinable
     public static func predecessor(
         of index: Index<Element>
-    ) throws(Ordinal.Position.Error) -> Index<Element> {
+    ) throws(Ordinal.Error) -> Index<Element> {
         try index - Index<Element>.Offset.one
     }
 }

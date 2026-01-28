@@ -43,13 +43,13 @@ struct StorageInlineTests {
         let count: Index<Int>.Count = 8
 
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(index.position.rawValue) * 10, at: index)
+            storage.initialize(to: Int(index.position) * 10, at: index)
         }
 
         // Move in reverse to verify all initialized
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == Int(index.position.rawValue) * 10)
+            #expect(value == Int(index.position) * 10)
         }
     }
 
@@ -92,7 +92,7 @@ struct StorageInlineTests {
 
         // Initialize first 4 elements
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(index.position.rawValue), at: index)
+            storage.initialize(to: Int(index.position), at: index)
         }
 
         // Deinitialize all 4
@@ -192,7 +192,7 @@ struct StorageInlineTests {
         let start: Range.Index = 1
         let end: Range.Index = 4
         let range = try Range.Lazy(start: start, end: end) { pos in
-            try! Index<Tracker>(Int(pos.position.rawValue))
+            try! Index<Tracker>(Int(pos.position))
         }
         storage.deinitialize(in: range)
 
@@ -216,7 +216,7 @@ struct StorageInlineTests {
 
         // Initialize inline storage
         (.zero..<count).forEach { index in
-            inline.initialize(to: (Int(index.position.rawValue) + 1) * 100, at: index)
+            inline.initialize(to: (Int(index.position) + 1) * 100, at: index)
         }
 
         // Move to heap
@@ -226,7 +226,7 @@ struct StorageInlineTests {
         // Verify heap has the values
         (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == (Int(index.position.rawValue) + 1) * 100)
+            #expect(value == (Int(index.position) + 1) * 100)
         }
         heap.count = .zero
     }
@@ -252,7 +252,7 @@ struct StorageInlineTests {
 
         // Initialize inline storage
         (.zero..<count).forEach { index in
-            inline.initialize(to: Int(index.position.rawValue) * 5, at: index)
+            inline.initialize(to: Int(index.position) * 5, at: index)
         }
 
         // Copy to heap
@@ -262,13 +262,13 @@ struct StorageInlineTests {
         // Verify inline still has original values
         (.zero..<count).reversed().forEach { index in
             let value = inline.move(at: index)
-            #expect(value == Int(index.position.rawValue) * 5)
+            #expect(value == Int(index.position) * 5)
         }
 
         // Verify heap has copies
         (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == Int(index.position.rawValue) * 5)
+            #expect(value == Int(index.position) * 5)
         }
         heap.count = .zero
     }

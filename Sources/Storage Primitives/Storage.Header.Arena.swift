@@ -49,7 +49,7 @@ extension Storage.Header {
         /// Uses UInt.max which is invalid for normal indices.
         @inlinable
         public static var sentinel: Index<Element> {
-            Index(__unchecked: (), Ordinal.Position(UInt.max))
+            Index(__unchecked: (), Ordinal(UInt.max))
         }
 
         /// Creates an empty arena header.

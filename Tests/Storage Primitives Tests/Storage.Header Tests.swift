@@ -33,7 +33,7 @@ struct StorageHeaderTests {
         func initWithCount() throws {
             let count: Index<Int>.Count = 5
             let header = Storage<Int>.Header.Count(count: count)
-            #expect(header.count.rawValue == 5)
+            #expect(header.count == 5)
             let empty = header.isEmpty
             #expect(empty == false)
         }
@@ -43,7 +43,7 @@ struct StorageHeaderTests {
             var header = Storage<Int>.Header.Count()
             let newCount: Index<Int>.Count = 10
             header.count = newCount
-            #expect(header.count.rawValue == 10)
+            #expect(header.count == 10)
         }
     }
 
@@ -72,9 +72,9 @@ struct StorageHeaderTests {
                 tail: tail,
                 count: count
             )
-            #expect(header.head.position.rawValue == 3)
-            #expect(header.tail.position.rawValue == 1)
-            #expect(header.count.rawValue == 3)
+            #expect(header.head.position == 3)
+            #expect(header.tail.position == 1)
+            #expect(header.count == 3)
         }
 
         @Test("advanceHead after dequeue")
@@ -91,8 +91,8 @@ struct StorageHeaderTests {
 
             header.advanceHead(capacity: capacity)
 
-            #expect(header.head.position.rawValue == 3)
-            #expect(header.count.rawValue == 2)
+            #expect(header.head.position == 3)
+            #expect(header.count == 2)
         }
 
         @Test("advanceHead wraps at capacity")
@@ -109,8 +109,8 @@ struct StorageHeaderTests {
 
             header.advanceHead(capacity: capacity)
 
-            #expect(header.head.position.rawValue == 0)
-            #expect(header.count.rawValue == 2)
+            #expect(header.head.position == 0)
+            #expect(header.count == 2)
         }
 
         @Test("advanceTail after enqueue")
@@ -127,8 +127,8 @@ struct StorageHeaderTests {
 
             header.advanceTail(capacity: capacity)
 
-            #expect(header.tail.position.rawValue == 3)
-            #expect(header.count.rawValue == 3)
+            #expect(header.tail.position == 3)
+            #expect(header.count == 3)
         }
 
         @Test("advanceTail wraps at capacity")
@@ -145,8 +145,8 @@ struct StorageHeaderTests {
 
             header.advanceTail(capacity: capacity)
 
-            #expect(header.tail.position.rawValue == 0)
-            #expect(header.count.rawValue == 2)
+            #expect(header.tail.position == 0)
+            #expect(header.count == 2)
         }
 
         @Test("retreatHead for prepend")
@@ -163,8 +163,8 @@ struct StorageHeaderTests {
 
             header.retreatHead(capacity: capacity)
 
-            #expect(header.head.position.rawValue == 1)
-            #expect(header.count.rawValue == 2)
+            #expect(header.head.position == 1)
+            #expect(header.count == 2)
         }
 
         @Test("retreatHead wraps at zero")
@@ -180,8 +180,8 @@ struct StorageHeaderTests {
 
             header.retreatHead(capacity: capacity)
 
-            #expect(header.head.position.rawValue == 4)
-            #expect(header.count.rawValue == 2)
+            #expect(header.head.position == 4)
+            #expect(header.count == 2)
         }
 
         @Test("retreatTail for pop-back")
@@ -198,8 +198,8 @@ struct StorageHeaderTests {
 
             header.retreatTail(capacity: capacity)
 
-            #expect(header.tail.position.rawValue == 2)
-            #expect(header.count.rawValue == 2)
+            #expect(header.tail.position == 2)
+            #expect(header.count == 2)
         }
     }
 
@@ -235,7 +235,7 @@ struct StorageHeaderTests {
         @Test("sentinel is UInt.max")
         func sentinelValue() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
-            #expect(sentinel.position.rawValue == UInt.max)
+            #expect(sentinel.position == UInt.max)
         }
 
         @Test("isSentinel check")

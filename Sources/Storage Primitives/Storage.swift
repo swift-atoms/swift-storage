@@ -45,7 +45,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
         @inline(__always)
         get { Index<Element>.Count(__unchecked: (), header) }
         @inline(__always)
-        set { header = Int(newValue.count.rawValue) }
+        set { header = Int(newValue.count) }
     }
 
     deinit {
@@ -159,7 +159,7 @@ extension Storage where Element: ~Copyable {
     /// - Returns: A new storage instance with at least the requested capacity.
     @inlinable
     public static func create(minimumCapacity: Index<Element>.Count) -> Storage<Element> {
-        let buffer = Storage<Element>.create(minimumCapacity: Int(minimumCapacity.count.rawValue)) { _ in 0 }
+        let buffer = Storage<Element>.create(minimumCapacity: Int(minimumCapacity.count)) { _ in 0 }
         return unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
     }
 
@@ -174,7 +174,7 @@ extension Storage where Element: ~Copyable {
         capacity: Index<Element>.Count,
         initializingWith initializer: (Index<Element>) -> Element
     ) -> Storage<Element> {
-        let storage = Storage<Element>.create(minimumCapacity: Int(capacity.count.rawValue)) { _ in 0 }
+        let storage = Storage<Element>.create(minimumCapacity: Int(capacity.count)) { _ in 0 }
         let typed = unsafe unsafeDowncast(storage, to: Storage<Element>.self)
 
         _ = unsafe typed.withUnsafeMutablePointerToElements { elements in
@@ -182,7 +182,7 @@ extension Storage where Element: ~Copyable {
                 unsafe (elements + index).initialize(to: initializer(index))
             }
         }
-        typed.header = Int(capacity.count.rawValue)
+        typed.header = Int(capacity.count)
 
         return typed
     }
@@ -327,7 +327,7 @@ extension Storage where Element: Copyable {
         }
 
         let new = Storage<Element>.create(minimumCapacity: count)
-        new.header = Int(count.count.rawValue)
+        new.header = Int(count.count)
 
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe new.withUnsafeMutablePointerToElements { dst in

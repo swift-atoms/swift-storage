@@ -25,12 +25,12 @@ struct StorageRingTests {
         // Normal advancement
         let index0: Index<Int> = .zero
         let index1 = Storage<Int>.Ring.successor(of: index0, wrapping: capacity)
-        #expect(index1.position.rawValue == 1)
+        #expect(index1.position == 1)
 
         // Wrap at boundary
         let index4: Index<Int> = 4
         let wrapped = Storage<Int>.Ring.successor(of: index4, wrapping: capacity)
-        #expect(wrapped.position.rawValue == 0)
+        #expect(wrapped.position == 0)
     }
 
     @Test("successor via static method")
@@ -38,7 +38,7 @@ struct StorageRingTests {
         let capacity: Index<Int>.Count = 5
         let index: Index<Int> = 4
         let next = Storage<Int>.Ring.successor(of: index, wrapping: capacity)
-        #expect(next.position.rawValue == 0)
+        #expect(next.position == 0)
     }
 
     // MARK: - Predecessor Tests
@@ -50,12 +50,12 @@ struct StorageRingTests {
         // Normal retreat
         let index2: Index<Int> = 2
         let index1 = Storage<Int>.Ring.predecessor(of: index2, wrapping: capacity)
-        #expect(index1.position.rawValue == 1)
+        #expect(index1.position == 1)
 
         // Wrap at zero
         let index0: Index<Int> = .zero
         let wrapped = Storage<Int>.Ring.predecessor(of: index0, wrapping: capacity)
-        #expect(wrapped.position.rawValue == 4)
+        #expect(wrapped.position == 4)
     }
 
     @Test("predecessor via static method")
@@ -63,7 +63,7 @@ struct StorageRingTests {
         let capacity: Index<Int>.Count = 5
         let index: Index<Int> = .zero
         let prev = Storage<Int>.Ring.predecessor(of: index, wrapping: capacity)
-        #expect(prev.position.rawValue == 4)
+        #expect(prev.position == 4)
     }
 
     // MARK: - Advanced Tests
@@ -76,7 +76,7 @@ struct StorageRingTests {
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (3 + 4) % 5 = 2
-        #expect(result.position.rawValue == 2)
+        #expect(result.position == 2)
     }
 
     @Test("advanced by negative offset wraps")
@@ -87,7 +87,7 @@ struct StorageRingTests {
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (1 + (-3) + 5) % 5 = 3
-        #expect(result.position.rawValue == 3)
+        #expect(result.position == 3)
     }
 
     @Test("advanced via static method")
@@ -98,7 +98,7 @@ struct StorageRingTests {
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (2 + 7) % 5 = 4
-        #expect(result.position.rawValue == 4)
+        #expect(result.position == 4)
     }
 
     // MARK: - Physical Index Tests
@@ -111,17 +111,17 @@ struct StorageRingTests {
         // Logical 0 -> Physical 3 (head)
         let logical0: Index<Int> = .zero
         let physical0 = Storage<Int>.Ring.physicalIndex(forLogical: logical0, head: head, capacity: capacity)
-        #expect(physical0.position.rawValue == 3)
+        #expect(physical0.position == 3)
 
         // Logical 1 -> Physical 4
         let logical1: Index<Int> = 1
         let physical1 = Storage<Int>.Ring.physicalIndex(forLogical: logical1, head: head, capacity: capacity)
-        #expect(physical1.position.rawValue == 4)
+        #expect(physical1.position == 4)
 
         // Logical 2 -> Physical 0 (wrapped)
         let logical2: Index<Int> = 2
         let physical2 = Storage<Int>.Ring.physicalIndex(forLogical: logical2, head: head, capacity: capacity)
-        #expect(physical2.position.rawValue == 0)
+        #expect(physical2.position == 0)
     }
 
     // MARK: - Edge Cases
@@ -132,10 +132,10 @@ struct StorageRingTests {
         let index: Index<Int> = .zero
 
         let succ = Storage<Int>.Ring.successor(of: index, wrapping: capacity)
-        #expect(succ.position.rawValue == 0)
+        #expect(succ.position == 0)
 
         let pred = Storage<Int>.Ring.predecessor(of: index, wrapping: capacity)
-        #expect(pred.position.rawValue == 0)
+        #expect(pred.position == 0)
     }
 
     @Test("large offset modulo capacity")
@@ -146,7 +146,7 @@ struct StorageRingTests {
 
         let result = Storage<Int>.Ring.advanced(index, by: offset, wrapping: capacity)
         // (0 + 12) % 5 = 2
-        #expect(result.position.rawValue == 2)
+        #expect(result.position == 2)
     }
 
     // MARK: - Linearize Move Tests

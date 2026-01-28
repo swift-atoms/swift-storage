@@ -61,7 +61,7 @@ extension Storage.Ring where Element: ~Copyable {
         let offsetValue = offset.rawValue.rawValue
         let normalizedOffset = ((offsetValue % cap) + cap) % cap
         // Use total Index + Count arithmetic (never throws)
-        let normalizedCount = Index<Element>.Count(Cardinal.Count(UInt(normalizedOffset)))
+        let normalizedCount = Index<Element>.Count(Cardinal(UInt(normalizedOffset)))
         return (index + normalizedCount) % capacity
     }
 
@@ -83,7 +83,7 @@ extension Storage.Ring where Element: ~Copyable {
         capacity: Index<Element>.Count
     ) -> Index<Element> {
         // Convert logical index to count (always non-negative)
-        let logicalCount = Index<Element>.Count(Cardinal.Count(logicalIndex.position.rawValue))
+        let logicalCount = Index<Element>.Count(Cardinal(logicalIndex.position))
         return (head + logicalCount) % capacity
     }
 
