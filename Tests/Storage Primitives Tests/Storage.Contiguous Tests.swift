@@ -18,22 +18,22 @@ struct StorageContiguousTests {
 
     // MARK: - Successor Tests
 
-    @Test("successor increments position")
-    func successorIncrements() throws {
+    @Test
+    func `successor increments position`() throws {
         let index: Index<Int> = .zero
         let next = Storage<Int>.Contiguous.successor(of: index)
         #expect(next.position == 1)
     }
 
-    @Test("successor via Index extension")
-    func successorExtension() throws {
-        let index = Index<Int>(__unchecked: (), 5)
+    @Test
+    func `successor via Index extension`() throws {
+        let index: Index<Int> = 5
         let next = index + .one
         #expect(next.position == 6)
     }
 
-    @Test("multiple successor calls")
-    func multipleSuccessors() throws {
+    @Test
+    func `multiple successor calls`() throws {
         var index: Index<Int> = .zero
         for i: UInt in 1...10 {
             index = index + .one
@@ -43,40 +43,40 @@ struct StorageContiguousTests {
 
     // MARK: - Predecessor Tests
 
-    @Test("predecessor decrements position")
-    func predecessorDecrements() throws {
-        let index = Index<Int>(__unchecked: (), 5)
+    @Test
+    func `predecessor decrements position`() throws {
+        let index: Index<Int> = 5
         let prev = try Storage<Int>.Contiguous.predecessor(of: index)
         #expect(prev.position == 4)
     }
 
-    @Test("predecessor via Index extension")
-    func predecessorExtension() throws {
-        let index = Index<Int>(__unchecked: (), 10)
+    @Test
+    func `predecessor via Index extension`() throws {
+        let index: Index<Int> = 10
         let prev = try index - .one
         #expect(prev.position == 9)
     }
 
-    @Test("predecessor to zero")
-    func predecessorToZero() throws {
-        let index = Index<Int>(__unchecked: (), 1)
+    @Test
+    func `predecessor to zero`() throws {
+        let index: Index<Int> = 1
         let zero = try index - .one
         #expect(zero.position == 0)
     }
 
     // MARK: - Combined Operations
 
-    @Test("successor then predecessor returns original")
-    func roundTrip() throws {
-        let original = Index<Int>(__unchecked: (), 42)
+    @Test
+    func `successor then predecessor returns original`() throws {
+        let original: Index<Int> = 42
         let incremented = original + .one
         let decremented = try incremented - .one
         #expect(decremented == original)
     }
 
-    @Test("predecessor then successor returns original")
-    func reverseRoundTrip() throws {
-        let original = Index<Int>(__unchecked: (), 42)
+    @Test
+    func `predecessor then successor returns original`() throws {
+        let original: Index<Int> = 42
         let decremented = try original - .one
         let incremented = decremented + .one
         #expect(incremented == original)

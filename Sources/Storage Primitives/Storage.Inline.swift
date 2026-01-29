@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 extension Storage.Inline where Element: ~Copyable {
-    
+
     /// Returns an immutable pointer to the element at the given index.
     ///
     /// - Parameter index: The index of the element.
@@ -20,26 +20,83 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Mutable.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
+            let ptr = unsafe UnsafePointer(UnsafeMutableRawPointer(base)
+                .assumingMemoryBound(to: Element.self)
+                .advanced(by: Int(bitPattern: index)))
+            return unsafe Pointer<Element>(ptr)
         }
     }
 
-    /// Returns an immutable pointer for read-only access (non-mutating).
+    // MARK: - Span Access (Closure-Based)
+    //
+    // Inline storage has unstable address (struct can move). Per span-access-abstraction
+    // research, inline storage MUST use closure-based span access, not property-based.
+    // The closure scope ensures the pointer is valid for the duration of use.
+    //
+    // Dense element packing enables direct Span creation from the storage pointer.
+
+    /// Provides read-only span access to the first `count` elements.
     ///
-    /// Use this method when you need read-only access in a borrowing context
-    /// (e.g., from `makeIterator()`). For general use prefer `pointer(at:)`.
+    /// The span is valid only for the duration of the closure.
     ///
-    /// - Parameter index: The index of the element.
-    /// - Returns: An immutable pointer to the element.
-    /// - Precondition: The element at `index` must be initialized.
+    /// - Parameters:
+    ///   - count: The number of initialized elements.
+    ///   - body: A closure that receives the span.
+    /// - Returns: The value returned by the closure.
+    /// - Throws: Rethrows any error thrown by the closure.
+    /// - Precondition: Elements at indices 0..<count must be initialized.
     @inlinable
-    @unsafe
-    public func read(at index: Index<Element>) -> Pointer<Element> {
-        unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+    public func withSpan<R, E: Swift.Error>(
+        count: Index<Element>.Count,
+        _ body: (Span<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        var thrown: E? = nil
+        let result: R? = unsafe Swift.withUnsafePointer(to: _storage) { base in
+            let ptr = unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
+            let span = unsafe Span(_unsafeStart: ptr, count: Int(bitPattern: count))
+            do {
+                return try body(span)
+            } catch let e as E {
+                thrown = e
+                return nil
+            } catch {
+                preconditionFailure("unexpected error type")
+            }
         }
+        if let thrown { throw thrown }
+        return result!
+    }
+
+    /// Provides mutable span access to the first `count` elements.
+    ///
+    /// The span is valid only for the duration of the closure.
+    ///
+    /// - Parameters:
+    ///   - count: The number of initialized elements.
+    ///   - body: A closure that receives the mutable span.
+    /// - Returns: The value returned by the closure.
+    /// - Throws: Rethrows any error thrown by the closure.
+    /// - Precondition: Elements at indices 0..<count must be initialized.
+    @inlinable
+    public mutating func withMutableSpan<R, E: Swift.Error>(
+        count: Index<Element>.Count,
+        _ body: (inout MutableSpan<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        var thrown: E? = nil
+        let result: R? = unsafe Swift.withUnsafeMutablePointer(to: &_storage) { base in
+            let ptr = unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
+            var span = unsafe MutableSpan(_unsafeStart: ptr, count: Int(bitPattern: count))
+            do {
+                return try body(&span)
+            } catch let e as E {
+                thrown = e
+                return nil
+            } catch {
+                preconditionFailure("unexpected error type")
+            }
+        }
+        if let thrown { throw thrown }
+        return result!
     }
 
     /// Returns a mutable pointer to the element at the given index.
@@ -50,8 +107,10 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Mutable.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            let ptr = unsafe UnsafeMutableRawPointer(base)
+                .assumingMemoryBound(to: Element.self)
+                .advanced(by: Int(bitPattern: index))
+            return unsafe Pointer<Element>.Mutable(ptr)
         }
     }
 
@@ -84,10 +143,9 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(count: Index<Element>.Count) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let ptr = unsafe UnsafeMutableRawPointer(mutating: base).assumingMemoryBound(to: Element.self)
             (.zero..<count).forEach { index in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                unsafe ptr.advanced(by: Int(bitPattern: index)).deinitialize(count: 1)
             }
         }
     }
@@ -100,10 +158,9 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let ptr = unsafe UnsafeMutableRawPointer(mutating: base).assumingMemoryBound(to: Element.self)
             range.forEach { index in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                unsafe ptr.advanced(by: Int(bitPattern: index)).deinitialize(count: 1)
             }
         }
     }
@@ -121,13 +178,12 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
-        let cap = Index<Element>.Count(UInt(capacity))
+        let cap = Index<Element>.Count(UInt(Self.capacity))
         var index = head
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let ptr = unsafe UnsafeMutableRawPointer(mutating: base).assumingMemoryBound(to: Element.self)
             (.zero..<count).forEach { _ in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                unsafe ptr.advanced(by: Int(bitPattern: index)).deinitialize(count: 1)
                 index = Storage<Element>.Ring.successor(of: index, wrapping: cap)
             }
         }
@@ -144,11 +200,11 @@ extension Storage.Inline where Element: ~Copyable {
     public mutating func move(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
+            let srcPtr = unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
             unsafe heapStorage.withUnsafeMutablePointerToElements { destination in
-                let address = unsafe Memory.Mutable.Address(base)
                 (.zero..<count).forEach { index in
-                    let source: Pointer<Element>.Mutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    unsafe (destination + index).initialize(to: source.move())
+                    let i = Int(bitPattern: index)
+                    unsafe (destination + index).initialize(to: srcPtr.advanced(by: i).move())
                 }
             }
         }

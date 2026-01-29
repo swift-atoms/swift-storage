@@ -67,22 +67,22 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// - ``Header/Arena``: Free list management for arena storage (List)
     public enum Header {}
     
-    /// Fixed-capacity inline storage.
+    /// Fixed-capacity inline storage with dense element packing.
     ///
     /// Provides stack-allocated storage with compile-time capacity. Elements are
-    /// stored inline without heap allocation, making this suitable for small,
-    /// fixed-size collections.
+    /// stored inline without heap allocation at their natural stride, enabling
+    /// direct Span access.
     ///
     /// ## Layout
     ///
-    /// Storage is backed by `InlineArray` with 64-byte slots, sufficient for most
-    /// element types. Elements are accessed via raw pointer operations to support
-    /// move-only types.
+    /// Storage uses `InlineArray<capacity, Element>` for dense element packing.
+    /// Elements are stored at `MemoryLayout<Element>.stride` intervals, making
+    /// the layout compatible with `Span` and `MutableSpan`.
     ///
     /// ## Usage
     ///
     /// ```swift
-    /// var storage = Storage<Int>.Inline<8>()
+    /// var storage = try Storage<Int>.Inline<8>()
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
     /// ```
@@ -90,43 +90,28 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// - Important: Caller is responsible for tracking which indices are initialized.
     public struct Inline<let capacity: Int>: ~Copyable {
         @usableFromInline
-        var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+        var _storage: InlineArray<capacity, Element>
 
-        /// The slot stride (64 bytes per slot).
+        /// The element stride in bytes.
         @usableFromInline
-        static var slotStride: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
+        static var elementStride: Int { MemoryLayout<Element>.stride }
 
-        /// Maximum element stride supported (64 bytes per slot).
+        /// The fixed capacity of this inline storage.
         @inlinable
-        public static var maxStride: Int { 64 }
-
-        /// Errors that can occur when creating inline storage.
-        public enum Error: Swift.Error, Sendable {
-            /// Element stride exceeds the inline storage slot size.
-            case strideExceedsSlotSize(stride: Int, maxSlotSize: Int)
-            /// Element alignment exceeds the inline storage alignment.
-            case alignmentExceedsStorageAlignment(alignment: Int, maxAlignment: Int)
-        }
+        public static var capacity: Int { capacity }
 
         /// Creates uninitialized inline storage.
         ///
-        /// - Throws: `Error.strideExceedsSlotSize` if element stride exceeds 64 bytes.
-        /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
+        /// - Note: All slots are uninitialized. Caller must initialize before use.
         @inlinable
-        public init() throws(Error) {
-            guard MemoryLayout<Element>.stride <= 64 else {
-                throw .strideExceedsSlotSize(
-                    stride: MemoryLayout<Element>.stride,
-                    maxSlotSize: 64
-                )
-            }
-            guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
-                throw .alignmentExceedsStorageAlignment(
-                    alignment: MemoryLayout<Element>.alignment,
-                    maxAlignment: MemoryLayout<Int>.alignment
-                )
-            }
-            _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+        public init() {
+            // Use Builtin.zeroInitializer to create uninitialized storage.
+            // This is safe because we track initialization separately via count,
+            // and all element access goes through raw pointer operations.
+            _storage = unsafe unsafeBitCast(
+                Builtin.zeroInitializer(),
+                to: InlineArray<capacity, Element>.self
+            )
         }
     }
     
@@ -226,17 +211,48 @@ extension Storage where Element: ~Copyable {
         unsafe pointer(at: index).move()
     }
 
-    /// Returns an immutable pointer to the element at the given index.
+    // MARK: - Span Access (Closure-Based)
+    //
+    // Even though heap storage has stable address, Span is ~Escapable and the
+    // compiler enforces lifetime scoping. Use closure-based access for safety.
+
+    /// Provides read-only span access to the first `count` elements.
     ///
-    /// - Parameter index: The index of the element.
-    /// - Returns: An immutable pointer to the element.
-    /// - Warning: The caller must ensure the index is valid.
+    /// The span is valid only for the duration of the closure.
+    ///
+    /// - Parameters:
+    ///   - count: The number of initialized elements.
+    ///   - body: A closure that receives the span.
+    /// - Returns: The value returned by the closure.
+    /// - Throws: Rethrows any error thrown by the closure.
+    /// - Precondition: Elements at indices 0..<count must be initialized.
     @inlinable
-    @unsafe
-    public func read(at index: Index<Element>) -> Pointer<Element> {
-        unsafe withUnsafeMutablePointerToElements {
-            unsafe Pointer<Element>(UnsafePointer($0 + index))
+    public func withSpan<R, E: Swift.Error>(
+        count: Index<Element>.Count,
+        _ body: (Span<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        var thrown: E? = nil
+        let result: R? = unsafe withUnsafeMutablePointerToElements { base in
+            let span = unsafe Span(_unsafeStart: UnsafePointer(base), count: Int(bitPattern: count))
+            do {
+                return try body(span)
+            } catch let e as E {
+                thrown = e
+                return nil
+            } catch {
+                preconditionFailure("unexpected error type")
+            }
         }
+        if let thrown { throw thrown }
+        return result!
+    }
+
+    /// Provides read-only span access using the storage's tracked count.
+    @inlinable
+    public func withSpan<R, E: Swift.Error>(
+        _ body: (Span<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        try withSpan(count: count, body)
     }
 }
 

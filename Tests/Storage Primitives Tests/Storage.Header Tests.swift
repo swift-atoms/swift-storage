@@ -21,16 +21,16 @@ struct StorageHeaderTests {
     @Suite("Storage.Header.Count")
     struct CountHeaderTests {
 
-        @Test("default initialization is zero")
-        func defaultInit() throws {
+        @Test
+        func `default initialization is zero`() throws {
             let header = Storage<Int>.Header.Count()
             #expect(header.count == .zero)
             let empty = header.isEmpty
             #expect(empty == true)
         }
 
-        @Test("initialization with count")
-        func initWithCount() throws {
+        @Test
+        func `initialization with count`() throws {
             let count: Index<Int>.Count = 5
             let header = Storage<Int>.Header.Count(count: count)
             #expect(header.count == 5)
@@ -38,8 +38,8 @@ struct StorageHeaderTests {
             #expect(empty == false)
         }
 
-        @Test("count can be modified")
-        func modifyCount() throws {
+        @Test
+        func `count can be modified`() throws {
             var header = Storage<Int>.Header.Count()
             let newCount: Index<Int>.Count = 10
             header.count = newCount
@@ -52,8 +52,8 @@ struct StorageHeaderTests {
     @Suite("Storage.Ring.Header")
     struct RingHeaderTests {
 
-        @Test("default initialization")
-        func defaultInit() throws {
+        @Test
+        func `default initialization`() throws {
             let header = Storage<Int>.Ring.Header()
             #expect(header.head == .zero)
             #expect(header.tail == .zero)
@@ -62,8 +62,8 @@ struct StorageHeaderTests {
             #expect(empty == true)
         }
 
-        @Test("initialization with values")
-        func initWithValues() throws {
+        @Test
+        func `initialization with values`() throws {
             let head: Index<Int> = 3
             let tail: Index<Int> = 1
             let count: Index<Int>.Count = 3
@@ -77,8 +77,8 @@ struct StorageHeaderTests {
             #expect(header.count == 3)
         }
 
-        @Test("advanceHead after dequeue")
-        func advanceHead() throws {
+        @Test
+        func `advanceHead after dequeue`() throws {
             let head: Index<Int> = 2
             let tail: Index<Int> = 0
             let count: Index<Int>.Count = 3
@@ -95,8 +95,8 @@ struct StorageHeaderTests {
             #expect(header.count == 2)
         }
 
-        @Test("advanceHead wraps at capacity")
-        func advanceHeadWraps() throws {
+        @Test
+        func `advanceHead wraps at capacity`() throws {
             let head: Index<Int> = 4
             let tail: Index<Int> = 2
             let count: Index<Int>.Count = 3
@@ -113,8 +113,8 @@ struct StorageHeaderTests {
             #expect(header.count == 2)
         }
 
-        @Test("advanceTail after enqueue")
-        func advanceTail() throws {
+        @Test
+        func `advanceTail after enqueue`() throws {
             let head: Index<Int> = 0
             let tail: Index<Int> = 2
             let count: Index<Int>.Count = 2
@@ -131,8 +131,8 @@ struct StorageHeaderTests {
             #expect(header.count == 3)
         }
 
-        @Test("advanceTail wraps at capacity")
-        func advanceTailWraps() throws {
+        @Test
+        func `advanceTail wraps at capacity`() throws {
             let head: Index<Int> = 3
             let tail: Index<Int> = 4
             let count: Index<Int>.Count = 1
@@ -149,8 +149,8 @@ struct StorageHeaderTests {
             #expect(header.count == 2)
         }
 
-        @Test("retreatHead for prepend")
-        func retreatHead() throws {
+        @Test
+        func `retreatHead for prepend`() throws {
             let head: Index<Int> = 2
             let tail: Index<Int> = 3
             let count: Index<Int>.Count = 1
@@ -167,8 +167,8 @@ struct StorageHeaderTests {
             #expect(header.count == 2)
         }
 
-        @Test("retreatHead wraps at zero")
-        func retreatHeadWraps() throws {
+        @Test
+        func `retreatHead wraps at zero`() throws {
             let tail: Index<Int> = 1
             let count: Index<Int>.Count = 1
             var header = Storage<Int>.Ring.Header(
@@ -184,8 +184,8 @@ struct StorageHeaderTests {
             #expect(header.count == 2)
         }
 
-        @Test("retreatTail for pop-back")
-        func retreatTail() throws {
+        @Test
+        func `retreatTail for pop-back`() throws {
             let head: Index<Int> = 0
             let tail: Index<Int> = 3
             let count: Index<Int>.Count = 3
@@ -208,8 +208,8 @@ struct StorageHeaderTests {
     @Suite("Storage.Header.Arena")
     struct ArenaHeaderTests {
 
-        @Test("default initialization")
-        func defaultInit() throws {
+        @Test
+        func `default initialization`() throws {
             let header = Storage<Int>.Header.Arena()
             #expect(header.head == Storage<Int>.Header.Arena.sentinel)
             #expect(header.tail == Storage<Int>.Header.Arena.sentinel)
@@ -222,24 +222,24 @@ struct StorageHeaderTests {
             #expect(hasFree == false)
         }
 
-        @Test("initialization with capacity")
-        func initWithCapacity() throws {
+        @Test
+        func `initialization with capacity`() throws {
             let capacity: Index<Int>.Count = 16
             let header = Storage<Int>.Header.Arena(capacity: capacity)
-            #expect(header.capacity.rawValue == 16)
+            #expect(header.capacity == 16)
             #expect(header.count == .zero)
             let empty = header.isEmpty
             #expect(empty == true)
         }
 
-        @Test("sentinel is UInt.max")
-        func sentinelValue() throws {
+        @Test
+        func `sentinel is UInt max`() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
             #expect(sentinel.position == Ordinal(UInt.max))
         }
 
-        @Test("isSentinel check")
-        func isSentinelCheck() throws {
+        @Test
+        func `isSentinel check`() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
             let normal: Index<Int> = 5
 
@@ -249,8 +249,8 @@ struct StorageHeaderTests {
             #expect(isNormalSent == false)
         }
 
-        @Test("hasFreeSlots when freeHead is not sentinel")
-        func hasFreeSlots() throws {
+        @Test
+        func `hasFreeSlots when freeHead is not sentinel`() throws {
             var header = Storage<Int>.Header.Arena()
             let hasFree1 = header.hasFreeSlots
             #expect(hasFree1 == false)

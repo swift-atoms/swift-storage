@@ -18,23 +18,23 @@ struct StorageTests {
 
     // MARK: - Creation Tests
 
-    @Test("create storage with minimum capacity")
-    func createStorage() throws {
+    @Test
+    func `create storage with minimum capacity`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         #expect(storage.capacity >= 10)
         #expect(storage.count == .zero)
     }
 
-    @Test("create storage with zero capacity")
-    func createZeroCapacity() throws {
+    @Test
+    func `create storage with zero capacity`() throws {
         let storage = Storage<Int>.create(minimumCapacity: .zero)
         _ = storage // Should not crash
     }
 
     // MARK: - Initialize and Move Tests
 
-    @Test("initialize and move single element")
-    func initializeAndMove() throws {
+    @Test
+    func `initialize and move single element`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
@@ -71,8 +71,8 @@ struct StorageTests {
 
     // MARK: - Pointer Access Tests
 
-    @Test("pointer returns correct address")
-    func pointerAccess() throws {
+    @Test
+    func `pointer returns correct address`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = 3
 
@@ -85,8 +85,8 @@ struct StorageTests {
         _ = storage.move(at: index)
     }
 
-    @Test("read returns immutable pointer")
-    func readAccess() throws {
+    @Test
+    func `read returns immutable pointer`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
@@ -182,8 +182,8 @@ struct StorageTests {
         copied.count = .zero
     }
 
-    @Test("copy empty storage")
-    func copyEmptyStorage() throws {
+    @Test
+    func `copy empty storage`() throws {
         let original = Storage<Int>.create(minimumCapacity: 10)
         let copied = original.copy()
         #expect(copied.count == .zero)
@@ -191,8 +191,8 @@ struct StorageTests {
 
     // MARK: - Typealias Tests
 
-    @Test("Contiguous typealias resolves to Storage")
-    func contiguousTypealias() throws {
+    @Test
+    func `Contiguous typealias resolves to Storage`() throws {
         let contiguousStorage = Storage<Int>.Contiguous.create(minimumCapacity: 5)
         #expect(contiguousStorage.capacity >= 5)
 
@@ -204,8 +204,8 @@ struct StorageTests {
 
     // MARK: - Deinit Behavior Tests
 
-    @Test("deinit cleans up initialized elements")
-    func deinitCleanup() throws {
+    @Test
+    func `deinit cleans up initialized elements`() throws {
         // Use a class to track deinitialization
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
@@ -241,26 +241,26 @@ struct StorageTests {
 
         #expect(storage.count == count)
 
-        // Verify all values
-        var j: UInt = 4
+        // Verify all values (use Int counter to avoid underflow)
+        var j = 4
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == j * 2)
+            #expect(value == UInt(j) * 2)
             j -= 1
         }
         storage.count = Index<UInt>.Count.zero
     }
 
-    @Test("create with zero capacity")
-    func createWithZeroCapacity() throws {
+    @Test
+    func `create with zero capacity`() throws {
         let storage = Storage<Int>.create(capacity: .zero) { _ in 0 }
         #expect(storage.count == .zero)
     }
 
     // MARK: - Deinitialize in Range Tests
 
-    @Test("deinitialize in range")
-    func deinitializeInRange() throws {
+    @Test
+    func `deinitialize in range`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -362,8 +362,8 @@ struct StorageTests {
         destination.count = .zero
     }
 
-    @Test("copy empty storage does nothing")
-    func copyEmptyToStorage() throws {
+    @Test
+    func `copy empty storage does nothing`() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
 
@@ -374,8 +374,8 @@ struct StorageTests {
 
     // MARK: - Pointer Type Tests
 
-    @Test("pointer returns Pointer.Mutable type")
-    func pointerReturnsMutableType() throws {
+    @Test
+    func `pointer returns Pointer Mutable type`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
@@ -390,8 +390,8 @@ struct StorageTests {
         storage.count = .zero
     }
 
-    @Test("read returns Pointer type")
-    func readReturnsImmutableType() throws {
+    @Test
+    func `read returns Pointer type`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 

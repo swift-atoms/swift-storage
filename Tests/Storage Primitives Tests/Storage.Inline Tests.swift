@@ -18,16 +18,16 @@ struct StorageInlineTests {
 
     // MARK: - Initialization Tests
 
-    @Test("inline storage can be created")
-    func creation() throws {
+    @Test
+    func `inline storage can be created`() throws {
         let storage = try Storage<Int>.Inline<8>()
         _ = storage
     }
 
     // MARK: - Initialize and Move Tests
 
-    @Test("initialize and move element")
-    func initializeAndMove() throws {
+    @Test
+    func `initialize and move element`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
@@ -59,8 +59,8 @@ struct StorageInlineTests {
 
     // MARK: - Pointer Tests
 
-    @Test("pointer returns correct address")
-    func pointerAccess() throws {
+    @Test
+    func `pointer returns correct address`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = 3
 
@@ -73,8 +73,8 @@ struct StorageInlineTests {
         _ = storage.move(at: index)
     }
 
-    @Test("mutable pointer allows modification")
-    func mutablePointerAccess() throws {
+    @Test
+    func `mutable pointer allows modification`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
@@ -108,8 +108,8 @@ struct StorageInlineTests {
 
     // MARK: - Type Safety Tests
 
-    @Test("different element types have separate storage")
-    func typeSafety() throws {
+    @Test
+    func `different element types have separate storage`() throws {
         var intStorage = try Storage<Int>.Inline<4>()
         var doubleStorage = try Storage<Double>.Inline<4>()
 
@@ -125,8 +125,8 @@ struct StorageInlineTests {
 
     // MARK: - Pointer Type Tests
 
-    @Test("pointer returns Pointer type")
-    func pointerReturnsImmutableType() throws {
+    @Test
+    func `pointer returns Pointer type`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
@@ -139,8 +139,8 @@ struct StorageInlineTests {
         _ = storage.move(at: index)
     }
 
-    @Test("mutablePointer returns Pointer.Mutable type")
-    func mutablePointerReturnsMutableType() throws {
+    @Test
+    func `mutablePointer returns Pointer Mutable type`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let index: Index<Int> = .zero
 
@@ -155,8 +155,8 @@ struct StorageInlineTests {
 
     // MARK: - Stride-Based Access Tests
 
-    @Test("stride-based access works correctly for different element sizes")
-    func strideBasedAccess() throws {
+    @Test
+    func `stride-based access works correctly for different element sizes`() throws {
         // Test with a larger struct that has different size/stride
         struct LargeElement {
             var a: Int
@@ -179,8 +179,8 @@ struct StorageInlineTests {
 
     // MARK: - Deinitialize in Range Tests
 
-    @Test("deinitialize in range")
-    func deinitializeInRange() throws {
+    @Test
+    func `deinitialize in range`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -289,8 +289,8 @@ struct StorageInlineTests {
         heap.count = .zero
     }
 
-    @Test("copy zero elements to heap storage")
-    func copyZeroToHeapStorage() throws {
+    @Test
+    func `copy zero elements to heap storage`() throws {
         let inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.create(minimumCapacity: capacity)
@@ -301,16 +301,16 @@ struct StorageInlineTests {
 
     // MARK: - Ring Buffer Deinitialize Tests
 
-    @Test("deinitialize ring with empty count")
-    func deinitializeRingEmpty() throws {
+    @Test
+    func `deinitialize ring with empty count`() throws {
         let storage = try Storage<Int>.Inline<8>()
 
         // Should not crash with empty count
         storage.deinitialize(head: .zero, count: .zero)
     }
 
-    @Test("deinitialize ring non-wrapped")
-    func deinitializeRingNonWrapped() throws {
+    @Test
+    func `deinitialize ring non-wrapped`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -331,8 +331,8 @@ struct StorageInlineTests {
         unsafe #expect(Tracker.deinitCount == 3)
     }
 
-    @Test("deinitialize ring wrapped")
-    func deinitializeRingWrapped() throws {
+    @Test
+    func `deinitialize ring wrapped`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -360,8 +360,8 @@ struct StorageInlineTests {
         unsafe #expect(Tracker.deinitCount == 3)
     }
 
-    @Test("deinitialize ring full buffer")
-    func deinitializeRingFullBuffer() throws {
+    @Test
+    func `deinitialize ring full buffer`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
