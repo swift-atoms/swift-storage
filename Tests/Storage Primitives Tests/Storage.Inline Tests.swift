@@ -37,19 +37,23 @@ struct StorageInlineTests {
         #expect(value == 42)
     }
 
-    @Test("initialize multiple elements")
-    func initializeMultiple() throws {
+    @Test
+    func `initialize multiple elements`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let count: Index<Int>.Count = 8
 
+        var i = 0
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(bitPattern: index.position.rawValue) * 10, at: index)
+            storage.initialize(to: i * 10, at: index)
+            i += 1
         }
 
         // Move in reverse to verify all initialized
+        var j = 7
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 10)
+            #expect(value == j * 10)
+            j -= 1
         }
     }
 
@@ -85,14 +89,16 @@ struct StorageInlineTests {
 
     // MARK: - Deinitialize Tests
 
-    @Test("deinitialize count elements")
-    func deinitializeCount() throws {
+    @Test
+    func `deinitialize count elements`() throws {
         var storage = try Storage<Int>.Inline<8>()
         let count: Index<Int>.Count = 4
 
         // Initialize first 4 elements
+        var i = 0
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(bitPattern: index.position.rawValue), at: index)
+            storage.initialize(to: i, at: index)
+            i += 1
         }
 
         // Deinitialize all 4
@@ -207,16 +213,18 @@ struct StorageInlineTests {
 
     // MARK: - Move to Heap Storage Tests
 
-    @Test("move to heap storage")
-    func moveToHeapStorage() throws {
+    @Test
+    func `move to heap storage`() throws {
         var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Initialize inline storage
+        var i = 0
         (.zero..<count).forEach { index in
-            inline.initialize(to: (Int(bitPattern: index.position.rawValue) + 1) * 100, at: index)
+            inline.initialize(to: (i + 1) * 100, at: index)
+            i += 1
         }
 
         // Move to heap
@@ -224,15 +232,17 @@ struct StorageInlineTests {
         heap.count = count
 
         // Verify heap has the values
+        var j = 3
         (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == (Int(bitPattern: index.position.rawValue) + 1) * 100)
+            #expect(value == (j + 1) * 100)
+            j -= 1
         }
         heap.count = .zero
     }
 
-    @Test("move zero elements to heap storage")
-    func moveZeroToHeapStorage() throws {
+    @Test
+    func `move zero elements to heap storage`() throws {
         var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.create(minimumCapacity: capacity)
@@ -243,16 +253,18 @@ struct StorageInlineTests {
 
     // MARK: - Copy to Heap Storage Tests
 
-    @Test("copy to heap storage")
-    func copyToHeapStorage() throws {
+    @Test
+    func `copy to heap storage`() throws {
         var inline = try Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage<Int>.create(minimumCapacity: capacity)
 
         // Initialize inline storage
+        var i = 0
         (.zero..<count).forEach { index in
-            inline.initialize(to: Int(bitPattern: index.position.rawValue) * 5, at: index)
+            inline.initialize(to: i * 5, at: index)
+            i += 1
         }
 
         // Copy to heap
@@ -260,15 +272,19 @@ struct StorageInlineTests {
         heap.count = count
 
         // Verify inline still has original values
+        var j = 3
         (.zero..<count).reversed().forEach { index in
             let value = inline.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
+            #expect(value == j * 5)
+            j -= 1
         }
 
         // Verify heap has copies
+        var k = 3
         (.zero..<count).reversed().forEach { index in
             let value = heap.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
+            #expect(value == k * 5)
+            k -= 1
         }
         heap.count = .zero
     }

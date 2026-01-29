@@ -57,11 +57,14 @@ extension Storage.Ring where Element: ~Copyable {
         wrapping capacity: Index<Element>.Count
     ) -> Index<Element> {
         // Normalize negative offsets to positive range [0, capacity)
-        let cap = Int(capacity.rawValue.rawValue)
-        let offsetValue = offset.rawValue.rawValue
+        // WORKAROUND: offset.vector.rawValue - no Int(offset:) extension yet
+        // WHY: [CONV-001] requires extension in affine-primitives
+        // WHEN TO REMOVE: When Int(bitPattern: Tagged<T, Affine.Discrete.Vector>) exists
+        let cap = Int(bitPattern: capacity)
+        let offsetValue = offset.vector.rawValue
         let normalizedOffset = ((offsetValue % cap) + cap) % cap
         // Use total Index + Count arithmetic (never throws)
-        let normalizedCount = Index<Element>.Count(Cardinal(UInt(normalizedOffset)))
+        let normalizedCount = Index<Element>.Count(UInt(normalizedOffset))
         return (index + normalizedCount) % capacity
     }
 

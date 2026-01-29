@@ -47,20 +47,24 @@ struct StorageTests {
         #expect(value == 42)
     }
 
-    @Test("initialize multiple elements")
-    func initializeMultiple() throws {
+    @Test
+    func `initialize multiple elements`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
+        var i = 0
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(bitPattern: index.position.rawValue) * 10, at: index)
+            storage.initialize(to: i * 10, at: index)
+            i += 1
         }
         storage.count = count
 
         // Verify all values
+        var j = 4
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 10)
+            #expect(value == j * 10)
+            j -= 1
         }
         storage.count = .zero
     }
@@ -99,13 +103,15 @@ struct StorageTests {
 
     // MARK: - Bulk Operations Tests
 
-    @Test("deinitialize count elements")
-    func deinitializeCount() throws {
+    @Test
+    func `deinitialize count elements`() throws {
         let storage = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
+        var i = 0
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(bitPattern: index.position.rawValue), at: index)
+            storage.initialize(to: i, at: index)
+            i += 1
         }
         storage.count = count
 
@@ -113,15 +119,17 @@ struct StorageTests {
         #expect(storage.count == .zero)
     }
 
-    @Test("move to new storage")
-    func moveToNewStorage() throws {
+    @Test
+    func `move to new storage`() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 3
 
         // Initialize source
+        var i = 0
         (.zero..<count).forEach { index in
-            source.initialize(to: (Int(bitPattern: index.position.rawValue) + 1) * 100, at: index)
+            source.initialize(to: (i + 1) * 100, at: index)
+            i += 1
         }
         source.count = count
 
@@ -130,38 +138,46 @@ struct StorageTests {
         destination.count = count
 
         // Verify destination has the values
+        var j = 2
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (Int(bitPattern: index.position.rawValue) + 1) * 100)
+            #expect(value == (j + 1) * 100)
+            j -= 1
         }
         destination.count = .zero
     }
 
     // MARK: - Copyable Extensions Tests
 
-    @Test("copy creates independent storage")
-    func copyStorage() throws {
+    @Test
+    func `copy creates independent storage`() throws {
         let original = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 4
 
+        var i = 0
         (.zero..<count).forEach { index in
-            original.initialize(to: Int(bitPattern: index.position.rawValue) * 5, at: index)
+            original.initialize(to: i * 5, at: index)
+            i += 1
         }
         original.count = count
 
         let copied = original.copy()
 
         // Verify original still has values
+        var j = 3
         (.zero..<count).reversed().forEach { index in
             let value = original.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
+            #expect(value == j * 5)
+            j -= 1
         }
         original.count = .zero
 
         // Verify copy has the same values
+        var k = 3
         (.zero..<count).reversed().forEach { index in
             let value = copied.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
+            #expect(value == k * 5)
+            k -= 1
         }
         copied.count = .zero
     }
@@ -183,7 +199,7 @@ struct StorageTests {
         // Verify static methods work through typealias
         let index: Index<Int> = .zero
         let next = Storage<Int>.Contiguous.successor(of: index)
-        #expect(next.position.rawValue == 1)
+        #expect(next.position == 1)
     }
 
     // MARK: - Deinit Behavior Tests
@@ -213,19 +229,24 @@ struct StorageTests {
 
     // MARK: - Create with Initializer Tests
 
-    @Test("create with initializing closure")
-    func createWithInitializer() throws {
+    @Test
+    func `create with initializing closure`() throws {
         let count: Index<UInt>.Count = 5
-        let storage = Storage<UInt>.create(capacity: count) { index in
-            index.position.rawValue * 2
+        var i: UInt = 0
+        let storage = Storage<UInt>.create(capacity: count) { _ in
+            let val = i * 2
+            i += 1
+            return val
         }
 
         #expect(storage.count == count)
 
         // Verify all values
+        var j: UInt = 4
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == index.position.rawValue * 2)
+            #expect(value == j * 2)
+            j -= 1
         }
         storage.count = Index<UInt>.Count.zero
     }
@@ -274,15 +295,17 @@ struct StorageTests {
 
     // MARK: - Move Convenience Tests
 
-    @Test("move to new storage uses count")
-    func moveToNewStorageConvenience() throws {
+    @Test
+    func `move to new storage uses count`() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
         // Initialize source
+        var i = 0
         (.zero..<count).forEach { index in
-            source.initialize(to: (Int(bitPattern: index.position.rawValue) + 1) * 10, at: index)
+            source.initialize(to: (i + 1) * 10, at: index)
+            i += 1
         }
         source.count = count
 
@@ -291,24 +314,28 @@ struct StorageTests {
         destination.count = count
 
         // Verify destination
+        var j = 4
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (Int(bitPattern: index.position.rawValue) + 1) * 10)
+            #expect(value == (j + 1) * 10)
+            j -= 1
         }
         destination.count = .zero
     }
 
     // MARK: - Copy To Tests
 
-    @Test("copy to new storage")
-    func copyToNewStorage() throws {
+    @Test
+    func `copy to new storage`() throws {
         let source = Storage<Int>.create(minimumCapacity: 10)
         let destination = Storage<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 4
 
         // Initialize source
+        var i = 0
         (.zero..<count).forEach { index in
-            source.initialize(to: Int(bitPattern: index.position.rawValue) * 3, at: index)
+            source.initialize(to: i * 3, at: index)
+            i += 1
         }
         source.count = count
 
@@ -317,16 +344,20 @@ struct StorageTests {
         destination.count = count
 
         // Verify source still has values
+        var j = 3
         (.zero..<count).reversed().forEach { index in
             let value = source.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 3)
+            #expect(value == j * 3)
+            j -= 1
         }
         source.count = .zero
 
         // Verify destination has copies
+        var k = 3
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == Int(bitPattern: index.position.rawValue) * 3)
+            #expect(value == k * 3)
+            k -= 1
         }
         destination.count = .zero
     }

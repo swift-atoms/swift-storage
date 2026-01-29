@@ -43,9 +43,9 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     @inlinable
     public var count: Index<Element>.Count {
         @inline(__always)
-        get { Index<Element>.Count(__unchecked: (), Cardinal(UInt(bitPattern: header))) }
+        get { Index<Element>.Count(UInt(bitPattern: header)) }
         @inline(__always)
-        set { header = Int(bitPattern: newValue.rawValue.rawValue) }
+        set { header = Int(bitPattern: newValue) }
     }
 
     deinit {
@@ -159,7 +159,7 @@ extension Storage where Element: ~Copyable {
     /// - Returns: A new storage instance with at least the requested capacity.
     @inlinable
     public static func create(minimumCapacity: Index<Element>.Count) -> Storage<Element> {
-        let buffer = Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity.rawValue.rawValue)) { _ in 0 }
+        let buffer = Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity)) { _ in 0 }
         return unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
     }
 
@@ -174,7 +174,7 @@ extension Storage where Element: ~Copyable {
         capacity: Index<Element>.Count,
         initializingWith initializer: (Index<Element>) -> Element
     ) -> Storage<Element> {
-        let storage = Storage<Element>.create(minimumCapacity: Int(bitPattern: capacity.rawValue.rawValue)) { _ in 0 }
+        let storage = Storage<Element>.create(minimumCapacity: Int(bitPattern: capacity)) { _ in 0 }
         let typed = unsafe unsafeDowncast(storage, to: Storage<Element>.self)
 
         _ = unsafe typed.withUnsafeMutablePointerToElements { elements in
@@ -182,7 +182,7 @@ extension Storage where Element: ~Copyable {
                 unsafe (elements + index).initialize(to: initializer(index))
             }
         }
-        typed.header = Int(bitPattern: capacity.rawValue.rawValue)
+        typed.header = Int(bitPattern: capacity)
 
         return typed
     }
@@ -327,7 +327,7 @@ extension Storage where Element: Copyable {
         }
 
         let new = Storage<Element>.create(minimumCapacity: count)
-        new.header = Int(bitPattern: count.rawValue.rawValue)
+        new.header = Int(bitPattern: count)
 
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe new.withUnsafeMutablePointerToElements { dst in

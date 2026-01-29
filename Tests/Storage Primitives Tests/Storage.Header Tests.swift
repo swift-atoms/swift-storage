@@ -235,7 +235,7 @@ struct StorageHeaderTests {
         @Test("sentinel is UInt.max")
         func sentinelValue() throws {
             let sentinel = Storage<Int>.Header.Arena.sentinel
-            #expect(sentinel.position.rawValue == UInt.max)
+            #expect(sentinel.position == Ordinal(UInt.max))
         }
 
         @Test("isSentinel check")
