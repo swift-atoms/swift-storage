@@ -53,14 +53,14 @@ struct StorageTests {
         let count: Index<Int>.Count = 5
 
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(index.position) * 10, at: index)
+            storage.initialize(to: Int(bitPattern: index.position.rawValue) * 10, at: index)
         }
         storage.count = count
 
         // Verify all values
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == Int(index.position) * 10)
+            #expect(value == Int(bitPattern: index.position.rawValue) * 10)
         }
         storage.count = .zero
     }
@@ -105,7 +105,7 @@ struct StorageTests {
         let count: Index<Int>.Count = 5
 
         (.zero..<count).forEach { index in
-            storage.initialize(to: Int(index.position), at: index)
+            storage.initialize(to: Int(bitPattern: index.position.rawValue), at: index)
         }
         storage.count = count
 
@@ -121,7 +121,7 @@ struct StorageTests {
 
         // Initialize source
         (.zero..<count).forEach { index in
-            source.initialize(to: (Int(index.position) + 1) * 100, at: index)
+            source.initialize(to: (Int(bitPattern: index.position.rawValue) + 1) * 100, at: index)
         }
         source.count = count
 
@@ -132,7 +132,7 @@ struct StorageTests {
         // Verify destination has the values
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (Int(index.position) + 1) * 100)
+            #expect(value == (Int(bitPattern: index.position.rawValue) + 1) * 100)
         }
         destination.count = .zero
     }
@@ -145,7 +145,7 @@ struct StorageTests {
         let count: Index<Int>.Count = 4
 
         (.zero..<count).forEach { index in
-            original.initialize(to: Int(index.position) * 5, at: index)
+            original.initialize(to: Int(bitPattern: index.position.rawValue) * 5, at: index)
         }
         original.count = count
 
@@ -154,14 +154,14 @@ struct StorageTests {
         // Verify original still has values
         (.zero..<count).reversed().forEach { index in
             let value = original.move(at: index)
-            #expect(value == Int(index.position) * 5)
+            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
         }
         original.count = .zero
 
         // Verify copy has the same values
         (.zero..<count).reversed().forEach { index in
             let value = copied.move(at: index)
-            #expect(value == Int(index.position) * 5)
+            #expect(value == Int(bitPattern: index.position.rawValue) * 5)
         }
         copied.count = .zero
     }
@@ -183,7 +183,7 @@ struct StorageTests {
         // Verify static methods work through typealias
         let index: Index<Int> = .zero
         let next = Storage<Int>.Contiguous.successor(of: index)
-        #expect(next.position == 1)
+        #expect(next.position.rawValue == 1)
     }
 
     // MARK: - Deinit Behavior Tests
@@ -217,7 +217,7 @@ struct StorageTests {
     func createWithInitializer() throws {
         let count: Index<UInt>.Count = 5
         let storage = Storage<UInt>.create(capacity: count) { index in
-            index.position * 2
+            index.position.rawValue * 2
         }
 
         #expect(storage.count == count)
@@ -225,9 +225,9 @@ struct StorageTests {
         // Verify all values
         (.zero..<count).reversed().forEach { index in
             let value = storage.move(at: index)
-            #expect(value == index.position * 2)
+            #expect(value == index.position.rawValue * 2)
         }
-        storage.count = .zero
+        storage.count = Index<UInt>.Count.zero
     }
 
     @Test("create with zero capacity")
@@ -258,7 +258,7 @@ struct StorageTests {
         let start: Range.Index = 1
         let end: Range.Index = 4
         let range = try Range.Lazy(start: start, end: end) { pos in
-            try! Index<Tracker>(Int(pos.position))
+            Index<Tracker>(__unchecked: (), pos.position)
         }
         storage.deinitialize(in: range)
 
@@ -282,7 +282,7 @@ struct StorageTests {
 
         // Initialize source
         (.zero..<count).forEach { index in
-            source.initialize(to: (Int(index.position) + 1) * 10, at: index)
+            source.initialize(to: (Int(bitPattern: index.position.rawValue) + 1) * 10, at: index)
         }
         source.count = count
 
@@ -293,7 +293,7 @@ struct StorageTests {
         // Verify destination
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == (Int(index.position) + 1) * 10)
+            #expect(value == (Int(bitPattern: index.position.rawValue) + 1) * 10)
         }
         destination.count = .zero
     }
@@ -308,7 +308,7 @@ struct StorageTests {
 
         // Initialize source
         (.zero..<count).forEach { index in
-            source.initialize(to: Int(index.position) * 3, at: index)
+            source.initialize(to: Int(bitPattern: index.position.rawValue) * 3, at: index)
         }
         source.count = count
 
@@ -319,14 +319,14 @@ struct StorageTests {
         // Verify source still has values
         (.zero..<count).reversed().forEach { index in
             let value = source.move(at: index)
-            #expect(value == Int(index.position) * 3)
+            #expect(value == Int(bitPattern: index.position.rawValue) * 3)
         }
         source.count = .zero
 
         // Verify destination has copies
         (.zero..<count).reversed().forEach { index in
             let value = destination.move(at: index)
-            #expect(value == Int(index.position) * 3)
+            #expect(value == Int(bitPattern: index.position.rawValue) * 3)
         }
         destination.count = .zero
     }

@@ -20,7 +20,7 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Address.Mutable(base)
+            let address = unsafe Memory.Mutable.Address(base)
             return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
         }
     }
@@ -50,7 +50,7 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Address.Mutable(base)
+            let address = unsafe Memory.Mutable.Address(base)
             return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
         }
     }
@@ -84,7 +84,7 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(count: Index<Element>.Count) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address.Mutable(UnsafeMutableRawPointer(mutating: base))
+            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
             (.zero..<count).forEach { index in
                 unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     .base.deinitialize(count: 1)
@@ -100,7 +100,7 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address.Mutable(UnsafeMutableRawPointer(mutating: base))
+            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
             range.forEach { index in
                 unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     .base.deinitialize(count: 1)
@@ -124,7 +124,7 @@ extension Storage.Inline where Element: ~Copyable {
         let cap = Index<Element>.Count(UInt(capacity))
         var index = head
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address.Mutable(UnsafeMutableRawPointer(mutating: base))
+            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
             (.zero..<count).forEach { _ in
                 unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     .base.deinitialize(count: 1)
@@ -145,7 +145,7 @@ extension Storage.Inline where Element: ~Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
             unsafe heapStorage.withUnsafeMutablePointerToElements { destination in
-                let address = unsafe Memory.Address.Mutable(base)
+                let address = unsafe Memory.Mutable.Address(base)
                 (.zero..<count).forEach { index in
                     let source: Pointer<Element>.Mutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     unsafe (destination + index).initialize(to: source.move())

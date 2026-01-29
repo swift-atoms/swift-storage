@@ -22,22 +22,22 @@ struct StorageContiguousTests {
     func successorIncrements() throws {
         let index: Index<Int> = .zero
         let next = Storage<Int>.Contiguous.successor(of: index)
-        #expect(next == 1)
+        #expect(next.position.rawValue == 1)
     }
 
     @Test("successor via Index extension")
     func successorExtension() throws {
         let index = Index<Int>(__unchecked: (), 5)
         let next = index + .one
-        #expect(next.position == 6)
+        #expect(next.position.rawValue == 6)
     }
 
     @Test("multiple successor calls")
     func multipleSuccessors() throws {
         var index: Index<Int> = .zero
-        for i in 1...10 {
+        for i: UInt in 1...10 {
             index = index + .one
-            #expect(index.position == i)
+            #expect(index.position.rawValue == i)
         }
     }
 
@@ -47,21 +47,21 @@ struct StorageContiguousTests {
     func predecessorDecrements() throws {
         let index = Index<Int>(__unchecked: (), 5)
         let prev = try Storage<Int>.Contiguous.predecessor(of: index)
-        #expect(prev.position == 4)
+        #expect(prev.position.rawValue == 4)
     }
 
     @Test("predecessor via Index extension")
     func predecessorExtension() throws {
         let index = Index<Int>(__unchecked: (), 10)
         let prev = try index - .one
-        #expect(prev.position == 9)
+        #expect(prev.position.rawValue == 9)
     }
 
     @Test("predecessor to zero")
     func predecessorToZero() throws {
         let index = Index<Int>(__unchecked: (), 1)
         let zero = try index - .one
-        #expect(zero.position == 0)
+        #expect(zero.position.rawValue == 0)
     }
 
     // MARK: - Combined Operations
