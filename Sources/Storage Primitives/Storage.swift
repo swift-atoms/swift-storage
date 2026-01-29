@@ -67,17 +67,23 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// - ``Header/Arena``: Free list management for arena storage (List)
     public enum Header {}
     
-    /// Fixed-capacity inline storage with dense element packing.
+    /// Fixed-capacity inline storage with 64-byte slots.
     ///
     /// Provides stack-allocated storage with compile-time capacity. Elements are
-    /// stored inline without heap allocation at their natural stride, enabling
-    /// direct Span access.
+    /// stored inline without heap allocation, making this suitable for small,
+    /// fixed-size collections.
     ///
     /// ## Layout
     ///
-    /// Storage uses `InlineArray<capacity, Element>` for dense element packing.
-    /// Elements are stored at `MemoryLayout<Element>.stride` intervals, making
-    /// the layout compatible with `Span` and `MutableSpan`.
+    /// Storage is backed by `InlineArray` with 64-byte slots, sufficient for most
+    /// element types. Elements are accessed via raw pointer operations to support
+    /// move-only types.
+    ///
+    /// ## Span Compatibility
+    ///
+    /// Due to the 64-byte slot layout, `Storage.Inline` does NOT support direct
+    /// Span access. Use `forEach` for iteration or individual element access via
+    /// `pointer(at:)`. For Span access, use heap-based `Storage` instead.
     ///
     /// ## Usage
     ///
@@ -90,28 +96,43 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// - Important: Caller is responsible for tracking which indices are initialized.
     public struct Inline<let capacity: Int>: ~Copyable {
         @usableFromInline
-        var _storage: InlineArray<capacity, Element>
+        var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
-        /// The element stride in bytes.
+        /// The slot stride (64 bytes per slot).
         @usableFromInline
-        static var elementStride: Int { MemoryLayout<Element>.stride }
+        static var slotStride: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
 
-        /// The fixed capacity of this inline storage.
+        /// Maximum element stride supported (64 bytes per slot).
         @inlinable
-        public static var capacity: Int { capacity }
+        public static var maxStride: Int { 64 }
+
+        /// Errors that can occur when creating inline storage.
+        public enum Error: Swift.Error, Sendable {
+            /// Element stride exceeds the inline storage slot size.
+            case strideExceedsSlotSize(stride: Int, maxSlotSize: Int)
+            /// Element alignment exceeds the inline storage alignment.
+            case alignmentExceedsStorageAlignment(alignment: Int, maxAlignment: Int)
+        }
 
         /// Creates uninitialized inline storage.
         ///
-        /// - Note: All slots are uninitialized. Caller must initialize before use.
+        /// - Throws: `Error.strideExceedsSlotSize` if element stride exceeds 64 bytes.
+        /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
         @inlinable
-        public init() {
-            // Use Builtin.zeroInitializer to create uninitialized storage.
-            // This is safe because we track initialization separately via count,
-            // and all element access goes through raw pointer operations.
-            _storage = unsafe unsafeBitCast(
-                Builtin.zeroInitializer(),
-                to: InlineArray<capacity, Element>.self
-            )
+        public init() throws(Error) {
+            guard MemoryLayout<Element>.stride <= 64 else {
+                throw .strideExceedsSlotSize(
+                    stride: MemoryLayout<Element>.stride,
+                    maxSlotSize: 64
+                )
+            }
+            guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
+                throw .alignmentExceedsStorageAlignment(
+                    alignment: MemoryLayout<Element>.alignment,
+                    maxAlignment: MemoryLayout<Int>.alignment
+                )
+            }
+            _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
         }
     }
     

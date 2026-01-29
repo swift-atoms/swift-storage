@@ -19,11 +19,11 @@ extension Storage.Inline where Element: Copyable {
     public func copy(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let srcPtr = unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
+            let address = unsafe Memory.Address(base)
             unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    let i = Int(bitPattern: index)
-                    unsafe (dst + index).initialize(to: srcPtr[i])
+                    let src = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+                    unsafe (dst + index).initialize(to: src.pointee)
                 }
             }
         }
