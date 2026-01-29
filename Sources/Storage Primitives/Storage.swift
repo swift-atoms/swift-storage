@@ -348,6 +348,43 @@ extension Storage where Element: ~Copyable {
             }
         }
     }
+
+    /// Shifts elements left to fill a gap at the removed index.
+    ///
+    /// Moves elements from `[removedAt+1, count)` to `[removedAt, count-1)`,
+    /// then decrements the stored count.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// // Before: [A, B, C, D] count=4, remove at index 1
+    /// storage.shiftLeft(removedAt: Index(1))
+    /// // After:  [A, C, D, _] count=3
+    /// ```
+    ///
+    /// - Parameter removedAt: The index where an element was removed.
+    /// - Precondition: `removedAt` must be less than `count`.
+    /// - Precondition: The element at `removedAt` must already be deinitialized.
+    @inlinable
+    public func shiftLeft(removedAt index: Index<Element>) {
+        let currentCount = self.count
+        let newCount = currentCount.subtract.saturating(.one)
+
+        // If removing the last element, just decrement count
+        guard index < newCount else {
+            self.count = newCount
+            return
+        }
+
+        // Shift elements left: move [index+1, currentCount) to [index, currentCount-1)
+        _ = unsafe withUnsafeMutablePointerToElements { elements in
+            (index..<newCount).forEach { destIndex in
+                let srcIndex = destIndex + .one
+                unsafe (elements + destIndex).initialize(to: (elements + srcIndex).move())
+            }
+        }
+        self.count = newCount
+    }
 }
 
 // MARK: - Copyable Extensions

@@ -25,6 +25,7 @@ let package = Package(
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-pointer-primitives"),
         .package(path: "../swift-range-primitives"),
+        .package(path: "../swift-cyclic-index-primitives"),
     ],
     targets: [
         .target(
@@ -33,6 +34,7 @@ let package = Package(
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
+                .product(name: "Cyclic Index Primitives", package: "swift-cyclic-index-primitives"),
             ]
         ),
         .target(
