@@ -195,6 +195,8 @@ extension Storage.Inline where Element: ~Copyable {
     ///   - count: Number of elements to deinitialize.
     /// - Precondition: Elements from head through count positions must be initialized.
     /// - Note: Non-mutating to allow use from deinit contexts.
+    /// - Note: For full ring buffer support, use buffer-primitives which provides
+    ///   `Buffer.Ring` discipline and `Storage.Inline+Cyclic` extensions.
     @inlinable
     public func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
@@ -205,7 +207,8 @@ extension Storage.Inline where Element: ~Copyable {
             (.zero..<count).forEach { _ in
                 unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
                     .base.deinitialize(count: 1)
-                index = Storage<Element>.Ring.successor(of: index, wrapping: cap)
+                // Ring successor: (index + 1) % capacity
+                index = (index + Index<Element>.Count.one) % cap
             }
         }
     }

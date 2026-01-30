@@ -63,8 +63,9 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// Headers track the metadata required for different storage layouts:
     ///
     /// - ``Header/Count``: Element count for contiguous storage (Array, Stack)
-    /// - ``Header/Ring``: Head/tail/count for circular buffers (Queue, Deque)
     /// - ``Header/Arena``: Free list management for arena storage (List)
+    ///
+    /// For ring buffer headers, see `Buffer.Ring.Header` in buffer-primitives.
     public enum Header {}
     
     /// Fixed-capacity inline storage with 64-byte slots.
@@ -135,25 +136,6 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
             _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
         }
     }
-    
-    /// Circular buffer storage operations.
-    ///
-    /// Operations for ring buffer storage where elements wrap around the capacity
-    /// boundary. Used by Queue and Deque.
-    ///
-    /// ## Ring Buffer Semantics
-    ///
-    /// Ring buffers maintain a circular view over contiguous storage. Elements are
-    /// logically ordered from head to tail, but physically wrap at capacity:
-    ///
-    /// ```
-    /// Physical:  [ 2 | 3 | 4 | 0 | 1 ]
-    ///                        ^head
-    /// Logical:   [ 0 | 1 | 2 | 3 | 4 ]
-    /// ```
-    ///
-    /// All operations maintain the invariant that results are in `0..<capacity`.
-    public enum Ring {}
 }
 
 // MARK: - Creation
