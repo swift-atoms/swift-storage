@@ -13,7 +13,7 @@ public import Property_Primitives
 
 // MARK: - Shift Property Accessor
 
-extension Storage.Inline where Element: ~Copyable {
+extension Storage.Static where Element: ~Copyable {
     /// Property view for shift operations.
     ///
     /// Provides `.shift.left(removedAt:count:)` for filling gaps after element removal.
@@ -41,7 +41,7 @@ extension Storage.Inline where Element: ~Copyable {
 // MARK: - Shift Left Operation
 
 extension Property.View.Typed.Valued
-where Tag == Shift, Base == Storage<Element>.Inline<n>, Element: ~Copyable {
+where Tag == Shift, Base == Storage<Element>.Static<n>, Element: ~Copyable {
     /// Shifts elements left to fill a gap at the removed index.
     ///
     /// Moves elements from `[removedAt+1, count)` to `[removedAt, count-1)`.
@@ -76,12 +76,12 @@ where Tag == Shift, Base == Storage<Element>.Inline<n>, Element: ~Copyable {
                 let srcIndex = destIndex + .one
                 let srcPtr: Pointer<Element>.Mutable = address.pointer(
                     at: srcIndex,
-                    stride: Storage<Element>.Inline<n>.slotStride,
+                    stride: Storage<Element>.Static<n>.slotStride,
                     as: Element.self
                 )
                 let dstPtr: Pointer<Element>.Mutable = address.pointer(
                     at: destIndex,
-                    stride: Storage<Element>.Inline<n>.slotStride,
+                    stride: Storage<Element>.Static<n>.slotStride,
                     as: Element.self
                 )
                 dstPtr.initialize(to: srcPtr.move())

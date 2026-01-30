@@ -12,7 +12,7 @@
 /// Tag type for `.shift` property extensions on storage types.
 ///
 /// Use this tag with `Property.View` to add `.shift.left(...)` functionality
-/// to storage types like `Storage.Inline`.
+/// to storage types like `Storage.Static`.
 ///
 /// ## Available Operations
 ///

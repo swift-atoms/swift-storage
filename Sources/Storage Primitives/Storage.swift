@@ -26,7 +26,7 @@ public import Range_Primitives
 /// ## Variants
 ///
 /// - `Storage` / `Storage.Contiguous`: Heap storage (this type)
-/// - `Storage.Inline<N>`: Fixed-capacity inline storage
+/// - `Storage.Static<N>`: Fixed-capacity inline storage
 ///
 /// ## Usage
 ///
@@ -82,7 +82,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     ///
     /// ## Span Compatibility
     ///
-    /// Due to the 64-byte slot layout, `Storage.Inline` does NOT support direct
+    /// Due to the 64-byte slot layout, `Storage.Static` does NOT support direct
     /// Span access. Use `forEach` for iteration or individual element access via
     /// `pointer(at:)`. For Span access, use heap-based `Storage` instead.
     ///
@@ -95,7 +95,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// ```
     ///
     /// - Important: Caller is responsible for tracking which indices are initialized.
-    public struct Inline<let capacity: Int>: ~Copyable {
+    public struct Static<let capacity: Int>: ~Copyable {
         @usableFromInline
         var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 

@@ -2,13 +2,13 @@
 
 | Directory | Purpose | Date | Toolchain | Status |
 |-----------|---------|------|-----------|--------|
-| inline-span-access | Investigate approaches to enable Span access for Storage.Inline | 2026-01-29 | Swift 6.2.3 | CONFIRMED |
+| inline-span-access | Investigate approaches to enable Span access for Storage.Static | 2026-01-29 | Swift 6.2.3 | CONFIRMED |
 | inline-span-copyable | Test InlineArray<capacity, Element> for Copyable elements | 2026-01-29 | Swift 6.2.3 | CONFIRMED |
 | inline-uninitialized | Test approaches for uninitialized InlineArray with ~Copyable | 2026-01-29 | Swift 6.2.3 | REFUTED |
 
 ## Summary
 
-These experiments investigate whether `Storage.Inline` can support `Span`/`MutableSpan` access.
+These experiments investigate whether `Storage.Static` can support `Span`/`MutableSpan` access.
 
 ### Key Findings
 
@@ -24,9 +24,9 @@ These experiments investigate whether `Storage.Inline` can support `Span`/`Mutab
 
 | Need | Type | Layout | Access Pattern |
 |------|------|--------|----------------|
-| `~Copyable` elements | `Storage.Inline` | 64-byte slots | `forEach`, `withElement` |
+| `~Copyable` elements | `Storage.Static` | 64-byte slots | `forEach`, `withElement` |
 | Span access | `Storage` (heap) | Dense | `withSpan`, `withMutableSpan` |
 
-**Rationale**: If you need Span access, you can afford heap allocation. If you need inline storage (stack allocation), you're in a performance-critical path where strided access is acceptable. Adding `Storage.Inline.Dense` would add API complexity without enabling the primary use case (`~Copyable` with Span).
+**Rationale**: If you need Span access, you can afford heap allocation. If you need inline storage (stack allocation), you're in a performance-critical path where strided access is acceptable. Adding `Storage.Static.Dense` would add API complexity without enabling the primary use case (`~Copyable` with Span).
 
 See: `Research/inline-storage-span-access.md` for full analysis.

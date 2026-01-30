@@ -10,19 +10,19 @@ status: DECISION
 
 ## Context
 
-After fixing the pointer escape bug in `Storage.Inline.read(at:)`, the question arose: can `Storage.Inline` support `Span`/`MutableSpan` access?
+After fixing the pointer escape bug in `Storage.Static.read(at:)`, the question arose: can `Storage.Static` support `Span`/`MutableSpan` access?
 
-**Trigger**: Investigation of whether strided element access (`forEach`, `withElement`) could be replaced with `Span` for `Storage.Inline`.
+**Trigger**: Investigation of whether strided element access (`forEach`, `withElement`) could be replaced with `Span` for `Storage.Static`.
 
 ## Question
 
-Should `Storage.Inline` provide `Span` access, and if not, what is the principled design?
+Should `Storage.Static` provide `Span` access, and if not, what is the principled design?
 
 ## Analysis
 
 ### The Constraint
 
-`Storage.Inline` uses 64-byte slots (tuple-based `InlineArray`) because:
+`Storage.Static` uses 64-byte slots (tuple-based `InlineArray`) because:
 
 1. **`InlineArray.init(repeating:)` requires `Copyable`** — cannot create uninitialized storage for `~Copyable` elements
 2. **No `InlineArray.init(uninitializedCapacity:)`** — this API doesn't exist in Swift 6.2
@@ -42,7 +42,7 @@ Three experiments verified the constraints:
 
 ### Option A: Dual Storage Types
 
-Add `Storage.Inline.Dense<capacity>` for `Copyable` elements with Span support.
+Add `Storage.Static.Dense<capacity>` for `Copyable` elements with Span support.
 
 **Disadvantages**:
 - Adds API complexity
@@ -55,7 +55,7 @@ Use the existing types as designed:
 
 | Need | Type | Layout | Access Pattern |
 |------|------|--------|----------------|
-| `~Copyable` elements | `Storage.Inline` | 64-byte slots | `forEach`, `withElement` |
+| `~Copyable` elements | `Storage.Static` | 64-byte slots | `forEach`, `withElement` |
 | Span access | `Storage` (heap) | Dense | `withSpan`, `withMutableSpan` |
 
 **Insight**: If you need Span access, you can afford heap allocation. If you need inline storage (stack allocation), you're in a performance-critical path where the strided access is acceptable.
@@ -64,7 +64,7 @@ Use the existing types as designed:
 
 1. **No artificial complexity** — Each type does one thing well
 2. **Clear selection criteria** — `~Copyable` or stack-only → Inline; need Span → heap Storage
-3. **No dead code** — No `Storage.Inline.Dense` that nobody uses
+3. **No dead code** — No `Storage.Static.Dense` that nobody uses
 4. **Matches reality** — Swift 6.2 constraints make true generic inline Span impossible anyway
 
 ## Comparison
@@ -81,21 +81,21 @@ Use the existing types as designed:
 
 **Status**: DECISION
 
-**Decision**: Do not add `Storage.Inline.Dense`. The natural split is correct:
+**Decision**: Do not add `Storage.Static.Dense`. The natural split is correct:
 
-- `Storage.Inline`: 64-byte slots, `~Copyable` support, strided access
+- `Storage.Static`: 64-byte slots, `~Copyable` support, strided access
 - `Storage`: Heap, dense packing, Span support
 
 **Rationale**: Creating a dense inline variant adds complexity without enabling the primary use case (`~Copyable` with Span). Users who need Span can use heap storage; the allocation cost is acceptable for that use case.
 
-**Documentation**: Update `Storage.Inline` documentation to clarify:
+**Documentation**: Update `Storage.Static` documentation to clarify:
 - Span is not supported due to 64-byte slot layout
 - Use `forEach` and `withElement` for iteration
 - For Span access, use heap-based `Storage` instead
 
 ## Future Consideration
 
-If Swift Evolution adds `InlineArray.init(uninitializedCapacity:)` (enabling uninitialized inline storage for `~Copyable`), revisit this decision. Such an API would enable a single `Storage.Inline` implementation with dense packing and Span support.
+If Swift Evolution adds `InlineArray.init(uninitializedCapacity:)` (enabling uninitialized inline storage for `~Copyable`), revisit this decision. Such an API would enable a single `Storage.Static` implementation with dense packing and Span support.
 
 ## References
 

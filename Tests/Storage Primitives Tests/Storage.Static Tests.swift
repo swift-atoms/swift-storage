@@ -13,7 +13,7 @@ import Testing
 import Storage_Primitives
 import Storage_Primitives_Test_Support
 
-@Suite("Storage.Inline Tests")
+@Suite("Storage.Static Tests")
 struct StorageInlineTests {
 
     // MARK: - Initialization Tests

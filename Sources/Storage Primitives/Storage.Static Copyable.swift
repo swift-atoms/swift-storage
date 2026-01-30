@@ -7,7 +7,7 @@
 
 // MARK: - Copyable Extensions for Inline Storage
 
-extension Storage.Inline where Element: Copyable {
+extension Storage.Static where Element: Copyable {
     /// Copies elements from this inline storage to heap storage.
     ///
     /// - Parameters:

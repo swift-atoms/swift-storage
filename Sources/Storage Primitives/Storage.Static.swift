@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage.Inline where Element: ~Copyable {
+extension Storage.Static where Element: ~Copyable {
 
     /// Returns an immutable pointer to the element at the given index.
     ///
@@ -61,7 +61,7 @@ extension Storage.Inline where Element: ~Copyable {
 
     // MARK: - Iteration
     //
-    // Storage.Inline uses 64-byte slots, which is incompatible with Span's
+    // Storage.Static uses 64-byte slots, which is incompatible with Span's
     // dense layout expectation. Provide forEach for iteration instead.
 
     /// Calls the given closure for each initialized element.
@@ -196,7 +196,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: Elements from head through count positions must be initialized.
     /// - Note: Non-mutating to allow use from deinit contexts.
     /// - Note: For full ring buffer support, use buffer-primitives which provides
-    ///   `Buffer.Ring` discipline and `Storage.Inline+Cyclic` extensions.
+    ///   `Buffer.Ring` discipline and `Storage.Static+Cyclic` extensions.
     @inlinable
     public func deinitialize(head: Index<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }

@@ -18,13 +18,13 @@ During refactoring of `swift-stack-primitives` to use `swift-storage-primitives`
 
 ## Question
 
-How should `Storage.Inline` provide non-mutating read access to stored elements without undefined behavior from pointer escape?
+How should `Storage.Static` provide non-mutating read access to stored elements without undefined behavior from pointer escape?
 
 ## Analysis
 
 ### The Bug
 
-The current `read(at:)` implementation in `Storage.Inline`:
+The current `read(at:)` implementation in `Storage.Static`:
 
 ```swift
 @inlinable
@@ -306,7 +306,7 @@ public var span: Span<Element> {
     _read {
         unsafe withUnsafePointer(to: _storage._storage) { base in
             let address = unsafe Memory.Address(base)
-            let ptr = address.pointer(at: .zero, stride: Storage<Element>.Inline<capacity>.slotStride, as: Element.self)
+            let ptr = address.pointer(at: .zero, stride: Storage<Element>.Static<capacity>.slotStride, as: Element.self)
             yield unsafe Span(_unsafeStart: ptr.base, count: _count)
         }
     }
@@ -320,10 +320,10 @@ This works because:
 
 ### The Two-Layer Pattern
 
-**Layer 1 (Storage.Inline)**: Closure-based read for safe element access
+**Layer 1 (Storage.Static)**: Closure-based read for safe element access
 
 ```swift
-// Storage.Inline - closure-based, pointer never escapes
+// Storage.Static - closure-based, pointer never escapes
 @inlinable
 @unsafe
 public func read<R>(at index: Index<Element>, _ body: (Pointer<Element>) -> R) -> R {
@@ -353,7 +353,7 @@ Since Stack.Inline's `span` property already uses `_read` correctly, the fix is 
 
 **Option 1**: Make Stack.Inline access `_storage._storage` directly via `withUnsafePointer`
 
-**Option 2**: Change `Storage.Inline.read(at:)` to closure-based AND keep the existing `read(at:)` signature but mark it deprecated, implementing it via the closure version for compatibility during migration
+**Option 2**: Change `Storage.Static.read(at:)` to closure-based AND keep the existing `read(at:)` signature but mark it deprecated, implementing it via the closure version for compatibility during migration
 
 **Option 3 (Recommended)**: Provide BOTH APIs:
 - `read(at:_:)` - closure-based, safe
@@ -373,7 +373,7 @@ public var span: Span<Element> {
         // keeping the pointer valid for the entire _read duration
         unsafe withUnsafePointer(to: _storage._storage) { base in
             let address = unsafe Memory.Address(base)
-            let ptr = address.pointer(at: .zero, stride: Storage<Element>.Inline<capacity>.slotStride, as: Element.self)
+            let ptr = address.pointer(at: .zero, stride: Storage<Element>.Static<capacity>.slotStride, as: Element.self)
             yield unsafe Span(_unsafeStart: ptr.base, count: _count)
         }
     }
@@ -382,7 +382,7 @@ public var span: Span<Element> {
 
 And fix `peek()` and `forEach()` similarly - they must use `withUnsafePointer` directly with the operation inside the closure.
 
-**Storage.Inline.read(at:)** should be changed to closure-based to prevent future misuse:
+**Storage.Static.read(at:)** should be changed to closure-based to prevent future misuse:
 
 ```swift
 @inlinable
@@ -400,17 +400,17 @@ public func read<R>(at index: Index<Element>, _ body: (Pointer<Element>) -> R) -
 
 **Status**: DECISION
 
-The bug is confirmed. `Storage.Inline.read(at:)` returns a pointer that escapes the `withUnsafePointer` closure scope, causing undefined behavior.
+The bug is confirmed. `Storage.Static.read(at:)` returns a pointer that escapes the `withUnsafePointer` closure scope, causing undefined behavior.
 
 **Decision**: Implement two-layer fix:
 
-1. **Storage.Inline**: Change `read(at:)` to closure-based API
+1. **Storage.Static**: Change `read(at:)` to closure-based API
 2. **Stack.Inline**: Fix `span`, `peek()`, `forEach()` to either:
    - Use the new closure-based `read(at:_:)`, OR
    - Access `_storage._storage` directly via `withUnsafePointer` with operations inside the closure
 
 **Implementation steps**:
-1. Add closure-based `read(at:_:)` to Storage.Inline
+1. Add closure-based `read(at:_:)` to Storage.Static
 2. Deprecate pointer-returning `read(at:)`
 3. Update Stack.Inline callers
 4. Verify tests pass

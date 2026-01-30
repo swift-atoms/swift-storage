@@ -58,9 +58,9 @@ The choice between `Count.one` and `Offset.one` encodes more than a value—it e
 
 **Date**: 2026-01-27
 
-**Context**: Converting Storage.Inline preconditions to typed throws.
+**Context**: Converting Storage.Static preconditions to typed throws.
 
-The original `Storage.Inline.init()` used preconditions:
+The original `Storage.Static.init()` used preconditions:
 
 ```swift
 precondition(MemoryLayout<Element>.stride <= 64)
@@ -80,7 +80,7 @@ public enum Error: Swift.Error, Sendable {
 
 Instead of "precondition failed," the caller sees "stride 128 exceeds max slot size 64." The error carries the information needed to understand and recover from the failure. The `throws(Error)` signature constrains the error type—callers know exactly what can fail.
 
-**Applies to**: `Storage.Inline.init`, typed throws patterns, recoverable initialization errors.
+**Applies to**: `Storage.Static.init`, typed throws patterns, recoverable initialization errors.
 
 ---
 
