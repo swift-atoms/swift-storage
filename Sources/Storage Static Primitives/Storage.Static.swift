@@ -9,21 +9,47 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Storage_Primitives_Core
+
 extension Storage.Static where Element: ~Copyable {
 
-    /// Returns an immutable pointer to the element at the given index.
+    /// Returns an immutable pointer to the element at the given index (non-mutating).
+    ///
+    /// This overload is non-mutating, enabling use in `_read` accessors where
+    /// `self` is borrowed immutably.
     ///
     /// - Parameter index: The index of the element.
-    /// - Returns: A pointer to the element.
+    /// - Returns: An immutable pointer to the element.
     /// - Precondition: The element at `index` must be initialized.
-    /// - Note: This method is mutating to ensure pointer stability.
+    ///
+    /// ## Lifetime Safety
+    ///
+    /// The `@_lifetime(borrow self)` annotation ensures the returned pointer is
+    /// valid only while `self` is borrowed. During a `_read` accessor, `self`
+    /// cannot move, making this safe.
+    @unsafe
+    @_lifetime(borrow self)
     @inlinable
-    public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
-        unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Mutable.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
+    public func pointer(at index: Index<Element>) -> Pointer<Element>.Immutable {
+        unsafe withUnsafePointer(to: _storage) { base in
+            let address = unsafe Memory.Address(base)
+            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
         }
     }
+//
+//    /// Returns an immutable pointer to the element at the given index.
+//    ///
+//    /// - Parameter index: The index of the element.
+//    /// - Returns: A pointer to the element.
+//    /// - Precondition: The element at `index` must be initialized.
+//    /// - Note: This method is mutating to ensure pointer stability.
+//    @inlinable
+//    public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
+//        unsafe withUnsafeMutablePointer(to: &_storage) { base in
+//            let address = unsafe Memory.Mutable.Address(base)
+//            return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
+//        }
+//    }
 
     /// Returns a mutable pointer to the element at the given index.
     ///
@@ -31,6 +57,7 @@ extension Storage.Static where Element: ~Copyable {
     /// - Returns: A mutable pointer to the element.
     /// - Precondition: The element at `index` must be initialized.
     @inlinable
+    @_disfavoredOverload
     public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
             let address = unsafe Memory.Mutable.Address(base)

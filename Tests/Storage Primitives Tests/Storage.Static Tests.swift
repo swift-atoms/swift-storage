@@ -132,7 +132,8 @@ struct StorageInlineTests {
 
         storage.initialize(to: 42, at: index)
 
-        let ptr: Pointer<Int> = storage.pointer(at: index)
+        // Use mutating pointer which returns Mutable, then convert to immutable
+        let ptr: Pointer<Int>.Mutable = storage.pointer(at: index)
         let value = ptr.pointee
         #expect(value == 42)
 

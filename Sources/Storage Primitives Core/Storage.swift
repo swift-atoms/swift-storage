@@ -97,11 +97,11 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// - Important: Caller is responsible for tracking which indices are initialized.
     public struct Static<let capacity: Int>: ~Copyable {
         @usableFromInline
-        var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+        package var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
         /// The slot stride (64 bytes per slot).
         @usableFromInline
-        static var slotStride: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
+        package static var slotStride: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
 
         /// Maximum element stride supported (64 bytes per slot).
         @inlinable
@@ -420,4 +420,7 @@ extension Storage where Element: Copyable {
 extension Storage {
     /// Semantic alias - Storage IS contiguous heap storage.
     public typealias Contiguous = Storage
+
+    /// Semantic alias for inline storage.
+    public typealias Inline = Static
 }

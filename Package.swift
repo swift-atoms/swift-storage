@@ -17,6 +17,14 @@ let package = Package(
             targets: ["Storage Primitives"]
         ),
         .library(
+            name: "Storage Primitives Core",
+            targets: ["Storage Primitives Core"]
+        ),
+        .library(
+            name: "Storage Static Primitives",
+            targets: ["Storage Static Primitives"]
+        ),
+        .library(
             name: "Storage Primitives Test Support",
             targets: ["Storage Primitives Test Support"]
         ),
@@ -28,13 +36,30 @@ let package = Package(
         .package(path: "../swift-range-primitives"),
     ],
     targets: [
+        // Core: Type declarations and class operations
         .target(
-            name: "Storage Primitives",
+            name: "Storage Primitives Core",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
+            ]
+        ),
+        // Static: Inline storage operations
+        .target(
+            name: "Storage Static Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+            ]
+        ),
+        // Public: Re-exports all modules
+        .target(
+            name: "Storage Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                "Storage Static Primitives",
             ]
         ),
         .target(

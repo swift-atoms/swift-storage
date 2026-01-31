@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Storage_Primitives_Core
 public import Property_Primitives
 
 // MARK: - Shift Property Accessor

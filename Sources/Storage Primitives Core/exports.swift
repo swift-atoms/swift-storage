@@ -9,8 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Re-export all modules for consumers.
-// Users import Storage_Primitives and get everything.
+// Re-export dependencies for consumers.
 
-@_exported public import Storage_Primitives_Core
-@_exported public import Storage_Static_Primitives
+@_exported public import Index_Primitives
+@_exported public import Pointer_Primitives
+@_exported public import Property_Primitives
+@_exported public import Range_Primitives
