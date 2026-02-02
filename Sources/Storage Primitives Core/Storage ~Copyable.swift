@@ -5,6 +5,54 @@
 //  Created by Coen ten Thije Boonkkamp on 02/02/2026.
 //
 
+extension Storage where Element: ~Copyable {
+    /// Creates storage with the specified minimum capacity.
+    ///
+    /// - Parameter minimumCapacity: The minimum number of elements to allocate.
+    /// - Returns: A new storage instance with zero count.
+    @inlinable
+    public static func create(
+        minimumCapacity: Index<Element>.Count
+    ) -> Storage<Element> {
+        unsafe unsafeDowncast(
+            Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity)) { _ in 0 },
+            to: Storage<Element>.self
+        )
+    }
+
+    /// Creates storage with the specified capacity and header initializer.
+    ///
+    /// - Parameters:
+    ///   - minimumCapacity: The minimum number of elements to allocate.
+    ///   - headerInitializer: A closure that returns the initial count.
+    /// - Returns: A new storage instance.
+    /// - Throws: Any error thrown by the header initializer.
+    @inlinable
+    public static func create<E: Error>(
+        minimumCapacity: Index<Element>.Count,
+        makingHeaderWith headerInitializer: (Storage<Element>) throws(E) -> Index<Element>.Count
+    ) throws(E) -> Storage<Element> {
+        var thrown: E? = nil
+        let storage = unsafe unsafeDowncast(
+            Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity)) { buffer in
+                let typed = unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
+                do {
+                    return Int(bitPattern: try headerInitializer(typed))
+                } catch let e as E {
+                    thrown = e
+                    return 0
+                } catch {
+                    preconditionFailure("unexpected error type")
+                }
+            },
+            to: Storage<Element>.self
+        )
+        if let thrown { throw thrown }
+        return storage
+    }
+}
+
+
 // MARK: - Element Access
 
 extension Storage where Element: ~Copyable {
@@ -197,3 +245,4 @@ extension Storage where Element: ~Copyable {
         self.count = newCount
     }
 }
+
