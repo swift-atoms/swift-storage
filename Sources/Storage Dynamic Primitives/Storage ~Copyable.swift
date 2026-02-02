@@ -255,7 +255,7 @@ extension Storage where Element: ~Copyable {
 // MARK: - Shift Left Operation
 
 extension Property.View.Typed
-where Tag == Shift, Base == Storage<Element>, Element: ~Copyable {
+where Tag == Storage<Element>.Shift, Base == Storage<Element>, Element: ~Copyable {
     /// Shifts elements left to fill a gap at the removed index.
     ///
     /// Moves elements from `[removedAt+1, count)` to `[removedAt, count-1)`,

@@ -9,26 +9,28 @@
 //
 // ===----------------------------------------------------------------------===//
 
-/// Tag type for `.shift` property extensions on storage types.
-///
-/// Use this tag with `Property.View` to add `.shift.left(...)` functionality
-/// to storage types like `Storage.Static`.
-///
-/// ## Available Operations
-///
-/// | Operation | Description |
-/// |-----------|-------------|
-/// | `.shift.left(removedAt:count:)` | Shift elements left to fill a gap |
-///
-/// ## Usage
-///
-/// The tag is used in property accessors:
-///
-/// ```swift
-/// var shift: Property<Shift, Self>.View.Typed<Element>.Valued<capacity> {
-///     mutating _read {
-///         yield unsafe Property<Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
-///     }
-/// }
-/// ```
-public enum Shift {}
+extension Storage where Element: ~Copyable {
+    /// Tag type for `.shift` property extensions on storage types.
+    ///
+    /// Use this tag with `Property.View` to add `.shift.left(...)` functionality
+    /// to storage types like `Storage.Static`.
+    ///
+    /// ## Available Operations
+    ///
+    /// | Operation | Description |
+    /// |-----------|-------------|
+    /// | `.shift.left(removedAt:count:)` | Shift elements left to fill a gap |
+    ///
+    /// ## Usage
+    ///
+    /// The tag is used in property accessors:
+    ///
+    /// ```swift
+    /// var shift: Property<Shift, Self>.View.Typed<Element>.Valued<capacity> {
+    ///     mutating _read {
+    ///         yield unsafe Property<Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
+    ///     }
+    /// }
+    /// ```
+    public enum Shift {}
+}

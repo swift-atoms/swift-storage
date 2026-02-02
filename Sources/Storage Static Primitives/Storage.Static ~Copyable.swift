@@ -264,12 +264,12 @@ extension Storage.Static where Element: ~Copyable {
     /// // Elements shifted: [A, C, D, _] (caller updates count to 3)
     /// ```
     @inlinable
-    public var shift: Property<Shift, Self>.View.Typed<Element>.Valued<capacity> {
+    public var shift: Property<Storage.Shift, Self>.View.Typed<Element>.Valued<capacity> {
         mutating _read {
-            yield unsafe Property<Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
+            yield unsafe Property<Storage.Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
         }
         mutating _modify {
-            var view = unsafe Property<Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
+            var view = unsafe Property<Storage.Shift, Self>.View.Typed<Element>.Valued<capacity>(&self)
             yield &view
         }
     }
@@ -278,7 +278,7 @@ extension Storage.Static where Element: ~Copyable {
 // MARK: - Shift Left Operation
 
 extension Property.View.Typed.Valued
-where Tag == Shift, Base == Storage<Element>.Static<n>, Element: ~Copyable {
+where Tag == Storage<Element>.Shift, Base == Storage<Element>.Static<n>, Element: ~Copyable {
     /// Shifts elements left to fill a gap at the removed index.
     ///
     /// Moves elements from `[removedAt+1, count)` to `[removedAt, count-1)`.
