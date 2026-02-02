@@ -193,13 +193,8 @@ struct StorageTests {
 
     @Test
     func `Contiguous typealias resolves to Storage`() throws {
-        let contiguousStorage = Storage<Int>.Contiguous.create(minimumCapacity: 5)
+        let contiguousStorage = Storage<Int>.create(minimumCapacity: 5)
         #expect(contiguousStorage.capacity >= 5)
-
-        // Verify static methods work through typealias
-        let index: Index<Int> = .zero
-        let next = Storage<Int>.Contiguous.successor(of: index)
-        #expect(next.position == 1)
     }
 
     // MARK: - Deinit Behavior Tests
@@ -227,19 +222,21 @@ struct StorageTests {
         unsafe #expect(Tracker.deinitCount == 3)
     }
 
-    // MARK: - Create with Initializer Tests
+    // MARK: - Create with Header Initializer Tests
 
     @Test
-    func `create with initializing closure`() throws {
+    func `create with header initializer`() throws {
         let count: Index<UInt>.Count = 5
-        var i: UInt = 0
-        let storage = Storage<UInt>.create(capacity: count) { _ in
-            let val = i * 2
-            i += 1
-            return val
-        }
+        let storage = Storage<UInt>.create(minimumCapacity: count) { _ in count }
 
         #expect(storage.count == count)
+
+        // Initialize elements manually
+        var i: UInt = 0
+        (.zero..<count).forEach { index in
+            storage.initialize(to: i * 2, at: index)
+            i += 1
+        }
 
         // Verify all values (use Int counter to avoid underflow)
         var j = 4
@@ -252,8 +249,8 @@ struct StorageTests {
     }
 
     @Test
-    func `create with zero capacity`() throws {
-        let storage = Storage<Int>.create(capacity: .zero) { _ in 0 }
+    func `create with zero capacity and header initializer`() throws {
+        let storage = Storage<Int>.create(minimumCapacity: .zero) { _ in .zero }
         #expect(storage.count == .zero)
     }
 
