@@ -15,38 +15,6 @@ import Storage_Primitives_Test_Support
 
 @Suite("Storage.Header Tests")
 struct StorageHeaderTests {
-
-    // MARK: - Count Header Tests
-
-    @Suite("Storage.Header.Count")
-    struct CountHeaderTests {
-
-        @Test
-        func `default initialization is zero`() throws {
-            let header = Storage<Int>.Header.Count()
-            #expect(header.count == .zero)
-            let empty = header.isEmpty
-            #expect(empty == true)
-        }
-
-        @Test
-        func `initialization with count`() throws {
-            let count: Index<Int>.Count = 5
-            let header = Storage<Int>.Header.Count(count: count)
-            #expect(header.count == 5)
-            let empty = header.isEmpty
-            #expect(empty == false)
-        }
-
-        @Test
-        func `count can be modified`() throws {
-            var header = Storage<Int>.Header.Count()
-            let newCount: Index<Int>.Count = 10
-            header.count = newCount
-            #expect(header.count == 10)
-        }
-    }
-
     // MARK: - Arena Header Tests
     //
     // Note: Ring header tests moved to buffer-primitives with Buffer.Ring.Header
