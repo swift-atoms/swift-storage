@@ -56,7 +56,7 @@ extension Storage {
 extension Storage.Initialization {
     /// The total number of initialized slots across all spans.
     @inlinable
-    public var initializedCount: Storage.Slot.Count {
+    public var count: Storage.Slot.Count {
         switch self {
         case .empty:
             return .zero

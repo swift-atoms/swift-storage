@@ -59,25 +59,6 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-// MARK: - Legacy Count Property
-//
-// For backward compatibility, provides a count property that reads from
-// initialization state.
-
-extension Storage.Heap where Element: ~Copyable {
-    /// The number of initialized elements in storage (read-only).
-    ///
-    /// This property reads from the initialization state.
-    /// To set initialization, use `header.initialization = .linear(count:)` or `.empty`.
-    ///
-    /// - Note: For new code, prefer using `header.initialization.initializedCount`.
-    @inlinable
-    public var count: Tagged<Element, Cardinal> {
-        let slotCount = initialization.initializedCount
-        return Tagged<Element, Cardinal>(__unchecked: (), Cardinal(slotCount.rawValue.rawValue))
-    }
-}
-
 // MARK: - Span Access (Index-Based)
 
 extension Storage.Heap where Element: ~Copyable {
@@ -108,7 +89,7 @@ extension Storage.Heap where Element: ~Copyable {
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        try withSpan(count: count, body)
+        try withSpan(count: initialization.count.retag(), body)
     }
 }
 
@@ -138,7 +119,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: Elements at indices 0..<count must be initialized.
     @inlinable
     public func deinitialize() {
-        deinitialize(count: count)
+        deinitialize(count: initialization.count.retag())
     }
 
     /// Moves elements to a new storage instance.
@@ -170,7 +151,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
     @inlinable
     public func move(to newStorage: Storage.Heap<Element>) {
-        move(to: newStorage, count: count)
+        move(to: newStorage, count: initialization.count.retag())
     }
 
     /// Deinitializes elements in the specified range.

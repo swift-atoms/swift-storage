@@ -20,7 +20,7 @@ extension Storage.Heap where Element: Copyable {
     /// - Returns: A new storage instance with copied elements.
     @inlinable
     public func copy() -> Storage.Heap<Element> {
-        let count = self.count
+        let count = self.initialization.count
         let countInt = Int(bitPattern: count)
 
         let new = unsafe unsafeDowncast(
@@ -51,7 +51,7 @@ extension Storage.Heap where Element: Copyable {
     /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
     @inlinable
     public func copy(to newStorage: Storage.Heap<Element>) {
-        let count = self.count
+        let count = self.initialization.count
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in

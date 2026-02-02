@@ -19,17 +19,11 @@ extension Storage {
         /// Which physical slots are initialized.
         public var initialization: Initialization
 
-        /// Creates an empty header with no initialized slots.
-        @inlinable
-        public init() {
-            self.initialization = .empty
-        }
-
         /// Creates a header with the specified initialization state.
         ///
         /// - Parameter initialization: The initial state describing which slots are initialized.
         @inlinable
-        public init(initialization: Initialization) {
+        public init(initialization: Initialization = .empty) {
             self.initialization = initialization
         }
     }
@@ -41,7 +35,7 @@ extension Storage.Header {
     /// The total number of initialized slots.
     @inlinable
     public var count: Storage.Slot.Count {
-        initialization.initializedCount
+        initialization.count
     }
 
     /// Whether no slots are initialized.
