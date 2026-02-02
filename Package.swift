@@ -21,6 +21,10 @@ let package = Package(
             targets: ["Storage Primitives Core"]
         ),
         .library(
+            name: "Storage Dynamic Primitives",
+            targets: ["Storage Dynamic Primitives"]
+        ),
+        .library(
             name: "Storage Static Primitives",
             targets: ["Storage Static Primitives"]
         ),
@@ -36,12 +40,20 @@ let package = Package(
         .package(path: "../swift-range-primitives"),
     ],
     targets: [
-        // Core: Type declarations and class operations
+        // Core: Type declarations and fundamental access
         .target(
             name: "Storage Primitives Core",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
+                .product(name: "Range Primitives", package: "swift-range-primitives"),
+            ]
+        ),
+        // Dynamic: Bulk operations on heap storage
+        .target(
+            name: "Storage Dynamic Primitives",
+            dependencies: [
+                "Storage Primitives Core",
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
@@ -52,6 +64,7 @@ let package = Package(
             dependencies: [
                 "Storage Primitives Core",
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
         ),
         // Public: Re-exports all modules
@@ -59,6 +72,7 @@ let package = Package(
             name: "Storage Primitives",
             dependencies: [
                 "Storage Primitives Core",
+                "Storage Dynamic Primitives",
                 "Storage Static Primitives",
             ]
         ),

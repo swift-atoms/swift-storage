@@ -58,16 +58,6 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
         }
     }
 
-    /// Namespace for storage header types.
-    ///
-    /// Headers track the metadata required for different storage layouts:
-    ///
-    /// - ``Header/Count``: Element count for contiguous storage (Array, Stack)
-    /// - ``Header/Arena``: Free list management for arena storage (List)
-    ///
-    /// For ring buffer headers, see `Buffer.Ring.Header` in buffer-primitives.
-    public enum Header {}
-    
     /// Fixed-capacity inline storage with 64-byte slots.
     ///
     /// Provides stack-allocated storage with compile-time capacity. Elements are
