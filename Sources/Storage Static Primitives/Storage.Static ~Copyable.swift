@@ -32,7 +32,7 @@ extension Storage.Static where Element: ~Copyable {
     @inlinable
     public func pointer(at index: Index<Element>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
-            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slot.factor
             return unsafe UnsafeRawPointer(base)
                 .advanced(by: byteOffset)
                 .assumingMemoryBound(to: Element.self)
@@ -48,7 +48,7 @@ extension Storage.Static where Element: ~Copyable {
     @_disfavoredOverload
     public mutating func pointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slot.factor
             return unsafe UnsafeMutableRawPointer(base)
                 .advanced(by: byteOffset)
                 .assumingMemoryBound(to: Element.self)
@@ -94,7 +94,7 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) {
         var thrown: E? = nil
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slotStride.factor
+            let stride = Self.slot.factor
             (.zero..<count).forEach { index in
                 guard thrown == nil else { return }
                 let byteOffset = Int(index.rawValue.rawValue) * stride
@@ -127,7 +127,7 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafePointer(to: _storage) { base in
-            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slot.factor
             let ptr = unsafe UnsafeRawPointer(base)
                 .advanced(by: byteOffset)
                 .assumingMemoryBound(to: Element.self)
@@ -158,7 +158,7 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slot.factor
             let ptr = unsafe UnsafeMutableRawPointer(base)
                 .advanced(by: byteOffset)
                 .assumingMemoryBound(to: Element.self)
@@ -185,7 +185,7 @@ extension Storage.Static where Element: ~Copyable {
     @inlinable
     public func deinitialize(count: Index<Element>.Count) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slotStride.factor
+            let stride = Self.slot.factor
             (.zero..<count).forEach { index in
                 let byteOffset = Int(index.rawValue.rawValue) * stride
                 unsafe UnsafeMutableRawPointer(mutating: base)
@@ -204,7 +204,7 @@ extension Storage.Static where Element: ~Copyable {
     @inlinable
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slotStride.factor
+            let stride = Self.slot.factor
             range.forEach { index in
                 let byteOffset = Int(index.rawValue.rawValue) * stride
                 unsafe UnsafeMutableRawPointer(mutating: base)
@@ -233,7 +233,7 @@ extension Storage.Static where Element: ~Copyable {
         let cap = Index<Element>.Count(UInt(capacity))
         var index = head
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slotStride.factor
+            let stride = Self.slot.factor
             (.zero..<count).forEach { _ in
                 let byteOffset = Int(index.rawValue.rawValue) * stride
                 unsafe UnsafeMutableRawPointer(mutating: base)
@@ -258,7 +258,7 @@ extension Storage.Static where Element: ~Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
             unsafe heapStorage.withUnsafeMutablePointerToElements { destination in
-                let stride = Self.slotStride.factor
+                let stride = Self.slot.factor
                 (.zero..<count).forEach { index in
                     let byteOffset = Int(index.rawValue.rawValue) * stride
                     let source = unsafe UnsafeMutableRawPointer(base)
@@ -331,7 +331,7 @@ where Tag == Storage<Element>.Shift, Base == Storage<Element>.Static<n>, Element
 
         // Shift elements left: move [index+1, count) to [index, count-1)
         unsafe withUnsafeMutablePointer(to: &base.pointee._storage) { storagePtr in
-            let stride = Storage<Element>.Static<n>.slotStride.factor
+            let stride = Storage<Element>.Static<n>.slot.factor
             (index..<newCount).forEach { destIndex in
                 let srcIndex = destIndex + .one
                 let srcByteOffset = Int(srcIndex.rawValue.rawValue) * stride

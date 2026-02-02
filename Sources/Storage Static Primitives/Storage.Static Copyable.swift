@@ -25,7 +25,7 @@ extension Storage.Static where Element: Copyable {
     public func copy(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slotStride.factor
+            let stride = Self.slot.factor
             unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
                     let byteOffset = Int(index.rawValue.rawValue) * stride

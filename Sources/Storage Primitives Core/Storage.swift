@@ -91,11 +91,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
 
         /// The slot stride (64 bytes per slot).
         @usableFromInline
-        package static var slotStride: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
-
-        /// Maximum element stride supported (64 bytes per slot).
-        @inlinable
-        public static var maxStride: Int { 64 }
+        package static var slot: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
 
         /// Errors that can occur when creating inline storage.
         public enum Error: Swift.Error, Sendable {
@@ -111,10 +107,10 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
         /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
         @inlinable
         public init() throws(Error) {
-            guard MemoryLayout<Element>.stride <= 64 else {
+            guard MemoryLayout<Element>.stride <= Self.slot.factor else {
                 throw .strideExceedsSlotSize(
                     stride: MemoryLayout<Element>.stride,
-                    maxSlotSize: 64
+                    maxSlotSize: Self.slot.factor
                 )
             }
             guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
