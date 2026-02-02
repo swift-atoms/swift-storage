@@ -68,6 +68,70 @@ extension Storage.Heap where Element: ~Copyable {
     public func move(at slot: Storage.Slot) -> Element {
         unsafe pointer(at: slot).move()
     }
+
+    /// Deinitializes the element at the given physical slot.
+    ///
+    /// - Parameter slot: The physical slot to deinitialize.
+    /// - Precondition: The element at `slot` must be initialized.
+    /// - Note: The caller is responsible for updating `initialization` state.
+    @inlinable
+    public func deinitialize(at slot: Storage.Slot) {
+        unsafe pointer(at: slot).deinitialize(count: 1)
+    }
+}
+
+// MARK: - Span-Based Operations
+
+extension Storage.Heap where Element: ~Copyable {
+    /// Deinitializes all elements in the given span.
+    ///
+    /// Iterates through all slots in the span and deinitializes each element.
+    ///
+    /// - Parameter span: The contiguous range of slots to deinitialize.
+    /// - Precondition: All slots in the span must contain initialized elements.
+    /// - Note: The caller is responsible for updating `initialization` state.
+    @inlinable
+    public func deinitialize(span: Storage.Span) {
+        guard !span.isEmpty else { return }
+        _ = unsafe withUnsafeMutablePointerToElements { elements in
+            var slot = span.start
+            while slot < span.end {
+                let offset = Int(bitPattern: slot.rawValue.rawValue)
+                unsafe (elements + offset).deinitialize(count: 1)
+                slot = slot.successor.saturating()
+            }
+        }
+    }
+
+    /// Moves elements from a span to linear positions in the destination storage.
+    ///
+    /// Elements are moved from the source span and placed at slots 0..<span.count
+    /// in the destination storage. Source slots are deinitialized after moving.
+    ///
+    /// - Parameters:
+    ///   - span: The contiguous range of slots to move from.
+    ///   - destination: The destination storage to move elements into.
+    /// - Precondition: All slots in the span must contain initialized elements.
+    /// - Precondition: Destination slots 0..<span.count must be uninitialized.
+    /// - Note: The caller is responsible for updating `initialization` state on both storages.
+    @inlinable
+    public func move(span: Storage.Span, to destination: Storage.Heap<Element>) {
+        guard !span.isEmpty else { return }
+        _ = unsafe withUnsafeMutablePointerToElements { srcElements in
+            unsafe destination.withUnsafeMutablePointerToElements { dstElements in
+                var srcSlot = span.start
+                var dstOffset = 0
+                while srcSlot < span.end {
+                    let srcOffset = Int(bitPattern: srcSlot.rawValue.rawValue)
+                    unsafe (dstElements + dstOffset).initialize(
+                        to: (srcElements + srcOffset).move()
+                    )
+                    srcSlot = srcSlot.successor.saturating()
+                    dstOffset += 1
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Span Access
