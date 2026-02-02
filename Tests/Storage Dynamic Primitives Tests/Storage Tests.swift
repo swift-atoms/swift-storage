@@ -20,14 +20,14 @@ struct StorageTests {
 
     @Test
     func `create storage with minimum capacity`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         #expect(storage.capacity >= 10)
         #expect(storage.count == .zero)
     }
 
     @Test
     func `create storage with zero capacity`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: .zero)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: .zero)
         _ = storage // Should not crash
     }
 
@@ -35,7 +35,7 @@ struct StorageTests {
 
     @Test
     func `initialize and move single element`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
         storage.initialize(to: 42, at: index)
@@ -49,7 +49,7 @@ struct StorageTests {
 
     @Test
     func `initialize multiple elements`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
         var i = 0
@@ -73,7 +73,7 @@ struct StorageTests {
 
     @Test
     func `pointer returns correct address`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = 3
 
         storage.initialize(to: 99, at: index)
@@ -87,7 +87,7 @@ struct StorageTests {
 
     @Test
     func `read returns immutable pointer`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
         storage.initialize(to: 77, at: index)
@@ -105,7 +105,7 @@ struct StorageTests {
 
     @Test
     func `deinitialize count elements`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
         var i = 0
@@ -121,8 +121,8 @@ struct StorageTests {
 
     @Test
     func `move to new storage`() throws {
-        let source = Storage<Int>.create(minimumCapacity: 10)
-        let destination = Storage<Int>.create(minimumCapacity: 10)
+        let source = Storage.Heap<Int>.create(minimumCapacity: 10)
+        let destination = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 3
 
         // Initialize source
@@ -151,7 +151,7 @@ struct StorageTests {
 
     @Test
     func `copy creates independent storage`() throws {
-        let original = Storage<Int>.create(minimumCapacity: 10)
+        let original = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 4
 
         var i = 0
@@ -184,7 +184,7 @@ struct StorageTests {
 
     @Test
     func `copy empty storage`() throws {
-        let original = Storage<Int>.create(minimumCapacity: 10)
+        let original = Storage.Heap<Int>.create(minimumCapacity: 10)
         let copied = original.copy()
         #expect(copied.count == .zero)
     }
@@ -193,7 +193,7 @@ struct StorageTests {
 
     @Test
     func `Contiguous typealias resolves to Storage`() throws {
-        let contiguousStorage = Storage<Int>.create(minimumCapacity: 5)
+        let contiguousStorage = Storage.Heap<Int>.create(minimumCapacity: 5)
         #expect(contiguousStorage.capacity >= 5)
     }
 
@@ -211,7 +211,7 @@ struct StorageTests {
         let count: Index<Tracker>.Count = 3
 
         do {
-            let storage = Storage<Tracker>.create(minimumCapacity: 5)
+            let storage = Storage.Heap<Tracker>.create(minimumCapacity: 5)
             (.zero..<count).forEach { index in
                 storage.initialize(to: Tracker(), at: index)
             }
@@ -227,7 +227,7 @@ struct StorageTests {
     @Test
     func `create with header initializer`() throws {
         let count: Index<UInt>.Count = 5
-        let storage = Storage<UInt>.create(minimumCapacity: count) { _ in count }
+        let storage = Storage.Heap<UInt>.create(minimumCapacity: count) { _ in count }
 
         #expect(storage.count == count)
 
@@ -250,7 +250,7 @@ struct StorageTests {
 
     @Test
     func `create with zero capacity and header initializer`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: .zero) { _ in .zero }
+        let storage = Storage.Heap<Int>.create(minimumCapacity: .zero) { _ in .zero }
         #expect(storage.count == .zero)
     }
 
@@ -266,7 +266,7 @@ struct StorageTests {
         unsafe Tracker.deinitCount = 0
         let count: Index<Tracker>.Count = 5
 
-        let storage = Storage<Tracker>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Tracker>.create(minimumCapacity: 10)
         (.zero..<count).forEach { index in
             storage.initialize(to: Tracker(), at: index)
         }
@@ -294,8 +294,8 @@ struct StorageTests {
 
     @Test
     func `move to new storage uses count`() throws {
-        let source = Storage<Int>.create(minimumCapacity: 10)
-        let destination = Storage<Int>.create(minimumCapacity: 10)
+        let source = Storage.Heap<Int>.create(minimumCapacity: 10)
+        let destination = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 5
 
         // Initialize source
@@ -324,8 +324,8 @@ struct StorageTests {
 
     @Test
     func `copy to new storage`() throws {
-        let source = Storage<Int>.create(minimumCapacity: 10)
-        let destination = Storage<Int>.create(minimumCapacity: 10)
+        let source = Storage.Heap<Int>.create(minimumCapacity: 10)
+        let destination = Storage.Heap<Int>.create(minimumCapacity: 10)
         let count: Index<Int>.Count = 4
 
         // Initialize source
@@ -361,8 +361,8 @@ struct StorageTests {
 
     @Test
     func `copy empty storage does nothing`() throws {
-        let source = Storage<Int>.create(minimumCapacity: 10)
-        let destination = Storage<Int>.create(minimumCapacity: 10)
+        let source = Storage.Heap<Int>.create(minimumCapacity: 10)
+        let destination = Storage.Heap<Int>.create(minimumCapacity: 10)
 
         // Source is empty
         source.copy(to: destination)
@@ -373,7 +373,7 @@ struct StorageTests {
 
     @Test
     func `pointer returns Pointer Mutable type`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
         storage.initialize(to: 42, at: index)
@@ -389,7 +389,7 @@ struct StorageTests {
 
     @Test
     func `read returns Pointer type`() throws {
-        let storage = Storage<Int>.create(minimumCapacity: 10)
+        let storage = Storage.Heap<Int>.create(minimumCapacity: 10)
         let index: Index<Int> = .zero
 
         storage.initialize(to: 99, at: index)

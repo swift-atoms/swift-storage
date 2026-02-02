@@ -10,105 +10,86 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+public import Index_Primitives
 import Range_Primitives
 
+// MARK: - Index-Based API (Backward Compatibility)
+//
+// These methods accept Index<Element> and convert to Storage.Slot internally.
+// This provides backward compatibility while the codebase transitions to
+// slot-based APIs.
 
-// MARK: - Factory
-
-extension Storage where Element: ~Copyable {
-    /// Creates storage with the specified minimum capacity.
-    ///
-    /// - Parameter minimumCapacity: The minimum number of elements to allocate.
-    /// - Returns: A new storage instance with zero count.
-    @inlinable
-    public static func create(
-        minimumCapacity: Index<Element>.Count
-    ) -> Storage<Element> {
-        unsafe unsafeDowncast(
-            Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity)) { _ in 0 },
-            to: Storage<Element>.self
-        )
-    }
-}
-
-// MARK: - Fundamental Element Access
-
-extension Storage where Element: ~Copyable {
+extension Storage.Heap where Element: ~Copyable {
     /// Returns a mutable pointer to the element at the given index.
     ///
-    /// - Parameter index: The index of the element.
+    /// - Parameter index: The logical index of the element.
     /// - Returns: A mutable pointer to the element.
     /// - Warning: The caller must ensure the index is valid.
+    /// - Note: This method converts the index to a physical slot internally.
     @inlinable
     @unsafe
     public func pointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafeMutablePointerToElements {
-            unsafe $0 + Index.Offset(__unchecked: (), index)
-        }
+        let slot = Storage.Slot(Ordinal(index.rawValue.rawValue))
+        return unsafe pointer(at: slot)
     }
 
     /// Initializes storage at the given index with the provided value.
     ///
     /// - Parameters:
     ///   - element: The value to store.
-    ///   - index: The index to initialize.
+    ///   - index: The logical index to initialize.
     /// - Precondition: The element at `index` must be uninitialized.
+    /// - Note: This method converts the index to a physical slot internally.
     @inlinable
     public func initialize(to element: consuming Element, at index: Index<Element>) {
-        let ptr = unsafe pointer(at: index)
-        unsafe ptr.initialize(to: element)
+        let slot = Storage.Slot(Ordinal(index.rawValue.rawValue))
+        initialize(to: element, at: slot)
     }
 
     /// Moves the element at the given index, deinitializing that slot.
     ///
-    /// - Parameter index: The index to move from.
+    /// - Parameter index: The logical index to move from.
     /// - Returns: The moved element.
     /// - Precondition: The element at `index` must be initialized.
+    /// - Note: This method converts the index to a physical slot internally.
     @inlinable
     public func move(at index: Index<Element>) -> Element {
-        unsafe pointer(at: index).move()
+        let slot = Storage.Slot(Ordinal(index.rawValue.rawValue))
+        return move(at: slot)
     }
 }
 
+// MARK: - Legacy Count Property
+//
+// For backward compatibility, provides a count property that reads from
+// initialization state.
 
-// MARK: - Advanced Factory
-
-extension Storage where Element: ~Copyable {
-    /// Creates storage with the specified capacity and header initializer.
+extension Storage.Heap where Element: ~Copyable {
+    /// The number of initialized elements in storage.
     ///
-    /// - Parameters:
-    ///   - minimumCapacity: The minimum number of elements to allocate.
-    ///   - headerInitializer: A closure that returns the initial count.
-    /// - Returns: A new storage instance.
-    /// - Throws: Any error thrown by the header initializer.
+    /// This property reads from and writes to the initialization state.
+    /// It's provided for backward compatibility with code that uses `storage.count`.
+    ///
+    /// The setter assumes linear initialization starting at slot 0.
+    /// For non-linear layouts (e.g., ring buffers), use `header.initialization` directly.
+    ///
+    /// - Note: For new code, prefer using `header.initialization`.
     @inlinable
-    public static func create<E: Error>(
-        minimumCapacity: Index<Element>.Count,
-        makingHeaderWith headerInitializer: (Storage<Element>) throws(E) -> Index<Element>.Count
-    ) throws(E) -> Storage<Element> {
-        var thrown: E? = nil
-        let storage = unsafe unsafeDowncast(
-            Storage<Element>.create(minimumCapacity: Int(bitPattern: minimumCapacity)) { buffer in
-                let typed = unsafe unsafeDowncast(buffer, to: Storage<Element>.self)
-                do {
-                    return Int(bitPattern: try headerInitializer(typed))
-                } catch let e as E {
-                    thrown = e
-                    return 0
-                } catch {
-                    preconditionFailure("unexpected error type")
-                }
-            },
-            to: Storage<Element>.self
-        )
-        if let thrown { throw thrown }
-        return storage
+    public var count: Tagged<Element, Cardinal> {
+        get {
+            let slotCount = initialization.initializedCount
+            return Tagged<Element, Cardinal>(__unchecked: (), Cardinal(slotCount.rawValue.rawValue))
+        }
+        set {
+            let slotCount = Storage.Slot.Count(newValue.rawValue.rawValue)
+            header.initialization = .linear(count: slotCount)
+        }
     }
 }
 
-// MARK: - Span Access
+// MARK: - Span Access (Index-Based)
 
-extension Storage where Element: ~Copyable {
+extension Storage.Heap where Element: ~Copyable {
     /// Provides read-only span access to the first `count` elements.
     ///
     /// The span is valid only for the duration of the closure.
@@ -124,20 +105,11 @@ extension Storage where Element: ~Copyable {
         count: Index<Element>.Count,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        var thrown: E? = nil
-        let result: R? = unsafe withUnsafeMutablePointerToElements { base in
-            let span = unsafe Span(_unsafeStart: UnsafePointer(base), count: Int(bitPattern: count))
-            do {
-                return try body(span)
-            } catch let e as E {
-                thrown = e
-                return nil
-            } catch {
-                preconditionFailure("unexpected error type")
-            }
-        }
-        if let thrown { throw thrown }
-        return result!
+        let span = Storage.Span(
+            start: .zero,
+            count: Storage.Slot.Count(count.rawValue.rawValue)
+        )
+        return try withSpan(span, body)
     }
 
     /// Provides read-only span access using the storage's tracked count.
@@ -149,9 +121,25 @@ extension Storage where Element: ~Copyable {
     }
 }
 
-// MARK: - Bulk Operations
+// MARK: - Bulk Operations (Index-Based)
 
-extension Storage where Element: ~Copyable {
+extension Storage.Heap where Element: ~Copyable {
+    /// Deinitializes elements from index 0 up to (but not including) count.
+    ///
+    /// - Parameter count: The number of elements to deinitialize.
+    /// - Precondition: Elements at indices 0..<count must be initialized.
+    @inlinable
+    public func deinitialize(count: Index<Element>.Count) {
+        guard count > .zero else { return }
+        _ = unsafe withUnsafeMutablePointerToElements { elements in
+            (.zero..<count).forEach { index in
+                let offset = Int(bitPattern: index.rawValue.rawValue)
+                unsafe (elements + offset).deinitialize(count: 1)
+            }
+        }
+        header.initialization = .empty
+    }
+
     /// Deinitializes all initialized elements (uses storage's tracked count).
     ///
     /// This is a convenience overload that uses the receiver's `count` property.
@@ -162,21 +150,6 @@ extension Storage where Element: ~Copyable {
         deinitialize(count: count)
     }
 
-    /// Deinitializes elements from index 0 up to (but not including) count.
-    ///
-    /// - Parameter count: The number of elements to deinitialize.
-    /// - Precondition: Elements at indices 0..<count must be initialized.
-    @inlinable
-    public func deinitialize(count: Index<Element>.Count) {
-        guard count > .zero else { return }
-        _ = unsafe withUnsafeMutablePointerToElements { elements in
-            (.zero..<count).forEach { index in
-                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
-            }
-        }
-        header = 0
-    }
-
     /// Moves elements to a new storage instance.
     ///
     /// - Parameters:
@@ -185,12 +158,12 @@ extension Storage where Element: ~Copyable {
     /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
     /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
     @inlinable
-    public func move(to newStorage: Storage<Element>, count: Index<Element>.Count) {
+    public func move(to newStorage: Storage.Heap<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    let offset = Index.Offset(__unchecked: (), index)
+                    let offset = Int(bitPattern: index.rawValue.rawValue)
                     unsafe (dst + offset).initialize(to: (src + offset).move())
                 }
             }
@@ -205,7 +178,7 @@ extension Storage where Element: ~Copyable {
     /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
     /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
     @inlinable
-    public func move(to newStorage: Storage<Element>) {
+    public func move(to newStorage: Storage.Heap<Element>) {
         move(to: newStorage, count: count)
     }
 
@@ -217,84 +190,9 @@ extension Storage where Element: ~Copyable {
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafeMutablePointerToElements { elements in
             range.forEach { index in
-                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
+                let offset = Int(bitPattern: index.rawValue.rawValue)
+                unsafe (elements + offset).deinitialize(count: 1)
             }
         }
-    }
-
-}
-
-// MARK: - Shift Property Accessor
-
-extension Storage where Element: ~Copyable {
-    /// Property view for shift operations.
-    ///
-    /// Provides `.shift.left(removedAt:)` for filling gaps after element removal.
-    ///
-    /// ## Usage
-    ///
-    /// ```swift
-    /// // After removing element at index 1:
-    /// let removed = storage.move(at: Index(1))
-    /// storage.shift.left(removedAt: Index(1))
-    /// // Elements shifted: [A, C, D, _] count decremented automatically
-    /// ```
-    @inlinable
-    public var shift: Property<Shift, Storage<Element>>.View.Typed<Element> {
-        _read {
-            var storage = self
-            yield unsafe Property<Shift, Storage<Element>>.View.Typed<Element>(&storage)
-        }
-        _modify {
-            var storage = self
-            var view = unsafe Property<Shift, Storage<Element>>.View.Typed<Element>(&storage)
-            yield &view
-        }
-    }
-}
-
-// MARK: - Shift Left Operation
-
-extension Property.View.Typed
-where Tag == Storage<Element>.Shift, Base == Storage<Element>, Element: ~Copyable {
-    /// Shifts elements left to fill a gap at the removed index.
-    ///
-    /// Moves elements from `[removedAt+1, count)` to `[removedAt, count-1)`,
-    /// then decrements the stored count.
-    ///
-    /// ## Usage
-    ///
-    /// ```swift
-    /// // Before: [A, B, C, D] count=4, remove at index 1
-    /// let removed = storage.move(at: Index(1))
-    /// storage.shift.left(removedAt: Index(1))
-    /// // After:  [A, C, D, _] count=3
-    /// ```
-    ///
-    /// - Parameter index: The index where an element was removed.
-    /// - Precondition: `index` must be less than `count`.
-    /// - Precondition: The element at `index` must already be deinitialized.
-    @inlinable
-    public func left(removedAt index: Index<Element>) {
-        let storage = unsafe base.pointee
-        let currentCount = storage.count
-        let newCount = currentCount.subtract.saturating(.one)
-
-        // If removing the last element, just decrement count
-        guard index < newCount else {
-            storage.count = newCount
-            return
-        }
-
-        // Shift elements left: move [index+1, currentCount) to [index, currentCount-1)
-        _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
-            (index..<newCount).forEach { destIndex in
-                let srcIndex = destIndex + .one
-                let destOffset = Index.Offset(__unchecked: (), destIndex)
-                let srcOffset = Index.Offset(__unchecked: (), srcIndex)
-                unsafe (elements + destOffset).initialize(to: (elements + srcOffset).move())
-            }
-        }
-        storage.count = newCount
     }
 }

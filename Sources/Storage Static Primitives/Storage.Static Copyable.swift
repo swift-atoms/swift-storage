@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+public import Index_Primitives
 
 // MARK: - Copyable Extensions for Inline Storage
 
@@ -22,17 +23,18 @@ extension Storage.Static where Element: Copyable {
     /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
     /// - Precondition: Elements at indices 0..<count must be uninitialized in heapStorage.
     @inlinable
-    public func copy(to heapStorage: Storage<Element>, count: Index<Element>.Count) {
+    public func copy(to heapStorage: Storage.Heap<Element>, count: Index<Element>.Count) {
         guard count > .zero else { return }
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let stride = Self.slot.factor
+            let stride = Self.slotStride
             unsafe heapStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
                     let byteOffset = Int(index.rawValue.rawValue) * stride
                     let src = unsafe UnsafeRawPointer(base)
                         .advanced(by: byteOffset)
                         .assumingMemoryBound(to: Element.self)
-                    unsafe (dst + Index.Offset(__unchecked: (), index)).initialize(to: src.pointee)
+                    let offset = Int(bitPattern: index.rawValue.rawValue)
+                    unsafe (dst + offset).initialize(to: src.pointee)
                 }
             }
         }

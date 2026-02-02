@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage where Element: ~Copyable {
+extension Storage {
     /// Tag type for `.shift` property extensions on storage types.
     ///
     /// Use this tag with `Property.View` to add `.shift.left(...)` functionality

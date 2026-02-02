@@ -15,45 +15,62 @@ import Range_Primitives
 public import Memory_Primitives
 @_spi(Internal) public import Identity_Primitives
 
-/// Canonical heap storage using ManagedBuffer.
+/// Namespace for storage primitives.
 ///
-/// `Storage<Element>` is the primitive heap storage building block, analogous to
-/// `Array.Storage` in array-primitives. It provides:
-/// - Contiguous element storage
-/// - Reference semantics with manual memory management
-/// - Support for ~Copyable elements
+/// `Storage` provides heap and inline storage building blocks:
+/// - ``Storage/Heap``: Heap-allocated storage via ManagedBuffer
+/// - ``Storage/Static``: Fixed-capacity inline storage
 ///
-/// ## Variants
-///
-/// - `Storage` / `Storage.Contiguous`: Heap storage (this type)
-/// - `Storage.Static<N>`: Fixed-capacity inline storage
-///
-/// ## Usage
-///
-/// ```swift
-/// let storage = Storage<Int>.create(minimumCapacity: 10)
-/// storage.initialize(to: 42, at: .zero)
-/// let value = storage.move(at: .zero)
-/// ```
-public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
-    /// The number of initialized elements in storage.
+/// And physical coordinate types for slot-based access:
+/// - ``Storage/Slot``: Physical slot position
+/// - ``Storage/Span``: Contiguous slot range
+/// - ``Storage/Initialization``: Which slots are initialized
+public enum Storage {
+    /// Canonical heap storage using ManagedBuffer.
     ///
-    /// This property must be kept in sync with actual initialized elements.
-    /// The deinit uses this value to know how many elements to deinitialize.
-    @inlinable
-    public var count: Index<Element>.Count {
-        @inline(__always)
-        get { Index<Element>.Count(UInt(bitPattern: header)) }
-        @inline(__always)
-        set { header = Int(bitPattern: newValue) }
-    }
+    /// `Storage.Heap<Element>` is the primitive heap storage building block.
+    /// It provides:
+    /// - Contiguous element storage
+    /// - Reference semantics with manual memory management
+    /// - Support for ~Copyable elements
+    /// - Initialization tracking via ``Storage/Header``
+    ///
+    /// ## Initialization Tracking
+    ///
+    /// The storage tracks which slots are initialized via the `initialization`
+    /// property. The deinit uses this information to correctly deinitialize
+    /// only the initialized slots.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let storage = Storage.Heap<Int>.create(minimumCapacity: Storage.Slot.Count(10))
+    /// storage.initialize(to: 42, at: .zero)
+    /// let value = storage.move(at: .zero)
+    /// ```
+    public final class Heap<Element: ~Copyable>: ManagedBuffer<Header, Element> {
+        deinit {
+            switch header.initialization {
+            case .empty:
+                return
+            case .one(let span):
+                _deinitializeSpan(span)
+            case .two(let first, let second):
+                _deinitializeSpan(first)
+                _deinitializeSpan(second)
+            }
+        }
 
-    deinit {
-        let count = self.count
-        guard count > .zero else { return }
-        _ = unsafe self.withUnsafeMutablePointerToElements { elements in
-            (.zero..<count).forEach { index in
-                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
+        @usableFromInline
+        internal func _deinitializeSpan(_ span: Span) {
+            guard !span.isEmpty else { return }
+            _ = unsafe withUnsafeMutablePointerToElements { elements in
+                var slot = span.start
+                while slot < span.end {
+                    let offset = Int(bitPattern: slot.rawValue.rawValue)
+                    unsafe (elements + offset).deinitialize(count: 1)
+                    slot = slot.successor.saturating()
+                }
             }
         }
     }
@@ -70,28 +87,35 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     /// element types. Elements are accessed via raw pointer operations to support
     /// move-only types.
     ///
+    /// ## Initialization Tracking
+    ///
+    /// Unlike the old `Storage<Element>.Static`, this type now tracks initialization
+    /// state via the `_initialization` field. The caller can use `deinitializeAll()`
+    /// to clean up all initialized slots.
+    ///
     /// ## Span Compatibility
     ///
     /// Due to the 64-byte slot layout, `Storage.Static` does NOT support direct
     /// Span access. Use `forEach` for iteration or individual element access via
-    /// `pointer(at:)`. For Span access, use heap-based `Storage` instead.
+    /// `pointer(at:)`. For Span access, use heap-based ``Storage/Heap`` instead.
     ///
     /// ## Usage
     ///
     /// ```swift
-    /// var storage = try Storage<Int>.Inline<8>()
+    /// var storage = try Storage.Static<Int, 8>()
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
     /// ```
-    ///
-    /// - Important: Caller is responsible for tracking which indices are initialized.
-    public struct Static<let capacity: Int>: ~Copyable {
+    public struct Static<Element: ~Copyable, let capacity: Int>: ~Copyable {
         @usableFromInline
         package var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
+        @usableFromInline
+        package var _initialization: Initialization
+
         /// The slot stride (64 bytes per slot).
         @usableFromInline
-        package static var slot: Affine.Discrete.Ratio<Element, Memory> { .init(64) }
+        package static var slotStride: Int { 64 }
 
         /// Errors that can occur when creating inline storage.
         public enum Error: Swift.Error, Sendable {
@@ -107,10 +131,10 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
         /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
         @inlinable
         public init() throws(Error) {
-            guard MemoryLayout<Element>.stride <= Self.slot.factor else {
+            guard MemoryLayout<Element>.stride <= Self.slotStride else {
                 throw .strideExceedsSlotSize(
                     stride: MemoryLayout<Element>.stride,
-                    maxSlotSize: Self.slot.factor
+                    maxSlotSize: Self.slotStride
                 )
             }
             guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
@@ -120,6 +144,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
                 )
             }
             _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+            _initialization = .empty
         }
     }
 }
@@ -131,12 +156,7 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
 /// This enables value semantics for inline storage. Copying `Storage.Static`
 /// creates a bitwise copy of the underlying `InlineArray`, which is valid
 /// when elements are `Copyable`.
-///
-/// - Important: Caller remains responsible for element lifecycle management.
-///   Both original and copy will have the same raw storage bytes at indices
-///   that were initialized before the copy.
 extension Storage.Static: Copyable where Element: Copyable {}
 
 /// `Storage.Static` is `Sendable` when its elements are `Sendable`.
 extension Storage.Static: Sendable where Element: Sendable {}
-

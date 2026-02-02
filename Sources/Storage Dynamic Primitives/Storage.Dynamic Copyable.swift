@@ -10,21 +10,24 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+public import Index_Primitives
 
 // MARK: - Copyable Extensions
 
-extension Storage where Element: Copyable {
+extension Storage.Heap where Element: Copyable {
     /// Creates a copy of this storage with all elements.
     ///
     /// - Returns: A new storage instance with copied elements.
     @inlinable
-    public func copy() -> Storage<Element> {
+    public func copy() -> Storage.Heap<Element> {
         let count = self.count
         let countInt = Int(bitPattern: count)
 
         let new = unsafe unsafeDowncast(
-            Storage<Element>.create(minimumCapacity: countInt) { _ in countInt },
-            to: Storage<Element>.self
+            Storage.Heap<Element>.create(minimumCapacity: countInt) { _ in
+                Storage.Header(initialization: .linear(count: Storage.Slot.Count(UInt(countInt))))
+            },
+            to: Storage.Heap<Element>.self
         )
 
         guard count > .zero else { return new }
@@ -32,8 +35,8 @@ extension Storage where Element: Copyable {
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe new.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    let offset = Index.Offset(__unchecked: (), index)
-                    unsafe (dst + offset).initialize(to: src[index])
+                    let offset = Int(bitPattern: index.rawValue.rawValue)
+                    unsafe (dst + offset).initialize(to: src[offset])
                 }
             }
         }
@@ -47,14 +50,14 @@ extension Storage where Element: Copyable {
     /// - Precondition: Elements at indices 0..<count must be initialized in this storage.
     /// - Precondition: Elements at indices 0..<count must be uninitialized in newStorage.
     @inlinable
-    public func copy(to newStorage: Storage<Element>) {
+    public func copy(to newStorage: Storage.Heap<Element>) {
         let count = self.count
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    let offset = Index.Offset(__unchecked: (), index)
-                    unsafe (dst + offset).initialize(to: src[index])
+                    let offset = Int(bitPattern: index.rawValue.rawValue)
+                    unsafe (dst + offset).initialize(to: src[offset])
                 }
             }
         }
