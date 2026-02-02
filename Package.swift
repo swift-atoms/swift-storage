@@ -85,6 +85,27 @@ let package = Package(
             path: "Tests/Support"
         ),
         .testTarget(
+            name: "Storage Primitives Core Tests",
+            dependencies: [
+                .target(name: "Storage Primitives Core"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
+            name: "Storage Dynamic Primitives Tests",
+            dependencies: [
+                .target(name: "Storage Dynamic Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
+            name: "Storage Static Primitives Tests",
+            dependencies: [
+                .target(name: "Storage Static Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
             name: "Storage Primitives Tests",
             dependencies: [
                 .target(name: "Storage Primitives"),

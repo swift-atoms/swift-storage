@@ -10,7 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Testing
-import Storage_Primitives
+import Storage_Static_Primitives
+import Storage_Dynamic_Primitives
 import Storage_Primitives_Test_Support
 
 @Suite("Storage.Static Tests")
