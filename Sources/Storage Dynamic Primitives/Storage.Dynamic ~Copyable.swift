@@ -65,25 +65,16 @@ extension Storage.Heap where Element: ~Copyable {
 // initialization state.
 
 extension Storage.Heap where Element: ~Copyable {
-    /// The number of initialized elements in storage.
+    /// The number of initialized elements in storage (read-only).
     ///
-    /// This property reads from and writes to the initialization state.
-    /// It's provided for backward compatibility with code that uses `storage.count`.
+    /// This property reads from the initialization state.
+    /// To set initialization, use `header.initialization = .linear(count:)` or `.empty`.
     ///
-    /// The setter assumes linear initialization starting at slot 0.
-    /// For non-linear layouts (e.g., ring buffers), use `header.initialization` directly.
-    ///
-    /// - Note: For new code, prefer using `header.initialization`.
+    /// - Note: For new code, prefer using `header.initialization.initializedCount`.
     @inlinable
     public var count: Tagged<Element, Cardinal> {
-        get {
-            let slotCount = initialization.initializedCount
-            return Tagged<Element, Cardinal>(__unchecked: (), Cardinal(slotCount.rawValue.rawValue))
-        }
-        set {
-            let slotCount = Storage.Slot.Count(newValue.rawValue.rawValue)
-            header.initialization = .linear(count: slotCount)
-        }
+        let slotCount = initialization.initializedCount
+        return Tagged<Element, Cardinal>(__unchecked: (), Cardinal(slotCount.rawValue.rawValue))
     }
 }
 

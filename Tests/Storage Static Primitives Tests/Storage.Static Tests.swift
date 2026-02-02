@@ -134,8 +134,8 @@ struct StorageInlineTests {
         storage.initialize(to: 42, at: index)
 
         // Use mutating pointer which returns Mutable, then convert to immutable
-        let ptr: UnsafeMutablePointer<Int> = storage.pointer(at: index)
-        let value = ptr.pointee
+        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: index)
+        let value = unsafe ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -148,8 +148,8 @@ struct StorageInlineTests {
 
         storage.initialize(to: 42, at: index)
 
-        let ptr: UnsafeMutablePointer<Int> = storage.pointer(at: index)
-        let value = ptr.pointee
+        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: index)
+        let value = unsafe ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -218,7 +218,7 @@ struct StorageInlineTests {
     @Test
     func `move to heap storage`() throws {
         var inline = try Storage.Static<Int, 8>()
-        let capacity: Index<Int>.Count = 8
+        let capacity: Storage.Slot.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -231,7 +231,7 @@ struct StorageInlineTests {
 
         // Move to heap
         inline.move(to: heap, count: count)
-        heap.count = count
+        heap.header.initialization = .linear(count: Storage.Slot.Count(4))
 
         // Verify heap has the values
         var j = 3
@@ -240,13 +240,13 @@ struct StorageInlineTests {
             #expect(value == (j + 1) * 100)
             j -= 1
         }
-        heap.count = Index<Int>.Count.zero
+        heap.header.initialization = .empty
     }
 
     @Test
     func `move zero elements to heap storage`() throws {
         var inline = try Storage.Static<Int, 8>()
-        let capacity: Index<Int>.Count = 8
+        let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
         // Move zero elements - should not crash
@@ -258,7 +258,7 @@ struct StorageInlineTests {
     @Test
     func `copy to heap storage`() throws {
         var inline = try Storage.Static<Int, 8>()
-        let capacity: Index<Int>.Count = 8
+        let capacity: Storage.Slot.Count = 8
         let count: Index<Int>.Count = 4
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -271,7 +271,7 @@ struct StorageInlineTests {
 
         // Copy to heap
         inline.copy(to: heap, count: count)
-        heap.count = count
+        heap.header.initialization = .linear(count: Storage.Slot.Count(4))
 
         // Verify inline still has original values
         var j = 3
@@ -288,13 +288,13 @@ struct StorageInlineTests {
             #expect(value == k * 5)
             k -= 1
         }
-        heap.count = Index<Int>.Count.zero
+        heap.header.initialization = .empty
     }
 
     @Test
     func `copy zero elements to heap storage`() throws {
         let inline = try Storage.Static<Int, 8>()
-        let capacity: Index<Int>.Count = 8
+        let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
         // Copy zero elements - should not crash
