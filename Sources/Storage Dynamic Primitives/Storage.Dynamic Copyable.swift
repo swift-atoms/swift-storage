@@ -32,7 +32,8 @@ extension Storage where Element: Copyable {
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe new.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    unsafe (dst + index).initialize(to: src[index])
+                    let offset = Index.Offset(__unchecked: (), index)
+                    unsafe (dst + offset).initialize(to: src[index])
                 }
             }
         }
@@ -52,7 +53,8 @@ extension Storage where Element: Copyable {
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    unsafe (dst + index).initialize(to: src[index])
+                    let offset = Index.Offset(__unchecked: (), index)
+                    unsafe (dst + offset).initialize(to: src[index])
                 }
             }
         }

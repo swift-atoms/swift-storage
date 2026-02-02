@@ -35,9 +35,9 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../swift-index-primitives"),
-        .package(path: "../swift-pointer-primitives"),
         .package(path: "../swift-property-primitives"),
         .package(path: "../swift-range-primitives"),
+        .package(path: "../swift-memory-primitives"),
     ],
     targets: [
         // Core: Type declarations and fundamental access
@@ -45,8 +45,8 @@ let package = Package(
             name: "Storage Primitives Core",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Pointer Primitives", package: "swift-pointer-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
         // Dynamic: Bulk operations on heap storage
@@ -80,7 +80,7 @@ let package = Package(
             name: "Storage Primitives Test Support",
             dependencies: [
                 "Storage Primitives",
-                .product(name: "Pointer Primitives Test Support", package: "swift-pointer-primitives"),
+                .product(name: "Memory Primitives Test Support", package: "swift-memory-primitives"),
             ],
             path: "Tests/Support"
         ),

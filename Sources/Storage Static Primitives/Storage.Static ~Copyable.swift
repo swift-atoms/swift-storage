@@ -30,10 +30,12 @@ extension Storage.Static where Element: ~Copyable {
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    public func pointer(at index: Index<Element>) -> Pointer<Element>.Immutable {
+    public func pointer(at index: Index<Element>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            return unsafe UnsafeRawPointer(base)
+                .advanced(by: byteOffset)
+                .assumingMemoryBound(to: Element.self)
         }
     }
 
@@ -44,10 +46,12 @@ extension Storage.Static where Element: ~Copyable {
     /// - Precondition: The element at `index` must be initialized.
     @inlinable
     @_disfavoredOverload
-    public mutating func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
+    public mutating func pointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Mutable.Address(base)
-            return address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            return unsafe UnsafeMutableRawPointer(base)
+                .advanced(by: byteOffset)
+                .assumingMemoryBound(to: Element.self)
         }
     }
 
@@ -59,7 +63,7 @@ extension Storage.Static where Element: ~Copyable {
     /// - Precondition: The element at `index` must be uninitialized.
     @inlinable
     public mutating func initialize(to value: consuming Element, at index: Index<Element>) {
-        pointer(at: index).initialize(to: value)
+        unsafe pointer(at: index).initialize(to: value)
     }
 
     /// Moves the element at the given index, deinitializing that slot.
@@ -69,7 +73,7 @@ extension Storage.Static where Element: ~Copyable {
     /// - Precondition: The element at `index` must be initialized.
     @inlinable
     public mutating func move(at index: Index<Element>) -> Element {
-        pointer(at: index).move()
+        unsafe pointer(at: index).move()
     }
 
     // MARK: - Iteration
@@ -90,12 +94,15 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) {
         var thrown: E? = nil
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address(base)
+            let stride = Self.slotStride.factor
             (.zero..<count).forEach { index in
                 guard thrown == nil else { return }
-                let ptr: Pointer<Element>.Immutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+                let byteOffset = Int(index.rawValue.rawValue) * stride
+                let ptr = unsafe UnsafeRawPointer(base)
+                    .advanced(by: byteOffset)
+                    .assumingMemoryBound(to: Element.self)
                 do {
-                    try body(ptr.pointee)
+                    try unsafe body(ptr.pointee)
                 } catch let e as E {
                     thrown = e
                 } catch {
@@ -120,10 +127,12 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Address(base)
-            let ptr: Pointer<Element>.Immutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let ptr = unsafe UnsafeRawPointer(base)
+                .advanced(by: byteOffset)
+                .assumingMemoryBound(to: Element.self)
             do {
-                return try body(ptr.pointee)
+                return try unsafe body(ptr.pointee)
             } catch let e as E {
                 thrown = e
                 return nil
@@ -149,10 +158,12 @@ extension Storage.Static where Element: ~Copyable {
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let address = unsafe Memory.Mutable.Address(base)
-            let ptr: Pointer<Element>.Mutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
+            let byteOffset = Int(index.rawValue.rawValue) * Self.slotStride.factor
+            let ptr = unsafe UnsafeMutableRawPointer(base)
+                .advanced(by: byteOffset)
+                .assumingMemoryBound(to: Element.self)
             do {
-                return try body(&ptr.pointee)
+                return try unsafe body(&ptr.pointee)
             } catch let e as E {
                 thrown = e
                 return nil
@@ -174,10 +185,13 @@ extension Storage.Static where Element: ~Copyable {
     @inlinable
     public func deinitialize(count: Index<Element>.Count) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let stride = Self.slotStride.factor
             (.zero..<count).forEach { index in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                let byteOffset = Int(index.rawValue.rawValue) * stride
+                unsafe UnsafeMutableRawPointer(mutating: base)
+                    .advanced(by: byteOffset)
+                    .assumingMemoryBound(to: Element.self)
+                    .deinitialize(count: 1)
             }
         }
     }
@@ -190,10 +204,13 @@ extension Storage.Static where Element: ~Copyable {
     @inlinable
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let stride = Self.slotStride.factor
             range.forEach { index in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                let byteOffset = Int(index.rawValue.rawValue) * stride
+                unsafe UnsafeMutableRawPointer(mutating: base)
+                    .advanced(by: byteOffset)
+                    .assumingMemoryBound(to: Element.self)
+                    .deinitialize(count: 1)
             }
         }
     }
@@ -216,10 +233,13 @@ extension Storage.Static where Element: ~Copyable {
         let cap = Index<Element>.Count(UInt(capacity))
         var index = head
         _ = unsafe withUnsafePointer(to: _storage) { base in
-            let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+            let stride = Self.slotStride.factor
             (.zero..<count).forEach { _ in
-                unsafe address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    .base.deinitialize(count: 1)
+                let byteOffset = Int(index.rawValue.rawValue) * stride
+                unsafe UnsafeMutableRawPointer(mutating: base)
+                    .advanced(by: byteOffset)
+                    .assumingMemoryBound(to: Element.self)
+                    .deinitialize(count: 1)
                 // Ring successor: (index + 1) % capacity
                 index = (index + Index<Element>.Count.one) % cap
             }
@@ -238,10 +258,13 @@ extension Storage.Static where Element: ~Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointer(to: &_storage) { base in
             unsafe heapStorage.withUnsafeMutablePointerToElements { destination in
-                let address = unsafe Memory.Mutable.Address(base)
+                let stride = Self.slotStride.factor
                 (.zero..<count).forEach { index in
-                    let source: Pointer<Element>.Mutable = address.pointer(at: index, stride: Self.slotStride, as: Element.self)
-                    unsafe (destination + index).initialize(to: source.move())
+                    let byteOffset = Int(index.rawValue.rawValue) * stride
+                    let source = unsafe UnsafeMutableRawPointer(base)
+                        .advanced(by: byteOffset)
+                        .assumingMemoryBound(to: Element.self)
+                    unsafe (destination + Index.Offset(__unchecked: (), index)).initialize(to: source.move())
                 }
             }
         }
@@ -308,20 +331,18 @@ where Tag == Storage<Element>.Shift, Base == Storage<Element>.Static<n>, Element
 
         // Shift elements left: move [index+1, count) to [index, count-1)
         unsafe withUnsafeMutablePointer(to: &base.pointee._storage) { storagePtr in
-            let address = unsafe Memory.Mutable.Address(storagePtr)
+            let stride = Storage<Element>.Static<n>.slotStride.factor
             (index..<newCount).forEach { destIndex in
                 let srcIndex = destIndex + .one
-                let srcPtr: Pointer<Element>.Mutable = address.pointer(
-                    at: srcIndex,
-                    stride: Storage<Element>.Static<n>.slotStride,
-                    as: Element.self
-                )
-                let dstPtr: Pointer<Element>.Mutable = address.pointer(
-                    at: destIndex,
-                    stride: Storage<Element>.Static<n>.slotStride,
-                    as: Element.self
-                )
-                dstPtr.initialize(to: srcPtr.move())
+                let srcByteOffset = Int(srcIndex.rawValue.rawValue) * stride
+                let dstByteOffset = Int(destIndex.rawValue.rawValue) * stride
+                let srcPtr = unsafe UnsafeMutableRawPointer(storagePtr)
+                    .advanced(by: srcByteOffset)
+                    .assumingMemoryBound(to: Element.self)
+                let dstPtr = unsafe UnsafeMutableRawPointer(storagePtr)
+                    .advanced(by: dstByteOffset)
+                    .assumingMemoryBound(to: Element.self)
+                unsafe dstPtr.initialize(to: srcPtr.move())
             }
         }
     }

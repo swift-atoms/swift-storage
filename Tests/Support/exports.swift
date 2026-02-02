@@ -6,5 +6,4 @@
 //
 
 @_exported import Storage_Primitives
-@_exported import Index_Primitives_Test_Support
-@_exported import Pointer_Primitives_Test_Support
+@_exported import Memory_Primitives_Test_Support

@@ -11,8 +11,8 @@
 
 public import Affine_Primitives
 public import Index_Primitives
-public import Pointer_Primitives
 import Range_Primitives
+public import Memory_Primitives
 @_spi(Internal) public import Identity_Primitives
 
 /// Canonical heap storage using ManagedBuffer.
@@ -51,9 +51,9 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     deinit {
         let count = self.count
         guard count > .zero else { return }
-        _ = unsafe withUnsafeMutablePointerToElements { elements in
+        _ = unsafe self.withUnsafeMutablePointerToElements { elements in
             (.zero..<count).forEach { index in
-                unsafe (elements + index).deinitialize(count: 1)
+                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
             }
         }
     }

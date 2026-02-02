@@ -41,9 +41,9 @@ extension Storage where Element: ~Copyable {
     /// - Warning: The caller must ensure the index is valid.
     @inlinable
     @unsafe
-    public func pointer(at index: Index<Element>) -> Pointer<Element>.Mutable {
+    public func pointer(at index: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
-            unsafe Pointer<Element>.Mutable($0 + index)
+            unsafe $0 + Index.Offset(__unchecked: (), index)
         }
     }
 
@@ -56,7 +56,7 @@ extension Storage where Element: ~Copyable {
     @inlinable
     public func initialize(to element: consuming Element, at index: Index<Element>) {
         let ptr = unsafe pointer(at: index)
-        ptr.initialize(to: element)
+        unsafe ptr.initialize(to: element)
     }
 
     /// Moves the element at the given index, deinitializing that slot.
@@ -171,7 +171,7 @@ extension Storage where Element: ~Copyable {
         guard count > .zero else { return }
         _ = unsafe withUnsafeMutablePointerToElements { elements in
             (.zero..<count).forEach { index in
-                unsafe (elements + index).deinitialize(count: 1)
+                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
             }
         }
         header = 0
@@ -190,7 +190,8 @@ extension Storage where Element: ~Copyable {
         _ = unsafe withUnsafeMutablePointerToElements { src in
             unsafe newStorage.withUnsafeMutablePointerToElements { dst in
                 (.zero..<count).forEach { index in
-                    unsafe (dst + index).initialize(to: (src + index).move())
+                    let offset = Index.Offset(__unchecked: (), index)
+                    unsafe (dst + offset).initialize(to: (src + offset).move())
                 }
             }
         }
@@ -216,7 +217,7 @@ extension Storage where Element: ~Copyable {
     public func deinitialize(in range: Range.Lazy<Index<Element>>) {
         _ = unsafe withUnsafeMutablePointerToElements { elements in
             range.forEach { index in
-                unsafe (elements + index).deinitialize(count: 1)
+                unsafe (elements + Index.Offset(__unchecked: (), index)).deinitialize(count: 1)
             }
         }
     }
@@ -289,7 +290,9 @@ where Tag == Storage<Element>.Shift, Base == Storage<Element>, Element: ~Copyabl
         _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
             (index..<newCount).forEach { destIndex in
                 let srcIndex = destIndex + .one
-                unsafe (elements + destIndex).initialize(to: (elements + srcIndex).move())
+                let destOffset = Index.Offset(__unchecked: (), destIndex)
+                let srcOffset = Index.Offset(__unchecked: (), srcIndex)
+                unsafe (elements + destOffset).initialize(to: (elements + srcOffset).move())
             }
         }
         storage.count = newCount

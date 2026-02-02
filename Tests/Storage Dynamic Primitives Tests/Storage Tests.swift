@@ -79,7 +79,7 @@ struct StorageTests {
         storage.initialize(to: 99, at: index)
 
         let ptr = unsafe storage.pointer(at: index)
-        let pointee = ptr.pointee
+        let pointee = unsafe ptr.pointee
         #expect(pointee == 99)
 
         _ = storage.move(at: index)
@@ -94,7 +94,7 @@ struct StorageTests {
         storage.count = .one
 
         let ptr = unsafe storage.pointer(at: index)
-        let value = ptr.pointee
+        let value = unsafe ptr.pointee
         #expect(value == 77)
 
         _ = storage.move(at: index)
@@ -379,8 +379,8 @@ struct StorageTests {
         storage.initialize(to: 42, at: index)
         storage.count = .one
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        let value = ptr.pointee
+        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: index)
+        let value = unsafe ptr.pointee
         #expect(value == 42)
 
         _ = storage.move(at: index)
@@ -395,8 +395,8 @@ struct StorageTests {
         storage.initialize(to: 99, at: index)
         storage.count = .one
 
-        let ptr: Pointer<Int>.Mutable = unsafe storage.pointer(at: index)
-        let value = ptr.pointee
+        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: index)
+        let value = unsafe ptr.pointee
         #expect(value == 99)
 
         _ = storage.move(at: index)

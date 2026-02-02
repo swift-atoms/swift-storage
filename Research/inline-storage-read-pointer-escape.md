@@ -49,7 +49,7 @@ The mutating version uses `withUnsafeMutablePointer(to: &_storage)`:
 ```swift
 public mutating func pointer(at index: Index<Element>) -> Pointer<Element> {
     unsafe withUnsafeMutablePointer(to: &_storage) { base in
-        let address = unsafe Memory.Mutable.Address(base)
+        let address = unsafe Memory.Address(base)
         return address.pointer(at: index, stride: Self.slotStride, as: Element.self).immutable
     }
 }
@@ -240,7 +240,7 @@ The `deinitialize` methods already use a workaround:
 ```swift
 public func deinitialize(count: Index<Element>.Count) {
     _ = unsafe withUnsafePointer(to: _storage) { base in
-        let address = unsafe Memory.Mutable.Address(UnsafeMutableRawPointer(mutating: base))
+        let address = unsafe Memory.Address(UnsafeMutableRawPointer(mutating: base))
         // ... uses the address within closure
     }
 }

@@ -12,4 +12,5 @@
 // Re-export dependencies for consumers.
 
 @_exported public import Index_Primitives
-@_exported public import Pointer_Primitives
+@_exported public import Range_Primitives
+//@_exported public import Memory_Primitives
