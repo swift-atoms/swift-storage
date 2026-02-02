@@ -124,3 +124,19 @@ public final class Storage<Element: ~Copyable>: ManagedBuffer<Int, Element> {
     }
 }
 
+// MARK: - Conditional Conformances
+
+/// `Storage.Static` is `Copyable` when its elements are `Copyable`.
+///
+/// This enables value semantics for inline storage. Copying `Storage.Static`
+/// creates a bitwise copy of the underlying `InlineArray`, which is valid
+/// when elements are `Copyable`.
+///
+/// - Important: Caller remains responsible for element lifecycle management.
+///   Both original and copy will have the same raw storage bytes at indices
+///   that were initialized before the copy.
+extension Storage.Static: Copyable where Element: Copyable {}
+
+/// `Storage.Static` is `Sendable` when its elements are `Sendable`.
+extension Storage.Static: Sendable where Element: Sendable {}
+
