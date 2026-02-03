@@ -35,14 +35,14 @@ struct StorageCoreTests {
 
     @Test
     func `Storage Slot types exist`() throws {
-        let _: Storage.Slot.Type = Storage.Slot.self
-        let _: Storage.Slot.Count.Type = Storage.Slot.Count.self
-        let _: Storage.Slot.Offset.Type = Storage.Slot.Offset.self
+        let _: Index<Storage>.Type = Index<Storage>.self
+        let _: Index<Storage>.Count.Type = Index<Storage>.Count.self
+        let _: Index<Storage>.Offset.Type = Index<Storage>.Offset.self
     }
 
     @Test
     func `Storage Span type exists`() throws {
-        let _: Swift.Range<Storage.Slot>.Type = Swift.Range<Storage.Slot>.self
+        let _: Swift.Range<Index<Storage>>.Type = Swift.Range<Index<Storage>>.self
     }
 
     @Test
@@ -59,7 +59,7 @@ struct StorageCoreTests {
 
     @Test
     func `span empty factory`() throws {
-        let span = Swift.Range<Storage.Slot>.empty
+        let span = Swift.Range<Index<Storage>>.empty
         #expect(span.isEmpty)
         #expect(span.lowerBound == .zero)
         #expect(span.upperBound == .zero)
@@ -67,9 +67,9 @@ struct StorageCoreTests {
 
     @Test
     func `span from start and count`() throws {
-        let span = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
+        let span = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(5))
         #expect(!span.isEmpty)
-        #expect(span.count == Storage.Slot.Count(5))
+        #expect(span.count == Index<Storage>.Count(5))
     }
 
     // MARK: - Initialization Tests
@@ -83,9 +83,9 @@ struct StorageCoreTests {
 
     @Test
     func `initialization linear`() throws {
-        let init_ = Storage.Initialization.linear(count: Storage.Slot.Count(5))
+        let init_ = Storage.Initialization.linear(count: Index<Storage>.Count(5))
         #expect(!init_.isEmpty)
-        #expect(init_.count == Storage.Slot.Count(5))
+        #expect(init_.count == Index<Storage>.Count(5))
     }
 
     @Test
@@ -96,10 +96,10 @@ struct StorageCoreTests {
 
     @Test
     func `initialization two spans`() throws {
-        let first = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(3))
-        let second = Swift.Range<Storage.Slot>(start: Storage.Slot(6), count: Storage.Slot.Count(2))
+        let first = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(3))
+        let second = Swift.Range<Index<Storage>>(start: Index<Storage>(6), count: Index<Storage>.Count(2))
         let init_ = Storage.Initialization.two(first: first, second: second)
         #expect(!init_.isEmpty)
-        #expect(init_.count == Storage.Slot.Count(5))
+        #expect(init_.count == Index<Storage>.Count(5))
     }
 }

@@ -20,7 +20,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Returns: A new storage instance with empty initialization.
     @inlinable
     public static func create(
-        minimumCapacity: Storage.Slot.Count
+        minimumCapacity: Index<Storage>.Count
     ) -> Storage.Heap<Element> {
         unsafe unsafeDowncast(
             Storage.Heap<Element>.create(
@@ -43,8 +43,8 @@ extension Storage.Heap where Element: ~Copyable {
 
     /// Storage capacity in slot count.
     @inlinable
-    public var slotCapacity: Storage.Slot.Count {
-        Storage.Slot.Count(UInt(capacity))
+    public var slotCapacity: Index<Storage>.Count {
+        Index<Storage>.Count(UInt(capacity))
     }
 }
 
@@ -58,9 +58,9 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Warning: The caller must ensure the slot is valid and within capacity.
     @inlinable
     @unsafe
-    public func pointer(at slot: Storage.Slot) -> UnsafeMutablePointer<Element> {
+    public func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
-            let offset = Storage.Slot.Offset(fromZero: slot).retag(Element.self)
+            let offset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
             return unsafe $0 + offset
         }
     }
@@ -73,7 +73,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func initialize(to element: consuming Element, at slot: Storage.Slot) {
+    public func initialize(to element: consuming Element, at slot: Index<Storage>) {
         let ptr = unsafe pointer(at: slot)
         unsafe ptr.initialize(to: element)
     }
@@ -85,7 +85,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func move(at slot: Storage.Slot) -> Element {
+    public func move(at slot: Index<Storage>) -> Element {
         unsafe pointer(at: slot).move()
     }
 
@@ -95,7 +95,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(at slot: Storage.Slot) {
+    public func deinitialize(at slot: Index<Storage>) {
         unsafe pointer(at: slot).deinitialize(count: 1)
     }
 }
@@ -111,7 +111,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(range: Swift.Range<Storage.Slot>) {
+    public func deinitialize(range: Swift.Range<Index<Storage>>) {
         guard !range.isEmpty else { return }
         var slot = range.lowerBound
         while slot < range.upperBound {
@@ -150,10 +150,10 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public func move(range: Swift.Range<Storage.Slot>, to destination: Storage.Heap<Element>) {
+    public func move(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
         var srcSlot = range.lowerBound
-        var dstSlot: Storage.Slot = .zero
+        var dstSlot: Index<Storage> = .zero
         while srcSlot < range.upperBound {
             destination.initialize(to: move(at: srcSlot), at: dstSlot)
             srcSlot = srcSlot.successor.saturating()
@@ -173,12 +173,12 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: Elements in the range range must be initialized and contiguous.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Storage.Slot>,
+        _ range: Swift.Range<Index<Storage>>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafeMutablePointerToElements { base in
-            let startOffset = Storage.Slot.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
             let count = Int(bitPattern: range.count)
             let rangeView = unsafe Span(
                 _unsafeStart: UnsafePointer(base + startOffset),

@@ -25,13 +25,13 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     @inlinable
-    public func copy(range: Swift.Range<Storage.Slot>, to destination: Storage.Heap<Element>) {
+    public func copy(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
         unsafe destination.withUnsafeMutablePointerToElements { dst in
             var srcSlot = range.lowerBound
-            var dstSlot: Storage.Slot = .zero
+            var dstSlot: Index<Storage> = .zero
             while srcSlot < range.upperBound {
-                let dstOffset = Storage.Slot.Offset(fromZero: dstSlot).retag(Element.self)
+                let dstOffset = Index<Storage>.Offset(fromZero: dstSlot).retag(Element.self)
                 unsafe (dst + dstOffset).initialize(to: pointer(at: srcSlot).pointee)
                 srcSlot = srcSlot.successor.saturating()
                 dstSlot = dstSlot.successor.saturating()

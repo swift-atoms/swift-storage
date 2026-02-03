@@ -20,9 +20,9 @@ struct StorageHeapTests {
 
     @Test
     func `create storage with minimum capacity`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
-        #expect(storage.slotCapacity >= Storage.Slot.Count(10))
+        #expect(storage.slotCapacity >= Index<Storage>.Count(10))
         #expect(storage.initialization.isEmpty)
     }
 
@@ -36,12 +36,12 @@ struct StorageHeapTests {
 
     @Test
     func `initialize and move single element`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
-        let slot: Storage.Slot = .zero
+        let slot: Index<Storage> = .zero
 
         storage.initialize(to: 42, at: slot)
-        storage.initialization = .linear(count: Storage.Slot.Count(1))
+        storage.initialization = .linear(count: Index<Storage>.Count(1))
 
         let value = storage.move(at: slot)
         storage.initialization = .empty
@@ -51,15 +51,15 @@ struct StorageHeapTests {
 
     @Test
     func `initialize multiple elements`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<5 {
             storage.initialize(to: i * 10, at: slot)
             slot = slot.successor.saturating()
         }
-        storage.initialization = .linear(count: Storage.Slot.Count(5))
+        storage.initialization = .linear(count: Index<Storage>.Count(5))
 
         // Verify all values by moving in forward order
         slot = .zero
@@ -75,9 +75,9 @@ struct StorageHeapTests {
 
     @Test
     func `pointer returns correct address`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
-        let slot = Storage.Slot(3)
+        let slot = Index<Storage>(3)
 
         storage.initialize(to: 99, at: slot)
 
@@ -90,12 +90,12 @@ struct StorageHeapTests {
 
     @Test
     func `pointer allows read access`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
-        let slot: Storage.Slot = .zero
+        let slot: Index<Storage> = .zero
 
         storage.initialize(to: 77, at: slot)
-        storage.initialization = .linear(count: Storage.Slot.Count(1))
+        storage.initialization = .linear(count: Index<Storage>.Count(1))
 
         let ptr = unsafe storage.pointer(at: slot)
         let value = unsafe ptr.pointee
@@ -109,7 +109,7 @@ struct StorageHeapTests {
 
     @Test
     func `deinitialize at single slot`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
         storage.initialize(to: 42, at: .zero)
@@ -118,17 +118,17 @@ struct StorageHeapTests {
 
     @Test
     func `deinitialize range of elements`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<5 {
             storage.initialize(to: i, at: slot)
             slot = slot.successor.saturating()
         }
-        storage.initialization = .linear(count: Storage.Slot.Count(5))
+        storage.initialization = .linear(count: Index<Storage>.Count(5))
 
-        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
+        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(5))
         storage.deinitialize(range: range)
         storage.initialization = .empty
     }
@@ -143,15 +143,15 @@ struct StorageHeapTests {
         unsafe Tracker.deinitCount = 0
 
         do {
-            let capacity: Storage.Slot.Count = 10
+            let capacity: Index<Storage>.Count = 10
             let storage = Storage.Heap<Tracker>.create(minimumCapacity: capacity)
 
-            var slot: Storage.Slot = .zero
+            var slot: Index<Storage> = .zero
             for _ in 0..<5 {
                 storage.initialize(to: Tracker(), at: slot)
                 slot = slot.successor.saturating()
             }
-            storage.initialization = .linear(count: Storage.Slot.Count(5))
+            storage.initialization = .linear(count: Index<Storage>.Count(5))
 
             storage.deinitialize()
             #expect(storage.initialization.isEmpty)
@@ -171,44 +171,44 @@ struct StorageHeapTests {
 
         unsafe Tracker.deinitCount = 0
 
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Tracker>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for _ in 0..<5 {
             storage.initialize(to: Tracker(), at: slot)
             slot = slot.successor.saturating()
         }
 
         // Deinitialize slots 1..<4
-        let range = Swift.Range<Storage.Slot>(start: Storage.Slot(1), count: Storage.Slot.Count(3))
+        let range = Swift.Range<Index<Storage>>(start: Index<Storage>(1), count: Index<Storage>.Count(3))
         storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (slots 0 and 4)
-        _ = storage.move(at: Storage.Slot(0))
-        _ = storage.move(at: Storage.Slot(4))
+        _ = storage.move(at: Index<Storage>(0))
+        _ = storage.move(at: Index<Storage>(4))
     }
 
     // MARK: - Move Tests
 
     @Test
     func `move range to new storage`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<3 {
             source.initialize(to: (i + 1) * 100, at: slot)
             slot = slot.successor.saturating()
         }
-        source.initialization = .linear(count: Storage.Slot.Count(3))
+        source.initialization = .linear(count: Index<Storage>.Count(3))
 
-        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(3))
+        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(3))
         source.move(range: range, to: destination)
-        destination.initialization = .linear(count: Storage.Slot.Count(3))
+        destination.initialization = .linear(count: Index<Storage>.Count(3))
         source.initialization = .empty
 
         // Verify destination has the values
@@ -225,15 +225,15 @@ struct StorageHeapTests {
 
     @Test
     func `copy creates independent storage`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let original = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<4 {
             original.initialize(to: i * 5, at: slot)
             slot = slot.successor.saturating()
         }
-        original.initialization = .linear(count: Storage.Slot.Count(4))
+        original.initialization = .linear(count: Index<Storage>.Count(4))
 
         let copied = original.copy()
 
@@ -258,7 +258,7 @@ struct StorageHeapTests {
 
     @Test
     func `copy empty storage`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let original = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let copied = original.copy()
         #expect(copied.initialization.isEmpty)
@@ -266,19 +266,19 @@ struct StorageHeapTests {
 
     @Test
     func `copy to new storage`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<4 {
             source.initialize(to: i * 3, at: slot)
             slot = slot.successor.saturating()
         }
-        source.initialization = .linear(count: Storage.Slot.Count(4))
+        source.initialization = .linear(count: Index<Storage>.Count(4))
 
         source.copy(to: destination)
-        destination.initialization = .linear(count: Storage.Slot.Count(4))
+        destination.initialization = .linear(count: Index<Storage>.Count(4))
 
         // Verify source still has values
         slot = .zero
@@ -301,7 +301,7 @@ struct StorageHeapTests {
 
     @Test
     func `copy empty storage does nothing`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -310,21 +310,21 @@ struct StorageHeapTests {
 
     @Test
     func `copy range to new storage`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<5 {
             source.initialize(to: i * 7, at: slot)
             slot = slot.successor.saturating()
         }
-        source.initialization = .linear(count: Storage.Slot.Count(5))
+        source.initialization = .linear(count: Index<Storage>.Count(5))
 
         // Copy only slots 1..<4
-        let range = Swift.Range<Storage.Slot>(start: Storage.Slot(1), count: Storage.Slot.Count(3))
+        let range = Swift.Range<Index<Storage>>(start: Index<Storage>(1), count: Index<Storage>.Count(3))
         source.copy(range: range, to: destination)
-        destination.initialization = .linear(count: Storage.Slot.Count(3))
+        destination.initialization = .linear(count: Index<Storage>.Count(3))
 
         // Verify destination has copies at linear positions 0..<3
         slot = .zero
@@ -351,15 +351,15 @@ struct StorageHeapTests {
         unsafe Tracker.deinitCount = 0
 
         do {
-            let capacity: Storage.Slot.Count = 5
+            let capacity: Index<Storage>.Count = 5
             let storage = Storage.Heap<Tracker>.create(minimumCapacity: capacity)
 
-            var slot: Storage.Slot = .zero
+            var slot: Index<Storage> = .zero
             for _ in 0..<3 {
                 storage.initialize(to: Tracker(), at: slot)
                 slot = slot.successor.saturating()
             }
-            storage.initialization = .linear(count: Storage.Slot.Count(3))
+            storage.initialization = .linear(count: Index<Storage>.Count(3))
             // storage goes out of scope here
         }
 
@@ -370,17 +370,17 @@ struct StorageHeapTests {
 
     @Test
     func `withSpan provides read access`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        var slot: Storage.Slot = .zero
+        var slot: Index<Storage> = .zero
         for i in 0..<5 {
             storage.initialize(to: i * 2, at: slot)
             slot = slot.successor.saturating()
         }
-        storage.initialization = .linear(count: Storage.Slot.Count(5))
+        storage.initialization = .linear(count: Index<Storage>.Count(5))
 
-        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
+        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(5))
         storage.withSpan(range) { readSpan in
             #expect(readSpan.count == 5)
             #expect(readSpan[0] == 0)
@@ -395,12 +395,12 @@ struct StorageHeapTests {
 
     @Test
     func `pointer returns UnsafeMutablePointer`() throws {
-        let capacity: Storage.Slot.Count = 10
+        let capacity: Index<Storage>.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
-        let slot: Storage.Slot = .zero
+        let slot: Index<Storage> = .zero
 
         storage.initialize(to: 42, at: slot)
-        storage.initialization = .linear(count: Storage.Slot.Count(1))
+        storage.initialization = .linear(count: Index<Storage>.Count(1))
 
         let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: slot)
         let value = unsafe ptr.pointee

@@ -36,7 +36,7 @@ extension Storage.Heap where Element: ~Copyable {
 extension Storage.Heap.Header {
     /// The total number of initialized slots.
     @inlinable
-    public var count: Storage.Slot.Count {
+    public var count: Index<Storage>.Count {
         initialization.count
     }
 

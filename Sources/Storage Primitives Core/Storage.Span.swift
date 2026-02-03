@@ -20,14 +20,14 @@ extension Swift.Range<Index<Storage>> {
 
     /// The number of slots in the span.
     @inlinable
-    public var count: Storage.Slot.Count {
+    public var count: Bound.Count {
         try! lowerBound.distance.forward(to: upperBound)
     }
 }
 
 // MARK: - Factory Methods
 
-extension Swift.Range<Storage.Slot> {
+extension Swift.Range<Index<Storage>> {
     /// An empty span starting and ending at slot zero.
     @inlinable
     public static var empty: Self {
@@ -41,8 +41,8 @@ extension Swift.Range<Storage.Slot> {
     ///   - count: The number of slots in the range.
     @inlinable
     public init(
-        start: Storage.Slot,
-        count: Storage.Slot.Count
+        start: Bound,
+        count: Bound.Count
     ) {
         unsafe self.init(uncheckedBounds: (lower: start, upper: start + count))
     }

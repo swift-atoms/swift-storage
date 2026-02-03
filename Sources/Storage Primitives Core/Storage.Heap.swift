@@ -30,18 +30,18 @@ extension Storage {
     /// ## Usage
     ///
     /// ```swift
-    /// let storage = Storage.Heap<Int>.create(minimumCapacity: Storage.Slot.Count(10))
+    /// let storage = Storage.Heap<Int>.create(minimumCapacity: Index<Storage>.Count(10))
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
     /// ```
     public final class Heap<Element: ~Copyable>: ManagedBuffer<Storage.Heap<Element>.Header, Element> {
         deinit {
-            func deinitialize(range: Swift.Range<Storage.Slot>) {
+            func deinitialize(range: Swift.Range<Index<Storage>>) {
                 guard !range.isEmpty else { return }
                 _ = unsafe withUnsafeMutablePointerToElements { elements in
                     var slot = range.lowerBound
                     while slot < range.upperBound {
-                        let offset = Slot.Offset(fromZero: slot).retag(Element.self)
+                        let offset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
                         unsafe (elements + offset).deinitialize(count: 1)
                         slot = slot.successor.saturating()
                     }

@@ -32,7 +32,7 @@ Compare the current `swift-storage-primitives` implementation against the centra
 | `Storage.Heap.Header` | Storage.Heap.Header.swift | ManagedBuffer header (wraps Initialization) |
 | `Storage.Initialization` | Storage.Initialization.swift | empty / one(Span) / two(first, second) |
 | `Storage.Span` | Storage.Span.swift | Half-open slot interval [start, end) |
-| `Storage.Slot` | Storage.Slot.swift | `Tagged<Storage, Ordinal>` physical coordinate |
+| `Index<Storage>` | Index<Storage>.swift | `Tagged<Storage, Ordinal>` physical coordinate |
 | `Storage.Shift` | Storage.Shift.swift | Tag for `.shift.left(removedAt:count:)` property |
 
 ### Current Modules
@@ -52,7 +52,7 @@ Compare the current `swift-storage-primitives` implementation against the centra
 
 | Implementation | Research Source | Assessment |
 |---------------|---------------|------------|
-| `Storage.Slot = Tagged<Storage, Ordinal>` | integration-maximization: phantom typing | Correct: zero-cost typed coordinate |
+| `Index<Storage> = Tagged<Storage, Ordinal>` | integration-maximization: phantom typing | Correct: zero-cost typed coordinate |
 | `Storage.Initialization` with `.two(first:second:)` | Collection Primitives Architecture: ring buffer wrap | Correct: handles circular initialization |
 | Conditional `Copyable`/`Sendable` on Static | Collection Primitives Architecture §5.1 | Correct: matches ADT patterns |
 | Typed throws on `Static.init()` | first-principles §7 (current state analysis) | Correct: `throws(Error)` not bare `throws` |
@@ -108,7 +108,7 @@ If both: `Storage.Heap`, `Storage.Static` (hybrid — heap by placement, static 
 |---------------|------------|
 | `Storage.Shift` tag type | Implementation detail for shift-left operations. No research covers it, but it follows the Property pattern from property-primitives. Acceptable. |
 | `Affine.Discrete.Ratio<Storage, Memory>.stride` (64-byte constant) | Used for slot sizing. Mentioned in inline-storage-span-access but not independently researched. The choice of 64 bytes is pragmatic, not derived from theory. Worth documenting rationale. |
-| Dual Index-based AND Slot-based APIs on Dynamic | Storage.Dynamic has both `pointer(at: Index<Element>)` and `pointer(at: Storage.Slot)`. The Index-based API appears to be backward compatibility. Research doesn't address when to prefer which. |
+| Dual Index-based AND Slot-based APIs on Dynamic | Storage.Dynamic has both `pointer(at: Index<Element>)` and `pointer(at: Index<Storage>)`. The Index-based API appears to be backward compatibility. Research doesn't address when to prefer which. |
 
 ### 2.5 Implementation Diverges from Research
 
@@ -125,7 +125,7 @@ If both: `Storage.Heap`, `Storage.Static` (hybrid — heap by placement, static 
 
 ### What's Right
 
-The current implementation is architecturally sound. The core abstractions — `Storage.Slot` as a phantom-typed coordinate, `Storage.Initialization` with ring buffer support, `Storage.Span` for contiguous slot ranges, and the `Dynamic`/`Static` split — are well-designed and align with the settled research decisions.
+The current implementation is architecturally sound. The core abstractions — `Index<Storage>` as a phantom-typed coordinate, `Storage.Initialization` with ring buffer support, `Storage.Span` for contiguous slot ranges, and the `Dynamic`/`Static` split — are well-designed and align with the settled research decisions.
 
 ### What Needs Decision
 

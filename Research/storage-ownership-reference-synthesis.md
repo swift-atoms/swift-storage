@@ -316,7 +316,7 @@ Storage.Inline<Element, let capacity>  ← EXISTS. InlineArray-based, 64-byte sl
 
 Storage.Initialization  ← EXISTS. Tracks which slots are initialized.
 Storage.Span            ← EXISTS. Range of initialized slots.
-Storage.Slot            ← EXISTS. Physical slot coordinate.
+Index<Storage>            ← EXISTS. Physical slot coordinate.
 Storage.Header          ← EXISTS. ManagedBuffer header.
 ```
 
@@ -367,7 +367,7 @@ Based on the first-principles research observation that `Storage.Ring` is access
 | `Storage.Heap.Header` | Keep (part of Heap) | Metadata for ManagedBuffer header |
 | `Storage.Initialization` | Keep | Fundamental to any typed storage |
 | `Storage.Span` | Keep | Fundamental to initialization tracking |
-| `Storage.Slot` | Keep | Physical coordinate system |
+| `Index<Storage>` | Keep | Physical coordinate system |
 
 ### 4.6 Staged Implementation Plan
 

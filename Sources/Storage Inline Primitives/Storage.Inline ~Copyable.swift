@@ -35,10 +35,10 @@ extension Storage.Inline where Element: ~Copyable {
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    public func pointer(at slot: Storage.Slot) -> UnsafePointer<Element> {
+    public func pointer(at slot: Index<Storage>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
             return unsafe UnsafeRawPointer(base)
-                .advanced(by: (Storage.Slot.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
                 .assumingMemoryBound(to: Element.self)
         }
     }
@@ -50,10 +50,10 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized.
     @inlinable
     @_disfavoredOverload
-    public mutating func pointer(at slot: Storage.Slot) -> UnsafeMutablePointer<Element> {
+    public mutating func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
             return unsafe UnsafeMutableRawPointer(base)
-                .advanced(by: (Storage.Slot.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
                 .assumingMemoryBound(to: Element.self)
         }
     }
@@ -66,7 +66,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public mutating func initialize(to element: consuming Element, at slot: Storage.Slot) {
+    public mutating func initialize(to element: consuming Element, at slot: Index<Storage>) {
         unsafe pointer(at: slot).initialize(to: element)
     }
 
@@ -77,7 +77,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public mutating func move(at slot: Storage.Slot) -> Element {
+    public mutating func move(at slot: Index<Storage>) -> Element {
         unsafe pointer(at: slot).move()
     }
 }
@@ -92,10 +92,10 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Note: Non-mutating to allow use from deinit-like contexts.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(at slot: Storage.Slot) {
+    public func deinitialize(at slot: Index<Storage>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
             unsafe UnsafeMutableRawPointer(mutating: base)
-                .advanced(by: (Storage.Slot.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
                 .assumingMemoryBound(to: Element.self)
                 .deinitialize(count: 1)
         }
@@ -108,7 +108,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Note: Non-mutating to allow use from deinit-like contexts.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(range: Swift.Range<Storage.Slot>) {
+    public func deinitialize(range: Swift.Range<Index<Storage>>) {
         guard !range.isEmpty else { return }
         var slot = range.lowerBound
         while slot < range.upperBound {
@@ -151,13 +151,13 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public mutating func move(range: Swift.Range<Storage.Slot>, to destination: Storage.Heap<Element>) {
+    public mutating func move(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
         unsafe destination.withUnsafeMutablePointerToElements { dst in
             var srcSlot = range.lowerBound
-            var dstSlot: Storage.Slot = .zero
+            var dstSlot: Index<Storage> = .zero
             while srcSlot < range.upperBound {
-                let dstOffset = Storage.Slot.Offset(fromZero: dstSlot).retag(Element.self)
+                let dstOffset = Index<Storage>.Offset(fromZero: dstSlot).retag(Element.self)
                 unsafe (dst + dstOffset).initialize(to: self.pointer(at: srcSlot).move())
                 srcSlot = srcSlot.successor.saturating()
                 dstSlot = dstSlot.successor.saturating()

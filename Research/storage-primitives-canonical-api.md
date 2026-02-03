@@ -37,7 +37,7 @@ Storage is the **coordination layer** between raw memory and buffers/ADTs. What 
 | Safe deinit (only initialized slots) | No | Yes |
 | Bulk move/copy/deinitialize | No | Yes |
 
-**Storage speaks only in `Storage.Slot` and `Storage.Span`.**
+**Storage speaks only in `Index<Storage>` and `Storage.Span`.**
 
 Storage does NOT know about:
 - `Index<Element>` — logical ADT positions (buffer/ADT layer maps these to slots)
@@ -55,7 +55,7 @@ Storage does NOT know about:
 | Type | Kind | File |
 |------|------|------|
 | `Storage` | `enum` (namespace) | `Storage.swift` |
-| `Storage.Slot` | `typealias` = `Tagged<Storage, Ordinal>` | `Storage.Slot.swift` |
+| `Index<Storage>` | `typealias` = `Tagged<Storage, Ordinal>` | `Index<Storage>.swift` |
 | `Storage.Span` | `struct` | `Storage.Span.swift` |
 | `Storage.Initialization` | `enum` | `Storage.Initialization.swift` |
 | `Storage.Heap<Element: ~Copyable>` | `final class` | `Storage.Heap.swift` |
@@ -90,22 +90,22 @@ public enum Storage {}
 
 ---
 
-### Storage.Slot
+### Index<Storage>
 
 ```swift
-// File: Storage.Slot.swift
+// File: Index<Storage>.swift
 extension Storage {
     /// Physical slot coordinate in storage [0, capacity).
     ///
-    /// All storage APIs accept Storage.Slot, never Index<Element>.
+    /// All storage APIs accept Index<Storage>, never Index<Element>.
     /// Buffer disciplines map logical indices to physical slots.
     public typealias Slot = Tagged<Storage, Ordinal>
 }
 ```
 
 Inherits from `Tagged<Storage, Ordinal>`:
-- `Storage.Slot.Count` — count of slots
-- `Storage.Slot.Offset` — distance between slots
+- `Index<Storage>.Count` — count of slots
+- `Index<Storage>.Offset` — distance between slots
 
 ---
 
@@ -120,14 +120,14 @@ extension Storage {
         public let end: Slot
 
         public init(start: Slot, end: Slot)
-        public init(start: Storage.Slot, count: Storage.Slot.Count)
+        public init(start: Index<Storage>, count: Index<Storage>.Count)
     }
 }
 
 // Computed properties
 extension Storage.Span {
     public var isEmpty: Bool
-    public var count: Storage.Slot.Count
+    public var count: Index<Storage>.Count
 }
 
 // Factory
@@ -159,13 +159,13 @@ extension Storage {
 
 // Computed properties
 extension Storage.Initialization {
-    public var count: Storage.Slot.Count
+    public var count: Index<Storage>.Count
     public var isEmpty: Bool
 }
 
 // Factory
 extension Storage.Initialization {
-    public static func linear(count: Storage.Slot.Count) -> Self
+    public static func linear(count: Index<Storage>.Count) -> Self
 }
 ```
 
@@ -202,7 +202,7 @@ extension Storage.Heap where Element: ~Copyable {
 }
 
 extension Storage.Heap.Header {
-    public var count: Storage.Slot.Count
+    public var count: Index<Storage>.Count
     public var isEmpty: Bool
 }
 ```
@@ -216,7 +216,7 @@ No changes from current. This is correct.
 extension Storage.Heap where Element: ~Copyable {
     /// Creates storage with the specified minimum slot capacity.
     public static func create(
-        minimumCapacity: Storage.Slot.Count
+        minimumCapacity: Index<Storage>.Count
     ) -> Storage.Heap<Element>
 }
 ```
@@ -229,12 +229,12 @@ extension Storage.Heap where Element: ~Copyable {
     public var initialization: Storage.Initialization { get set }
 
     /// Storage capacity in slot count.
-    public var slotCapacity: Storage.Slot.Count { get }
+    public var slotCapacity: Index<Storage>.Count { get }
 }
 ```
 
 > **Note on `slotCapacity`**: This name exists because `ManagedBuffer.capacity` returns `Int`.
-> Storage speaks in `Storage.Slot.Count`. The name distinguishes the typed accessor
+> Storage speaks in `Index<Storage>.Count`. The name distinguishes the typed accessor
 > from the inherited untyped one.
 
 #### Storage.Heap — Fundamental Slot Access
@@ -243,19 +243,19 @@ extension Storage.Heap where Element: ~Copyable {
 extension Storage.Heap where Element: ~Copyable {
     /// Returns a mutable pointer to the element at the given physical slot.
     @unsafe
-    public func pointer(at slot: Storage.Slot) -> UnsafeMutablePointer<Element>
+    public func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element>
 
     /// Initializes storage at the given physical slot.
     /// Caller is responsible for updating initialization state.
-    public func initialize(to element: consuming Element, at slot: Storage.Slot)
+    public func initialize(to element: consuming Element, at slot: Index<Storage>)
 
     /// Moves the element at the given physical slot, deinitializing that slot.
     /// Caller is responsible for updating initialization state.
-    public func move(at slot: Storage.Slot) -> Element
+    public func move(at slot: Index<Storage>) -> Element
 
     /// Deinitializes (destroys) the element at the given physical slot.
     /// Caller is responsible for updating initialization state.
-    public func deinitialize(at slot: Storage.Slot)
+    public func deinitialize(at slot: Index<Storage>)
 }
 ```
 
@@ -361,24 +361,24 @@ extension Storage.Inline where Element: ~Copyable {
     /// Non-mutating: valid in _read accessors where self is borrowed.
     @unsafe
     @_lifetime(borrow self)
-    public func pointer(at slot: Storage.Slot) -> UnsafePointer<Element>
+    public func pointer(at slot: Index<Storage>) -> UnsafePointer<Element>
 
     /// Returns a mutable pointer to the element at the given physical slot.
     @unsafe
-    public mutating func pointer(at slot: Storage.Slot) -> UnsafeMutablePointer<Element>
+    public mutating func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element>
 
     /// Initializes storage at the given physical slot.
     /// Caller is responsible for updating initialization state.
-    public mutating func initialize(to element: consuming Element, at slot: Storage.Slot)
+    public mutating func initialize(to element: consuming Element, at slot: Index<Storage>)
 
     /// Moves the element at the given physical slot, deinitializing that slot.
     /// Caller is responsible for updating initialization state.
-    public mutating func move(at slot: Storage.Slot) -> Element
+    public mutating func move(at slot: Index<Storage>) -> Element
 
     /// Deinitializes (destroys) the element at the given physical slot.
     /// Non-mutating to allow use from deinit-like contexts.
     /// Caller is responsible for updating initialization state.
-    public func deinitialize(at slot: Storage.Slot)
+    public func deinitialize(at slot: Index<Storage>)
 }
 ```
 
@@ -430,7 +430,7 @@ extension Storage.Inline where Element: Copyable {
 | File | Contents |
 |------|----------|
 | `Storage.swift` | `public enum Storage {}` — namespace only |
-| `Storage.Slot.swift` | `Storage.Slot` typealias |
+| `Index<Storage>.swift` | `Index<Storage>` typealias |
 | `Storage.Span.swift` | `Storage.Span` struct + computed properties + factory |
 | `Storage.Initialization.swift` | `Storage.Initialization` enum + computed properties + factory |
 | `Storage.Heap.swift` | `Storage.Heap<Element>` class declaration + deinit |
@@ -525,7 +525,7 @@ extension Storage.Inline where Element: Copyable {
 | `Storage` | Domain | ✓ |
 | `Storage.Heap` | Domain.Variant | ✓ |
 | `Storage.Inline` | Domain.Variant | ✓ |
-| `Storage.Slot` | Domain.Coordinate | ✓ |
+| `Index<Storage>` | Domain.Coordinate | ✓ |
 | `Storage.Span` | Domain.Range | ✓ |
 | `Storage.Initialization` | Domain.State | ✓ |
 | `Storage.Heap.Header` | Domain.Variant.Metadata | ✓ |
@@ -557,12 +557,12 @@ Current `Storage.swift` contains Storage + Heap + Inline. Split into three files
 
 ## Complete Public API Surface (Final)
 
-### Storage.Slot
+### Index<Storage>
 
 ```
-Storage.Slot                              typealias = Tagged<Storage, Ordinal>
-Storage.Slot.Count                        (inherited)
-Storage.Slot.Offset                       (inherited)
+Index<Storage>                              typealias = Tagged<Storage, Ordinal>
+Index<Storage>.Count                        (inherited)
+Index<Storage>.Offset                       (inherited)
 ```
 
 ### Storage.Span
