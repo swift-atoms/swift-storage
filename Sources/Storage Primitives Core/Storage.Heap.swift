@@ -36,11 +36,11 @@ extension Storage {
     /// ```
     public final class Heap<Element: ~Copyable>: ManagedBuffer<Storage.Heap<Element>.Header, Element> {
         deinit {
-            func deinitialize(span: Storage.Span) {
-                guard !span.isEmpty else { return }
+            func deinitialize(range: Swift.Range<Storage.Slot>) {
+                guard !range.isEmpty else { return }
                 _ = unsafe withUnsafeMutablePointerToElements { elements in
-                    var slot = span.start
-                    while slot < span.end {
+                    var slot = range.lowerBound
+                    while slot < range.upperBound {
                         let offset = Slot.Offset(fromZero: slot).retag(Element.self)
                         unsafe (elements + offset).deinitialize(count: 1)
                         slot = slot.successor.saturating()
@@ -51,11 +51,11 @@ extension Storage {
             switch header.initialization {
             case .empty:
                 return
-            case .one(let span):
-                deinitialize(span: span)
+            case .one(let range):
+                deinitialize(range: range)
             case .two(let first, let second):
-                deinitialize(span: first)
-                deinitialize(span: second)
+                deinitialize(range: first)
+                deinitialize(range: second)
             }
         }
     }

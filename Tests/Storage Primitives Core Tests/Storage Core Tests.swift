@@ -61,8 +61,8 @@ struct StorageCoreTests {
     func `span empty factory`() throws {
         let span = Storage.Span.empty
         #expect(span.isEmpty)
-        #expect(span.start == .zero)
-        #expect(span.end == .zero)
+        #expect(span.lowerBound == .zero)
+        #expect(span.upperBound == .zero)
     }
 
     @Test

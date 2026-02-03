@@ -40,14 +40,14 @@ extension Storage {
         case empty
 
         /// A single contiguous range of initialized slots.
-        case one(Span)
+        case one(Swift.Range<Storage.Slot>)
 
         /// Two disjoint ranges of initialized slots.
         ///
         /// Invariants:
         /// - `first.start < second.start`
         /// - `first.end <= second.start`
-        case two(first: Span, second: Span)
+        case two(first: Swift.Range<Storage.Slot>, second: Swift.Range<Storage.Slot>)
     }
 }
 
@@ -93,6 +93,6 @@ extension Storage.Initialization {
     @inlinable
     public static func linear(count: Storage.Slot.Count) -> Self {
         guard count > .zero else { return .empty }
-        return .one(Storage.Span(start: .zero, count: count))
+        return .one(Swift.Range<Storage.Slot>(start: .zero, count: count))
     }
 }

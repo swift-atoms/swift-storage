@@ -101,17 +101,17 @@ extension Storage.Inline where Element: ~Copyable {
         }
     }
 
-    /// Deinitializes all elements in the given span.
+    /// Deinitializes all elements in the given range.
     ///
-    /// - Parameter span: The contiguous range of slots to deinitialize.
-    /// - Precondition: All slots in the span must contain initialized elements.
+    /// - Parameter range: The contiguous range of slots to deinitialize.
+    /// - Precondition: All slots in the range must contain initialized elements.
     /// - Note: Non-mutating to allow use from deinit-like contexts.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(span: Storage.Span) {
-        guard !span.isEmpty else { return }
-        var slot = span.start
-        while slot < span.end {
+    public func deinitialize(range: Swift.Range<Storage.Slot>) {
+        guard !range.isEmpty else { return }
+        var slot = range.lowerBound
+        while slot < range.upperBound {
             deinitialize(at: slot)
             slot = slot.successor.saturating()
         }
@@ -126,11 +126,11 @@ extension Storage.Inline where Element: ~Copyable {
         switch _initialization {
         case .empty:
             return
-        case .one(let span):
-            deinitialize(span: span)
+        case .one(let range):
+            deinitialize(range: range)
         case .two(let first, let second):
-            deinitialize(span: first)
-            deinitialize(span: second)
+            deinitialize(range: first)
+            deinitialize(range: second)
         }
         _initialization = .empty
     }
@@ -139,24 +139,24 @@ extension Storage.Inline where Element: ~Copyable {
 // MARK: - Cross-Storage Operations
 
 extension Storage.Inline where Element: ~Copyable {
-    /// Moves elements in span to linear positions in destination heap storage.
+    /// Moves elements in range to linear positions in destination heap storage.
     ///
-    /// Elements from the source span are placed at slots 0..<span.count in the
+    /// Elements from the source range are placed at slots 0..<range.count in the
     /// destination storage. Source slots are deinitialized after moving.
     ///
     /// - Parameters:
-    ///   - span: The contiguous range of slots to move from.
+    ///   - range: The contiguous range of slots to move from.
     ///   - destination: The destination heap storage.
-    /// - Precondition: All slots in the span must contain initialized elements.
-    /// - Precondition: Destination slots 0..<span.count must be uninitialized.
+    /// - Precondition: All slots in the range must contain initialized elements.
+    /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public mutating func move(span: Storage.Span, to destination: Storage.Heap<Element>) {
-        guard !span.isEmpty else { return }
+    public mutating func move(range: Swift.Range<Storage.Slot>, to destination: Storage.Heap<Element>) {
+        guard !range.isEmpty else { return }
         unsafe destination.withUnsafeMutablePointerToElements { dst in
-            var srcSlot = span.start
+            var srcSlot = range.lowerBound
             var dstSlot: Storage.Slot = .zero
-            while srcSlot < span.end {
+            while srcSlot < range.upperBound {
                 let dstOffset = Storage.Slot.Offset(fromZero: dstSlot).retag(Element.self)
                 unsafe (dst + dstOffset).initialize(to: self.pointer(at: srcSlot).move())
                 srcSlot = srcSlot.successor.saturating()

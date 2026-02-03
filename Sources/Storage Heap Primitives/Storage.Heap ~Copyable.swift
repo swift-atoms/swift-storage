@@ -103,18 +103,18 @@ extension Storage.Heap where Element: ~Copyable {
 // MARK: - Span Operations
 
 extension Storage.Heap where Element: ~Copyable {
-    /// Deinitializes all elements in the given span.
+    /// Deinitializes all elements in the given range.
     ///
-    /// Iterates through all slots in the span and deinitializes each element.
+    /// Iterates through all slots in the range and deinitializes each element.
     ///
-    /// - Parameter span: The contiguous range of slots to deinitialize.
-    /// - Precondition: All slots in the span must contain initialized elements.
+    /// - Parameter range: The contiguous range of slots to deinitialize.
+    /// - Precondition: All slots in the range must contain initialized elements.
     /// - Note: The caller is responsible for updating `initialization` state.
     @inlinable
-    public func deinitialize(span: Storage.Span) {
-        guard !span.isEmpty else { return }
-        var slot = span.start
-        while slot < span.end {
+    public func deinitialize(range: Swift.Range<Storage.Slot>) {
+        guard !range.isEmpty else { return }
+        var slot = range.lowerBound
+        while slot < range.upperBound {
             deinitialize(at: slot)
             slot = slot.successor.saturating()
         }
@@ -129,63 +129,63 @@ extension Storage.Heap where Element: ~Copyable {
         switch header.initialization {
         case .empty:
             return
-        case .one(let span):
-            deinitialize(span: span)
+        case .one(let range):
+            deinitialize(range: range)
         case .two(let first, let second):
-            deinitialize(span: first)
-            deinitialize(span: second)
+            deinitialize(range: first)
+            deinitialize(range: second)
         }
         header.initialization = .empty
     }
 
-    /// Moves elements from a span to linear positions in the destination storage.
+    /// Moves elements from a range to linear positions in the destination storage.
     ///
-    /// Elements are moved from the source span and placed at slots 0..<span.count
+    /// Elements are moved from the source range and placed at slots 0..<range.count
     /// in the destination storage. Source slots are deinitialized after moving.
     ///
     /// - Parameters:
-    ///   - span: The contiguous range of slots to move from.
+    ///   - range: The contiguous range of slots to move from.
     ///   - destination: The destination storage to move elements into.
-    /// - Precondition: All slots in the span must contain initialized elements.
-    /// - Precondition: Destination slots 0..<span.count must be uninitialized.
+    /// - Precondition: All slots in the range must contain initialized elements.
+    /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public func move(span: Storage.Span, to destination: Storage.Heap<Element>) {
-        guard !span.isEmpty else { return }
-        var srcSlot = span.start
+    public func move(range: Swift.Range<Storage.Slot>, to destination: Storage.Heap<Element>) {
+        guard !range.isEmpty else { return }
+        var srcSlot = range.lowerBound
         var dstSlot: Storage.Slot = .zero
-        while srcSlot < span.end {
+        while srcSlot < range.upperBound {
             destination.initialize(to: move(at: srcSlot), at: dstSlot)
             srcSlot = srcSlot.successor.saturating()
             dstSlot = dstSlot.successor.saturating()
         }
     }
 
-    /// Provides read-only span access to elements in the specified slot range.
+    /// Provides read-only range access to elements in the specified slot range.
     ///
-    /// The span is valid only for the duration of the closure.
+    /// The range is valid only for the duration of the closure.
     ///
     /// - Parameters:
-    ///   - span: The contiguous range of slots to access.
-    ///   - body: A closure that receives the span.
+    ///   - range: The contiguous range of slots to access.
+    ///   - body: A closure that receives the range.
     /// - Returns: The value returned by the closure.
     /// - Throws: Rethrows any error thrown by the closure.
-    /// - Precondition: Elements in the span range must be initialized and contiguous.
+    /// - Precondition: Elements in the range range must be initialized and contiguous.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
-        _ span: Storage.Span,
+        _ range: Swift.Range<Storage.Slot>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafeMutablePointerToElements { base in
-            let startOffset = Storage.Slot.Offset(fromZero: span.start).retag(Element.self)
-            let count = Int(bitPattern: span.count)
-            let spanView = unsafe Span(
+            let startOffset = Storage.Slot.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let count = Int(bitPattern: range.count)
+            let rangeView = unsafe Span(
                 _unsafeStart: UnsafePointer(base + startOffset),
                 count: count
             )
             do {
-                return try body(spanView)
+                return try body(rangeView)
             } catch let e as E {
                 thrown = e
                 return nil
