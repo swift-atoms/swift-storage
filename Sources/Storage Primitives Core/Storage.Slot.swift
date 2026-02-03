@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Affine_Primitives
+public import Index_Primitives
 @_spi(Internal) public import Identity_Primitives
 
 extension Storage {
@@ -24,5 +25,5 @@ extension Storage {
     /// |------|-------|--------|
     /// | `Storage.Slot` | Physical | Storage memory [0, capacity) |
     /// | `Index<Element>` | Logical | ADT positions (user-facing) |
-    public typealias Slot = Tagged<Storage, Ordinal>
+    public typealias Slot = Index<Storage>
 }

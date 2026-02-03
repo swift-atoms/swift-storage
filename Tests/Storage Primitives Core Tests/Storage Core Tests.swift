@@ -42,7 +42,7 @@ struct StorageCoreTests {
 
     @Test
     func `Storage Span type exists`() throws {
-        let _: Storage.Span.Type = Storage.Span.self
+        let _: Swift.Range<Storage.Slot>.Type = Swift.Range<Storage.Slot>.self
     }
 
     @Test
@@ -59,7 +59,7 @@ struct StorageCoreTests {
 
     @Test
     func `span empty factory`() throws {
-        let span = Storage.Span.empty
+        let span = Swift.Range<Storage.Slot>.empty
         #expect(span.isEmpty)
         #expect(span.lowerBound == .zero)
         #expect(span.upperBound == .zero)
@@ -67,7 +67,7 @@ struct StorageCoreTests {
 
     @Test
     func `span from start and count`() throws {
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(5))
+        let span = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
         #expect(!span.isEmpty)
         #expect(span.count == Storage.Slot.Count(5))
     }
@@ -96,8 +96,8 @@ struct StorageCoreTests {
 
     @Test
     func `initialization two spans`() throws {
-        let first = Storage.Span(start: .zero, count: Storage.Slot.Count(3))
-        let second = Storage.Span(start: Storage.Slot(6), count: Storage.Slot.Count(2))
+        let first = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(3))
+        let second = Swift.Range<Storage.Slot>(start: Storage.Slot(6), count: Storage.Slot.Count(2))
         let init_ = Storage.Initialization.two(first: first, second: second)
         #expect(!init_.isEmpty)
         #expect(init_.count == Storage.Slot.Count(5))

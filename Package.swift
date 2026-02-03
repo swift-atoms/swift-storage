@@ -35,7 +35,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../swift-index-primitives"),
-        .package(path: "../swift-range-primitives"),
         .package(path: "../swift-memory-primitives"),
     ],
     targets: [
@@ -44,7 +43,6 @@ let package = Package(
             name: "Storage Primitives Core",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
                 .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
             ]
         ),

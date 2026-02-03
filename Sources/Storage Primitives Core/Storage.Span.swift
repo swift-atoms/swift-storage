@@ -13,7 +13,7 @@ public import Index_Primitives
 
 // MARK: - Computed Properties
 
-extension Swift.Range<Storage.Slot> {
+extension Swift.Range<Index<Storage>> {
     /// Whether the span contains no slots.
     @inlinable
     public var isEmpty: Bool { lowerBound == upperBound }
