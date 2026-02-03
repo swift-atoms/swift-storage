@@ -98,7 +98,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `deinitialize span of elements`() throws {
+    func `deinitialize range of elements`() throws {
         var storage = try Storage.Inline<Int, 8>()
 
         var slot: Storage.Slot = .zero
@@ -107,8 +107,8 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(4))
-        storage.deinitialize(span: span)
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(4))
+        storage.deinitialize(range: range)
     }
 
     @Test
@@ -136,7 +136,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `deinitialize partial span`() throws {
+    func `deinitialize partial range`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -153,8 +153,8 @@ struct StorageInlineTests {
         }
 
         // Deinitialize slots 1..<4
-        let span = Storage.Span(start: Storage.Slot(1), count: Storage.Slot.Count(3))
-        storage.deinitialize(span: span)
+        let range = Swift.Range<Storage.Slot>(start: Storage.Slot(1), count: Storage.Slot.Count(3))
+        storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
 
@@ -206,7 +206,7 @@ struct StorageInlineTests {
     // MARK: - Move to Heap Storage Tests
 
     @Test
-    func `move span to heap storage`() throws {
+    func `move range to heap storage`() throws {
         var inline = try Storage.Inline<Int, 8>()
         let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
@@ -217,8 +217,8 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(4))
-        inline.move(span: span, to: heap)
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(4))
+        inline.move(range: range, to: heap)
         heap.initialization = .linear(count: Storage.Slot.Count(4))
 
         // Verify heap has the values
@@ -232,19 +232,19 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `move empty span to heap storage`() throws {
+    func `move empty range to heap storage`() throws {
         var inline = try Storage.Inline<Int, 8>()
         let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        let span = Storage.Span.empty
-        inline.move(span: span, to: heap)
+        let range = Swift.Range<Storage.Slot>.empty
+        inline.move(range: range, to: heap)
     }
 
     // MARK: - Copy to Heap Storage Tests
 
     @Test
-    func `copy span to heap storage`() throws {
+    func `copy range to heap storage`() throws {
         var inline = try Storage.Inline<Int, 8>()
         let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
@@ -255,8 +255,8 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(4))
-        inline.copy(span: span, to: heap)
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(4))
+        inline.copy(range: range, to: heap)
         heap.initialization = .linear(count: Storage.Slot.Count(4))
 
         // Verify inline still has original values
@@ -278,19 +278,19 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `copy empty span to heap storage`() throws {
+    func `copy empty range to heap storage`() throws {
         let inline = try Storage.Inline<Int, 8>()
         let capacity: Storage.Slot.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
-        let span = Storage.Span.empty
-        inline.copy(span: span, to: heap)
+        let range = Swift.Range<Storage.Slot>.empty
+        inline.copy(range: range, to: heap)
     }
 
     // MARK: - Two-Span Deinitialize Tests
 
     @Test
-    func `deinitialize with two-span initialization`() throws {
+    func `deinitialize with two-range initialization`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -307,8 +307,8 @@ struct StorageInlineTests {
         storage.initialize(to: Tracker(), at: Storage.Slot(6))
         storage.initialize(to: Tracker(), at: Storage.Slot(7))
 
-        let first = Storage.Span(start: .zero, count: Storage.Slot.Count(3))
-        let second = Storage.Span(start: Storage.Slot(6), count: Storage.Slot.Count(2))
+        let first = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(3))
+        let second = Swift.Range<Storage.Slot>(start: Storage.Slot(6), count: Storage.Slot.Count(2))
         storage.initialization = .two(first: first, second: second)
 
         storage.deinitialize()

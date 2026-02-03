@@ -117,7 +117,7 @@ struct StorageHeapTests {
     }
 
     @Test
-    func `deinitialize span of elements`() throws {
+    func `deinitialize range of elements`() throws {
         let capacity: Storage.Slot.Count = 10
         let storage = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -128,8 +128,8 @@ struct StorageHeapTests {
         }
         storage.initialization = .linear(count: Storage.Slot.Count(5))
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(5))
-        storage.deinitialize(span: span)
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
+        storage.deinitialize(range: range)
         storage.initialization = .empty
     }
 
@@ -163,7 +163,7 @@ struct StorageHeapTests {
     // MARK: - Deinitialize Span in Range Tests
 
     @Test
-    func `deinitialize partial span`() throws {
+    func `deinitialize partial range`() throws {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -181,8 +181,8 @@ struct StorageHeapTests {
         }
 
         // Deinitialize slots 1..<4
-        let span = Storage.Span(start: Storage.Slot(1), count: Storage.Slot.Count(3))
-        storage.deinitialize(span: span)
+        let range = Swift.Range<Storage.Slot>(start: Storage.Slot(1), count: Storage.Slot.Count(3))
+        storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
 
@@ -194,7 +194,7 @@ struct StorageHeapTests {
     // MARK: - Move Tests
 
     @Test
-    func `move span to new storage`() throws {
+    func `move range to new storage`() throws {
         let capacity: Storage.Slot.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
@@ -206,8 +206,8 @@ struct StorageHeapTests {
         }
         source.initialization = .linear(count: Storage.Slot.Count(3))
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(3))
-        source.move(span: span, to: destination)
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(3))
+        source.move(range: range, to: destination)
         destination.initialization = .linear(count: Storage.Slot.Count(3))
         source.initialization = .empty
 
@@ -309,7 +309,7 @@ struct StorageHeapTests {
     }
 
     @Test
-    func `copy span to new storage`() throws {
+    func `copy range to new storage`() throws {
         let capacity: Storage.Slot.Count = 10
         let source = Storage.Heap<Int>.create(minimumCapacity: capacity)
         let destination = Storage.Heap<Int>.create(minimumCapacity: capacity)
@@ -322,8 +322,8 @@ struct StorageHeapTests {
         source.initialization = .linear(count: Storage.Slot.Count(5))
 
         // Copy only slots 1..<4
-        let span = Storage.Span(start: Storage.Slot(1), count: Storage.Slot.Count(3))
-        source.copy(span: span, to: destination)
+        let range = Swift.Range<Storage.Slot>(start: Storage.Slot(1), count: Storage.Slot.Count(3))
+        source.copy(range: range, to: destination)
         destination.initialization = .linear(count: Storage.Slot.Count(3))
 
         // Verify destination has copies at linear positions 0..<3
@@ -380,8 +380,8 @@ struct StorageHeapTests {
         }
         storage.initialization = .linear(count: Storage.Slot.Count(5))
 
-        let span = Storage.Span(start: .zero, count: Storage.Slot.Count(5))
-        storage.withSpan(span) { readSpan in
+        let range = Swift.Range<Storage.Slot>(start: .zero, count: Storage.Slot.Count(5))
+        storage.withSpan(range) { readSpan in
             #expect(readSpan.count == 5)
             #expect(readSpan[0] == 0)
             #expect(readSpan[1] == 2)
