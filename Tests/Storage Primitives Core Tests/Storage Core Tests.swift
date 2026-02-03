@@ -34,7 +34,7 @@ struct StorageCoreTests {
     }
 
     @Test
-    func `Storage Slot types exist`() throws {
+    func `Index Storage types exist`() throws {
         let _: Index<Storage>.Type = Index<Storage>.self
         let _: Index<Storage>.Count.Type = Index<Storage>.Count.self
         let _: Index<Storage>.Offset.Type = Index<Storage>.Offset.self

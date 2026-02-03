@@ -1,9 +1,13 @@
+// ===----------------------------------------------------------------------===//
 //
-//  File.swift
-//  swift-storage-primitives
+// This source file is part of the swift-primitives open source project
 //
-//  Created by Coen ten Thije Boonkkamp on 27/01/2026.
+// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
+// Licensed under Apache License v2.0
 //
+// See LICENSE for license information
+//
+// ===----------------------------------------------------------------------===//
 
 @_exported import Storage_Primitives
 @_exported import Memory_Primitives_Test_Support
