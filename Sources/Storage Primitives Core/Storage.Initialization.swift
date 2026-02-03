@@ -63,9 +63,7 @@ extension Storage.Initialization {
         case .one(let span):
             return span.count
         case .two(let first, let second):
-            return Storage.Slot.Count(
-                first.count.rawValue.rawValue + second.count.rawValue.rawValue
-            )
+            return first.count + second.count
         }
     }
 

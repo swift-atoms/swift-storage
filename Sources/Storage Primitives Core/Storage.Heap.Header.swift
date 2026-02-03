@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage {
+extension Storage.Heap where Element: ~Copyable {
     /// Header for ManagedBuffer containing initialization state.
     ///
     /// Stored in the ManagedBuffer header slot to track which physical
@@ -17,13 +17,15 @@ extension Storage {
     /// this information to correctly deinitialize only initialized slots.
     public struct Header: Sendable {
         /// Which physical slots are initialized.
-        public var initialization: Initialization
+        public var initialization: Storage.Initialization
 
         /// Creates a header with the specified initialization state.
         ///
         /// - Parameter initialization: The initial state describing which slots are initialized.
         @inlinable
-        public init(initialization: Initialization = .empty) {
+        public init(
+            initialization: Storage.Initialization = .empty
+        ) {
             self.initialization = initialization
         }
     }
@@ -31,7 +33,7 @@ extension Storage {
 
 // MARK: - Computed Properties
 
-extension Storage.Header {
+extension Storage.Heap.Header {
     /// The total number of initialized slots.
     @inlinable
     public var count: Storage.Slot.Count {

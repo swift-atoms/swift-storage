@@ -11,7 +11,27 @@
 
 public import Storage_Primitives_Core
 
-// MARK: - Initialization State
+// MARK: - Factory
+
+extension Storage.Heap where Element: ~Copyable {
+    /// Creates storage with the specified minimum capacity.
+    ///
+    /// - Parameter minimumCapacity: The minimum number of slots to allocate.
+    /// - Returns: A new storage instance with empty initialization.
+    @inlinable
+    public static func create(
+        minimumCapacity: Storage.Slot.Count
+    ) -> Storage.Heap<Element> {
+        unsafe unsafeDowncast(
+            Storage.Heap<Element>.create(
+                minimumCapacity: Int(bitPattern: minimumCapacity)
+            ) { _ in Storage.Heap.Header() },
+            to: Storage.Heap<Element>.self
+        )
+    }
+}
+
+// MARK: - Properties
 
 extension Storage.Heap where Element: ~Copyable {
     /// The initialization state describing which slots are initialized.
@@ -21,14 +41,14 @@ extension Storage.Heap where Element: ~Copyable {
         set { header.initialization = newValue }
     }
 
-    /// Storage capacity in slot terms.
+    /// Storage capacity in slot count.
     @inlinable
     public var slotCapacity: Storage.Slot.Count {
         Storage.Slot.Count(UInt(capacity))
     }
 }
 
-// MARK: - Fundamental Element Access (Slot-Based)
+// MARK: - Fundamental Slot Access
 
 extension Storage.Heap where Element: ~Copyable {
     /// Returns a mutable pointer to the element at the given physical slot.
@@ -40,7 +60,7 @@ extension Storage.Heap where Element: ~Copyable {
     @unsafe
     public func pointer(at slot: Storage.Slot) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
-            let offset = Int(bitPattern: slot.rawValue.rawValue)
+            let offset = Storage.Slot.Offset(fromZero: slot).retag(Element.self)
             return unsafe $0 + offset
         }
     }
@@ -80,7 +100,7 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-// MARK: - Span-Based Operations
+// MARK: - Span Operations
 
 extension Storage.Heap where Element: ~Copyable {
     /// Deinitializes all elements in the given span.
@@ -93,14 +113,29 @@ extension Storage.Heap where Element: ~Copyable {
     @inlinable
     public func deinitialize(span: Storage.Span) {
         guard !span.isEmpty else { return }
-        _ = unsafe withUnsafeMutablePointerToElements { elements in
-            var slot = span.start
-            while slot < span.end {
-                let offset = Int(bitPattern: slot.rawValue.rawValue)
-                unsafe (elements + offset).deinitialize(count: 1)
-                slot = slot.successor.saturating()
-            }
+        var slot = span.start
+        while slot < span.end {
+            deinitialize(at: slot)
+            slot = slot.successor.saturating()
         }
+    }
+
+    /// Deinitializes all tracked initialized slots and resets initialization to .empty.
+    ///
+    /// Iterates the `initialization` state and deinitializes exactly those slots
+    /// that are tracked as initialized.
+    @inlinable
+    public func deinitialize() {
+        switch header.initialization {
+        case .empty:
+            return
+        case .one(let span):
+            deinitialize(span: span)
+        case .two(let first, let second):
+            deinitialize(span: first)
+            deinitialize(span: second)
+        }
+        header.initialization = .empty
     }
 
     /// Moves elements from a span to linear positions in the destination storage.
@@ -117,26 +152,15 @@ extension Storage.Heap where Element: ~Copyable {
     @inlinable
     public func move(span: Storage.Span, to destination: Storage.Heap<Element>) {
         guard !span.isEmpty else { return }
-        _ = unsafe withUnsafeMutablePointerToElements { srcElements in
-            unsafe destination.withUnsafeMutablePointerToElements { dstElements in
-                var srcSlot = span.start
-                var dstOffset = 0
-                while srcSlot < span.end {
-                    let srcOffset = Int(bitPattern: srcSlot.rawValue.rawValue)
-                    unsafe (dstElements + dstOffset).initialize(
-                        to: (srcElements + srcOffset).move()
-                    )
-                    srcSlot = srcSlot.successor.saturating()
-                    dstOffset += 1
-                }
-            }
+        var srcSlot = span.start
+        var dstSlot: Storage.Slot = .zero
+        while srcSlot < span.end {
+            destination.initialize(to: move(at: srcSlot), at: dstSlot)
+            srcSlot = srcSlot.successor.saturating()
+            dstSlot = dstSlot.successor.saturating()
         }
     }
-}
 
-// MARK: - Span Access
-
-extension Storage.Heap where Element: ~Copyable {
     /// Provides read-only span access to elements in the specified slot range.
     ///
     /// The span is valid only for the duration of the closure.
@@ -146,7 +170,7 @@ extension Storage.Heap where Element: ~Copyable {
     ///   - body: A closure that receives the span.
     /// - Returns: The value returned by the closure.
     /// - Throws: Rethrows any error thrown by the closure.
-    /// - Precondition: Elements in the span range must be initialized.
+    /// - Precondition: Elements in the span range must be initialized and contiguous.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ span: Storage.Span,
@@ -154,7 +178,7 @@ extension Storage.Heap where Element: ~Copyable {
     ) throws(E) -> R {
         var thrown: E? = nil
         let result: R? = unsafe withUnsafeMutablePointerToElements { base in
-            let startOffset = Int(bitPattern: span.start.rawValue.rawValue)
+            let startOffset = Storage.Slot.Offset(fromZero: span.start).retag(Element.self)
             let count = Int(bitPattern: span.count)
             let spanView = unsafe Span(
                 _unsafeStart: UnsafePointer(base + startOffset),

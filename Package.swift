@@ -21,12 +21,12 @@ let package = Package(
             targets: ["Storage Primitives Core"]
         ),
         .library(
-            name: "Storage Dynamic Primitives",
-            targets: ["Storage Dynamic Primitives"]
+            name: "Storage Heap Primitives",
+            targets: ["Storage Heap Primitives"]
         ),
         .library(
-            name: "Storage Static Primitives",
-            targets: ["Storage Static Primitives"]
+            name: "Storage Inline Primitives",
+            targets: ["Storage Inline Primitives"]
         ),
         .library(
             name: "Storage Primitives Test Support",
@@ -35,7 +35,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../swift-index-primitives"),
-        .package(path: "../swift-property-primitives"),
         .package(path: "../swift-range-primitives"),
         .package(path: "../swift-memory-primitives"),
     ],
@@ -46,25 +45,21 @@ let package = Package(
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
             ]
         ),
-        // Dynamic: Bulk operations on heap storage
+        // Heap: Bulk operations on heap storage
         .target(
-            name: "Storage Dynamic Primitives",
+            name: "Storage Heap Primitives",
             dependencies: [
                 "Storage Primitives Core",
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
         ),
-        // Static: Inline storage operations
+        // Inline: Inline storage operations
         .target(
-            name: "Storage Static Primitives",
+            name: "Storage Inline Primitives",
             dependencies: [
                 "Storage Primitives Core",
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
         ),
         // Public: Re-exports all modules
@@ -72,8 +67,8 @@ let package = Package(
             name: "Storage Primitives",
             dependencies: [
                 "Storage Primitives Core",
-                "Storage Dynamic Primitives",
-                "Storage Static Primitives",
+                "Storage Heap Primitives",
+                "Storage Inline Primitives",
             ]
         ),
         .target(
@@ -92,16 +87,16 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "Storage Dynamic Primitives Tests",
+            name: "Storage Heap Primitives Tests",
             dependencies: [
-                .target(name: "Storage Dynamic Primitives"),
+                .target(name: "Storage Heap Primitives"),
                 .target(name: "Storage Primitives Test Support")
             ]
         ),
         .testTarget(
-            name: "Storage Static Primitives Tests",
+            name: "Storage Inline Primitives Tests",
             dependencies: [
-                .target(name: "Storage Static Primitives"),
+                .target(name: "Storage Inline Primitives"),
                 .target(name: "Storage Primitives Test Support")
             ]
         ),

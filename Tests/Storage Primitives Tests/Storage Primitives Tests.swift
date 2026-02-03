@@ -11,8 +11,8 @@
 
 // Umbrella test target - tests are in module-specific test targets:
 // - Storage Primitives Core Tests
-// - Storage Dynamic Primitives Tests
-// - Storage Static Primitives Tests
+// - Storage Heap Primitives Tests
+// - Storage Inline Primitives Tests
 
 import Testing
 import Storage_Primitives

@@ -9,5 +9,15 @@
 //
 // ===----------------------------------------------------------------------===//
 
-@_exported public import Storage_Primitives_Core
-@_exported public import Property_Primitives
+public import Memory_Primitives_Core
+public import Affine_Primitives
+
+/// The stride from Storage.Slot to Memory bytes: 64 bytes per slot.
+///
+/// Inline storage uses 64-byte fixed slots to accommodate most element types
+/// while supporting ~Copyable elements via raw pointer access.
+extension Affine.Discrete.Ratio<Storage, Memory> {
+    public static var stride: Self {
+        .init(64)
+    }
+}

@@ -49,7 +49,7 @@ extension Storage.Span {
     /// The number of slots in the span.
     @inlinable
     public var count: Storage.Slot.Count {
-        Storage.Slot.Count(end.rawValue.rawValue - start.rawValue.rawValue)
+        try! start.distance.forward(to: end)
     }
 }
 
@@ -68,8 +68,10 @@ extension Storage.Span {
     ///   - start: The first slot in the range.
     ///   - count: The number of slots in the range.
     @inlinable
-    public init(start: Storage.Slot, count: Storage.Slot.Count) {
-        let endRaw = start.rawValue.rawValue + count.rawValue.rawValue
-        self.init(start: start, end: Storage.Slot(Ordinal(endRaw)))
+    public init(
+        start: Storage.Slot,
+        count: Storage.Slot.Count
+    ) {
+        self.init(start: start, end: start + count)
     }
 }

@@ -1,6 +1,78 @@
 # Storage Primitives Research
 
-| Document | Topic | Date | Status |
-|----------|-------|------|--------|
-| [inline-storage-read-pointer-escape](inline-storage-read-pointer-escape.md) | Pointer escape from `Storage.Static.read(at:)` | 2026-01-29 | DECISION |
-| [inline-storage-span-access](inline-storage-span-access.md) | Span access for inline storage | 2026-01-29 | DECISION |
+Centralized research for storage, buffer, and ADT primitives design.
+
+This directory consolidates all storage-related research from:
+- `swift-storage-primitives/Research/` (original)
+- `swift-memory-primitives/Research/` (buffer/storage docs moved 2026-02-03)
+- `swift-primitives/Research/` (storage-related docs moved 2026-02-03)
+- `swift-queue-primitives/Research/` (collection architecture moved 2026-02-03)
+- `swift-primitives/Documentation.docc/Research/` (queue integration moved 2026-02-03)
+- `swift-institute/Research/` (collection/range semantics moved 2026-02-03)
+- `swift-institute/Documentation.docc/` (data structures catalog moved 2026-02-03)
+
+## Synthesis
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [storage-ownership-reference-synthesis](storage-ownership-reference-synthesis.md) | **Master synthesis**: conceptual map, canonical set proposals, trade-off analysis, recommendation | IN_PROGRESS |
+
+## Foundational Research
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [storage-primitives-first-principles](storage-primitives-first-principles.md) | Academic lit review: Scott-Strachey, linear logic, ownership types, storage taxonomy (7 variants) | IN_PROGRESS |
+| [storage-primitives-design](storage-primitives-design.md) | Original architectural proposal: Layout types, headers, ring ops, migration path | SUPERSEDED |
+| [unified-storage-primitive](unified-storage-primitive.md) | Layered approach: Storage.Dynamic for Array/Stack, custom for Queue/Hash.Table | RECOMMENDATION |
+| [buffer-algebraic-structure](buffer-algebraic-structure.md) | Buffers as ad-hoc structs, not Tagged intervals — universal precedent survey | IN_PROGRESS |
+| [buffer-base-nullability](buffer-base-nullability.md) | Property pattern for nullable vs non-null buffer base address | DECISION |
+
+## Index and Arithmetic
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [ring-buffer-index-arithmetic](ring-buffer-index-arithmetic.md) | Two-tier: ℤ/Nℤ cyclic group for Bounded, % projection for dynamic | DECISION |
+
+## Inline Storage
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [inline-storage-read-pointer-escape](inline-storage-read-pointer-escape.md) | Closure-based fix for Storage.Static pointer escape | DECISION |
+| [inline-storage-span-access](inline-storage-span-access.md) | 64-byte slots prevent dense Span; natural split static vs heap | DECISION |
+| [inline-variant-naming-consistency](inline-variant-naming-consistency.md) | Inline = all-N-initialized, Static = 0-to-N variable (superseded at storage layer by placement-based naming) | CONTEXTUALLY SUPERSEDED |
+
+## Collection Architecture
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [Collection Primitives Architecture](Collection%20Primitives%20Architecture.md) | Nested Storage classes, variant system, ~Copyable patterns | DECISION |
+| [queue-cyclic-index-storage-integration](queue-cyclic-index-storage-integration.md) | Cyclic index NOT viable for dynamic Queue | IN_PROGRESS |
+
+## Integration and Layering
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [integration-maximization-comparative-analysis](integration-maximization-comparative-analysis.md) | DIR/TIR/ASC metrics, pointer-primitives integration gaps | RECOMMENDATION |
+
+## Collection Semantics
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [finite-collection-join-point-integration](finite-collection-join-point-integration.md) | Collections orthogonal to finite types; integration at join-points | RECOMMENDATION |
+| [range-sequence-collection-semantic-analysis](range-sequence-collection-semantic-analysis.md) | Range.Lazy cannot conform to Sequence.Protocol with ~Copyable | — |
+
+## Reference Catalog
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [data-structures-catalog](data-structures-catalog.md) | Complete ADT catalog: 12+ types, 4 storage strategies | REFERENCE |
+
+## Status Legend
+
+| Status | Meaning |
+|--------|---------|
+| IN_PROGRESS | Active research or design work |
+| RECOMMENDATION | Analysis complete, recommendation made |
+| DECISION | Final decision documented and accepted |
+| SUPERSEDED | Replaced by newer research |
+| REFERENCE | Descriptive catalog, not a decision document |

@@ -9,12 +9,4 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Storage_Primitives_Core
-
-extension Storage {
-    /// Alias for `Storage.Heap` - the canonical heap storage type.
-    ///
-    /// `Storage.Dynamic` and `Storage.Heap` are interchangeable names for the
-    /// same heap-allocated storage type.
-    public typealias Dynamic = Heap
-}
+@_exported public import Storage_Primitives_Core
