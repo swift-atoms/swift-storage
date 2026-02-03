@@ -16,7 +16,7 @@
 /// - ``Storage/Inline``: Fixed-capacity inline storage
 ///
 /// And physical coordinate types for slot-based access:
-/// - ``Storage/Slot``: Physical slot position
-/// - ``Storage/Span``: Contiguous slot range
+/// - `Index<Storage>`: Physical slot position
+/// - `Swift.Range<Index<Storage>>`: Contiguous slot range
 /// - ``Storage/Initialization``: Which slots are initialized
 public enum Storage {}
