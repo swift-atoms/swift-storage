@@ -51,10 +51,10 @@ public enum Storage<Element: ~Copyable> {
     public enum Initialization: Sendable, Equatable {
         /// No slots are initialized.
         case empty
-
+        
         /// A single contiguous range of initialized slots.
         case one(Swift.Range<Index_Primitives.Index<Element>>)
-
+        
         /// Two disjoint ranges of initialized slots.
         ///
         /// Invariants:
@@ -87,14 +87,31 @@ public enum Storage<Element: ~Copyable> {
     /// ```
     public final class Heap: ManagedBuffer<Storage.Heap.Header, Element> {
         deinit {
-            func deinitialize(range: Swift.Range<Index<Element>>) {
-                guard !range.isEmpty else { return }
-                _ = unsafe withUnsafeMutablePointerToElements { elements in
-                    let offset = Index<Element>.Offset(fromZero: range.lowerBound)
-                    unsafe (elements + offset).deinitialize(count: range.count)
-                }
+            deinitialize()
+        }
+        
+        /// Deinitializes all elements in the given range.
+        ///
+        /// Uses bulk deinitialization for better performance on contiguous ranges.
+        ///
+        /// - Parameter range: The contiguous range of slots to deinitialize.
+        /// - Precondition: All slots in the range must contain initialized elements.
+        /// - Note: The caller is responsible for updating `initialization` state.
+        @inlinable
+        public func deinitialize(range: Swift.Range<Index<Element>>) {
+            guard !range.isEmpty else { return }
+            unsafe withUnsafeMutablePointerToElements { elements in
+                let startOffset = Index<Element>.Offset(fromZero: range.lowerBound)
+                unsafe (elements + startOffset).deinitialize(count: range.count)
             }
-
+        }
+        
+        /// Deinitializes all tracked initialized slots and resets initialization to .empty.
+        ///
+        /// Iterates the `initialization` state and deinitializes exactly those slots
+        /// that are tracked as initialized.
+        @inlinable
+        public func deinitialize() {
             switch header.initialization {
             case .empty:
                 return
@@ -104,6 +121,7 @@ public enum Storage<Element: ~Copyable> {
                 deinitialize(range: first)
                 deinitialize(range: second)
             }
+            header.initialization = .empty
         }
     }
     
@@ -151,12 +169,17 @@ public enum Storage<Element: ~Copyable> {
             @usableFromInline
             init() {}
         }
-
+        
         @usableFromInline
         package var _storage: _Raw
 
         @usableFromInline
         package var _initialization: Initialization
+
+        // WORKAROUND: swiftlang/swift#86652
+        // @_rawLayout cross-module deinit bug - remove when fixed
+        @usableFromInline
+        package var _deinitWorkaround: AnyObject? = nil
 
         /// Creates uninitialized inline storage.
         ///
@@ -165,6 +188,45 @@ public enum Storage<Element: ~Copyable> {
         public init() {
             _storage = _Raw()
             _initialization = .empty
+        }
+        
+        deinit {
+            self.deinitialize()
+        }
+        
+        /// Deinitializes all elements in the given range.
+        ///
+        /// - Parameter range: The contiguous range of slots to deinitialize.
+        /// - Precondition: All slots in the range must contain initialized elements.
+        /// - Note: Non-mutating to allow use from deinit-like contexts.
+        /// - Note: The caller is responsible for updating `initialization` state.
+        @inlinable
+        public func deinitialize(range: Swift.Range<Index<Element>>) {
+            guard !range.isEmpty else { return }
+            _ = unsafe withUnsafePointer(to: _storage) { base in
+                let raw = unsafe UnsafeMutableRawPointer(mutating: base)
+                let startPtr = unsafe raw
+                    .advanced(by: Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride)
+                    .assumingMemoryBound(to: Element.self)
+                unsafe startPtr.deinitialize(count: Int(range.count.rawValue.rawValue))
+            }
+        }
+        
+        /// Deinitializes all tracked initialized slots and resets initialization to .empty.
+        ///
+        /// Iterates the `initialization` state and deinitializes exactly those slots
+        /// that are tracked as initialized.
+        @inlinable
+        package func deinitialize() {
+            switch _initialization {
+            case .empty:
+                return
+            case .one(let range):
+                deinitialize(range: range)
+            case .two(let first, let second):
+                deinitialize(range: first)
+                deinitialize(range: second)
+            }
         }
     }
 }

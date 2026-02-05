@@ -103,41 +103,6 @@ extension Storage.Inline where Element: ~Copyable {
         }
     }
 
-    /// Deinitializes all elements in the given range.
-    ///
-    /// - Parameter range: The contiguous range of slots to deinitialize.
-    /// - Precondition: All slots in the range must contain initialized elements.
-    /// - Note: Non-mutating to allow use from deinit-like contexts.
-    /// - Note: The caller is responsible for updating `initialization` state.
-    @inlinable
-    public func deinitialize(range: Swift.Range<Index<Element>>) {
-        guard !range.isEmpty else { return }
-        _ = unsafe withUnsafePointer(to: _storage) { base in
-            let raw = unsafe UnsafeMutableRawPointer(mutating: base)
-            let startPtr = unsafe raw
-                .advanced(by: Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride)
-                .assumingMemoryBound(to: Element.self)
-            unsafe startPtr.deinitialize(count: Int(range.count.rawValue.rawValue))
-        }
-    }
-
-    /// Deinitializes all tracked initialized slots and resets initialization to .empty.
-    ///
-    /// Iterates the `initialization` state and deinitializes exactly those slots
-    /// that are tracked as initialized.
-    @inlinable
-    public mutating func deinitialize() {
-        switch _initialization {
-        case .empty:
-            return
-        case .one(let range):
-            deinitialize(range: range)
-        case .two(let first, let second):
-            deinitialize(range: first)
-            deinitialize(range: second)
-        }
-        _initialization = .empty
-    }
 }
 
 // MARK: - Cross-Storage Operations

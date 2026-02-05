@@ -45,9 +45,6 @@ let package = Package(
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
-            ],
-            swiftSettings: [
-                .enableExperimentalFeature("RawLayout"),
             ]
         ),
         // Heap: Bulk operations on heap storage
@@ -99,6 +96,7 @@ let package = Package(
         .testTarget(
             name: "Storage Inline Primitives Tests",
             dependencies: [
+                .target(name: "Storage Primitives Core"),
                 .target(name: "Storage Inline Primitives"),
                 .target(name: "Storage Primitives Test Support")
             ]
@@ -120,6 +118,7 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableExperimentalFeature("Lifetimes"),
+        .enableExperimentalFeature("RawLayout"),
         .strictMemorySafety()
     ]
     target.swiftSettings = (target.swiftSettings ?? []) + settings

@@ -105,39 +105,6 @@ extension Storage.Heap where Element: ~Copyable {
 // MARK: - Span Operations
 
 extension Storage.Heap where Element: ~Copyable {
-    /// Deinitializes all elements in the given range.
-    ///
-    /// Uses bulk deinitialization for better performance on contiguous ranges.
-    ///
-    /// - Parameter range: The contiguous range of slots to deinitialize.
-    /// - Precondition: All slots in the range must contain initialized elements.
-    /// - Note: The caller is responsible for updating `initialization` state.
-    @inlinable
-    public func deinitialize(range: Swift.Range<Index<Element>>) {
-        guard !range.isEmpty else { return }
-        unsafe withUnsafeMutablePointerToElements { elements in
-            let startOffset = Index<Element>.Offset(fromZero: range.lowerBound)
-            unsafe (elements + startOffset).deinitialize(count: range.count)
-        }
-    }
-
-    /// Deinitializes all tracked initialized slots and resets initialization to .empty.
-    ///
-    /// Iterates the `initialization` state and deinitializes exactly those slots
-    /// that are tracked as initialized.
-    @inlinable
-    public func deinitialize() {
-        switch header.initialization {
-        case .empty:
-            return
-        case .one(let range):
-            deinitialize(range: range)
-        case .two(let first, let second):
-            deinitialize(range: first)
-            deinitialize(range: second)
-        }
-        header.initialization = .empty
-    }
 
     /// Moves elements from a range to linear positions in the destination storage.
     ///

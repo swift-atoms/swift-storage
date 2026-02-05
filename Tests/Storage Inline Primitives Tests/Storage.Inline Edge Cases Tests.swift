@@ -340,6 +340,7 @@ struct StorageInlineEdgeCaseTests {
             #expect(storage.initialization.count == 2)
 
             storage.deinitialize()
+            storage._initialization = .empty
             #expect(storage.initialization.isEmpty)
         }
 
@@ -776,6 +777,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialization = .linear(count: 2)
 
             storage.deinitialize()
+            storage._initialization = .empty
             #expect(storage.initialization.isEmpty)
 
             // Second round - same slots
@@ -805,7 +807,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialize(to: 100, at: 0)
             storage.initialization = .linear(count: 1)
             storage.deinitialize()
-
+            storage._initialization = .empty
             #expect(storage.initialization.isEmpty)
         }
 

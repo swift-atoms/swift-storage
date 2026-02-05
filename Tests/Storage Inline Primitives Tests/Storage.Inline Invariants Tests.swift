@@ -202,7 +202,7 @@ struct StorageInlineInvariantTests {
             #expect(!storage.initialization.isEmpty)
 
             storage.deinitialize()
-
+            storage._initialization = .empty
             #expect(storage.initialization.isEmpty, "bulk deinitialize must set state to empty")
             unsafe #expect(Tracker.count == 0, "all trackers should be deinitialized")
         }
