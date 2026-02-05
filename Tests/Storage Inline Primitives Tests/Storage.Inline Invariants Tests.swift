@@ -228,6 +228,7 @@ struct StorageInlineInvariantTests {
 
             // Bulk deinitialize should clean up exactly 5
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
 
             unsafe #expect(Tracker.deinitCount == 5, "exactly 5 trackers should be deinitialized")
         }
@@ -371,6 +372,7 @@ struct StorageInlineInvariantTests {
             storage.initialization = .two(first: first, second: second)
 
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
 
             unsafe #expect(Tracker.deinitOrder.count == 4)
             // First range deinitialized first

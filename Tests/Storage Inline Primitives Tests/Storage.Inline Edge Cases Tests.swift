@@ -284,6 +284,7 @@ struct StorageInlineEdgeCaseTests {
 
                 // Bulk deinitialize
                 storage.deinitialize()
+                storage.initialization = .empty  // Reset so deinit doesn't double-free
             }
 
             unsafe #expect(Tracker.totalCreated == 400)
@@ -321,6 +322,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialization = .two(first: first, second: second)
 
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
 
             unsafe #expect(Tracker.deinitOrder == [0, 7])
         }
@@ -360,6 +362,7 @@ struct StorageInlineEdgeCaseTests {
             #expect(storage.initialization.count == 6)
 
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
         }
 
         @Test
@@ -389,6 +392,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialization = .two(first: first, second: second)
 
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
 
             unsafe #expect(Tracker.count == 0)
         }

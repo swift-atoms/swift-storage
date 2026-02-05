@@ -511,6 +511,7 @@ struct StorageInlineTests {
 
             // Explicitly call deinitialize() to test if IT works
             storage.deinitialize()
+            storage.initialization = .empty  // Reset so deinit doesn't double-free
             #expect(tracker.count == 3) // Should be deinitialized now
         }
     }
