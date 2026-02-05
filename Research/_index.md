@@ -37,6 +37,7 @@ This directory consolidates all storage-related research from:
 
 | Document | Topic | Status |
 |----------|-------|--------|
+| [storage-inline-invariants](storage-inline-invariants.md) | Complete invariant catalog: layout, initialization, ownership, preconditions | DECISION |
 | [inline-storage-read-pointer-escape](inline-storage-read-pointer-escape.md) | Closure-based fix for Storage.Static pointer escape | DECISION |
 | [inline-storage-span-access](inline-storage-span-access.md) | 64-byte slots prevent dense Span; natural split static vs heap (superseded by @_rawLayout) | SUPERSEDED |
 | [inline-variant-naming-consistency](inline-variant-naming-consistency.md) | Inline = all-N-initialized, Static = 0-to-N variable (superseded at storage layer by placement-based naming) | CONTEXTUALLY SUPERSEDED |
