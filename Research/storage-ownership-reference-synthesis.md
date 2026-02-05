@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 2.0.0
-last_updated: 2026-02-03
-status: IN_PROGRESS
+version: 3.0.0
+last_updated: 2026-02-05
+status: DECISION
 tier: 3
 applies_to: [swift-storage-primitives, swift-memory-primitives]
 normative: true
@@ -23,14 +23,11 @@ normative: true
 
 ## Context
 
-This document synthesizes all storage-related research across the Swift Institute ecosystem into a single coherent foundation. It integrates:
+This document synthesizes academic literature and design decisions into the theoretical foundation for storage primitives.
 
-- 15 research documents centralized into `swift-storage-primitives/Research/`
-- Academic literature from PL theory, systems research, and industrial practice
-- The current implementation state of storage-primitives (Tier 12)
-- External research on canonical storage variants
+**Purpose**: Establish the conceptual model, canonical primitive set, and layering strategy for storage, ownership, and reference primitives.
 
-**Purpose**: Establish the conceptual model, canonical primitive set, and layering strategy for storage, ownership, and reference primitives as a foundation for rebuilding storage-primitives and buffer-primitives from the ground up.
+**Implementation Note (2026-02-05)**: The `@_rawLayout` migration removed the 64-byte slot overhead from `Storage.Inline`. Elements are now stored at natural stride, eliminating the physical/logical slot distinction that originally motivated `Index<Storage>` as separate from `Index<Element>`.
 
 ---
 
@@ -312,7 +309,7 @@ Typed pointer access uses Swift stdlib types directly: `UnsafeMutablePointer<Ele
 
 ```
 Storage.Heap<Element>                  ← EXISTS. ARC-managed ManagedBuffer.
-Storage.Inline<Element, let capacity>  ← EXISTS. InlineArray-based, 64-byte slots.
+Storage.Inline<Element, let capacity>  ← EXISTS. @_rawLayout for element-sized slots.
 
 Storage.Initialization  ← EXISTS. Tracks which slots are initialized.
 Storage.Span            ← EXISTS. Range of initialized slots.
@@ -390,52 +387,46 @@ Based on the first-principles research observation that `Storage.Ring` is access
 
 | ID | Question | Blocking? |
 |----|----------|-----------|
-| OQ-1 | Should `Storage.Inline` remain unconditionally `~Copyable` (due to deinit), or should conditional `Copyable` be achieved through compiler improvements? | No — current design is sound |
+| OQ-1 | Should `Storage.Inline` remain unconditionally `~Copyable` (due to `@_rawLayout`), or should conditional `Copyable` be achieved through compiler improvements? | No — current design is sound; `@_rawLayout` requires ~Copyable |
 | OQ-2 | Should `Memory.Pool` live at Tier 10 or get its own tier? | No — Tier 10 is correct (same abstraction level as Arena) |
 | OQ-3 | Does `Storage.Heap.Header` generalize across Heap and Arena, or is it Heap-specific? | Yes — needs investigation before Phase 2 |
-| OQ-4 | The inline-storage-span-access research concluded Span is incompatible with 64-byte slots. Should Heap and Inline use different Span-like abstractions? | No — the current split (dense Span for Heap, strided access for Inline) is correct |
-| OQ-5 | How do the ring-buffer-index-arithmetic decisions (ℤ/Nℤ for Bounded, % for dynamic) interact with the storage rename? | No impact — Index arithmetic is orthogonal to storage naming |
 
 ---
 
 ## Part V: Research Corpus Status
 
-### 5.1 Settled Decisions
+### 5.1 Current Documents (swift-storage-primitives/Research/)
 
-These research outcomes are stable and should not be revisited without new evidence:
+| Document | Topic | Status |
+|----------|-------|--------|
+| storage-ownership-reference-synthesis | Master synthesis (this document) | DECISION |
+| storage-contiguous-api-design | Span API surface | DECISION |
+| storage-contiguous-protocol-conformance | Memory.Contiguous.Protocol conformance | DECISION |
+| storage-inline-invariants | Complete invariant catalog | DECISION |
+| inline-slot-type-organization | @_rawLayout recommendation | RECOMMENDATION |
+| inline-storage-read-pointer-escape | Closure-based pointer access | DECISION |
+| ring-buffer-index-arithmetic | Cyclic index arithmetic | DECISION |
+| Collection Primitives Architecture | ADT storage patterns | DECISION |
 
-| Document | Decision | Still Valid? |
-|----------|----------|-------------|
-| inline-storage-read-pointer-escape | Closure-based read for Storage.Static | Yes |
-| inline-storage-span-access | No dense Span for inline (64-byte slots) | Yes |
-| inline-variant-naming-consistency | Inline = all-N-initialized, Static = 0-to-N variable | Yes — reinforced by this synthesis |
-| ring-buffer-index-arithmetic | Two-tier: ℤ/Nℤ for Bounded, % for dynamic | Yes |
-| unified-storage-primitive | Layered approach (not fully unified) | Yes — extended by this synthesis |
-| buffer-algebraic-structure | Buffers are ad-hoc structs, not Tagged intervals | Yes |
-| buffer-base-nullability | Property pattern with `.nullable` and `.nonNull` | Yes |
-| Collection Primitives Architecture | Nested Storage classes for ~Copyable propagation | Yes |
+### 5.2 Relocated Documents
 
-### 5.2 Superseded Research
-
-| Document | Superseded By | Reason |
+| Document | New Location | Reason |
 |----------|--------------|--------|
-| storage-primitives-design | This synthesis + first-principles | Original design was pre-academic-review |
+| buffer-algebraic-structure | swift-memory-primitives/Research/ | Buffer is memory-level concept |
+| buffer-base-nullability | swift-memory-primitives/Research/ | Buffer is memory-level concept |
+| integration-maximization-comparative-analysis | swift-primitives/Research/ | Cross-package analysis |
+| finite-collection-join-point-integration | swift-primitives/Research/ | Ecosystem-level pattern |
+| range-sequence-collection-semantic-analysis | swift-primitives/Research/ | Collection semantics |
+| data-structures-catalog | swift-institute/Documentation.docc/ | Reference catalog |
 
-### 5.3 Still In Progress
+### 5.3 Architectural Changes Since v2.0
 
-| Document | Status | What Remains |
-|----------|--------|-------------|
-| storage-primitives-first-principles | Sections complete, needs formalization update | Typing rules should reference this synthesis |
-| integration-maximization-comparative-analysis | Recommendations valid; pointer-primitives eliminated, stdlib types used directly | Update to reflect stdlib pointer types |
-| queue-cyclic-index-storage-integration | Finding valid (cyclic index not viable for dynamic Queue) | No action needed |
-
-### 5.4 Documents That Need Updates
-
-| Document | Update Needed |
-|----------|--------------|
-| data-structures-catalog | Add Slab as arena-backed, Buffer.Slots as pool-backed |
-| finite-collection-join-point-integration | Reference this synthesis for storage layer clarity |
-| range-sequence-collection-semantic-analysis | No update needed — orthogonal to storage |
+| Change | Impact |
+|--------|--------|
+| `@_rawLayout` migration | Eliminates 64-byte slot overhead; elements stored at natural stride |
+| Element-sized slots | Physical slot = logical element position (1:1 correspondence) |
+| Span support for Inline | Now possible for Copyable elements (dense layout) |
+| `Storage.Span` superseded | Use `Range<Index<Storage>>` for slot ranges |
 
 ---
 
@@ -502,20 +493,6 @@ s uses ManagedBuffer for allocation/deallocation
 11. Jung, R. et al. (2018). "RustBelt" — POPL
 12. Weiss, A. et al. (2019-2021). "Oxide: The Essence of Rust"
 
-### Internal Research (now in swift-storage-primitives/Research/)
+### Internal Research
 
-13. storage-primitives-first-principles.md
-14. storage-primitives-design.md
-15. unified-storage-primitive.md
-16. buffer-algebraic-structure.md
-17. buffer-base-nullability.md
-18. ring-buffer-index-arithmetic.md
-19. inline-storage-read-pointer-escape.md
-20. inline-storage-span-access.md
-21. inline-variant-naming-consistency.md
-22. integration-maximization-comparative-analysis.md
-23. Collection Primitives Architecture.md
-24. queue-cyclic-index-storage-integration.md
-25. finite-collection-join-point-integration.md
-26. range-sequence-collection-semantic-analysis.md
-27. data-structures-catalog.md
+See `_index.md` for current document inventory.
