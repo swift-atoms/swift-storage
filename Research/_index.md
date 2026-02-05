@@ -17,6 +17,14 @@ This directory consolidates all storage-related research from:
 |----------|-------|--------|
 | [storage-ownership-reference-synthesis](storage-ownership-reference-synthesis.md) | **Master synthesis**: conceptual map, canonical set proposals, trade-off analysis, recommendation | IN_PROGRESS |
 
+## API Design
+
+| Document | Topic | Status |
+|----------|-------|--------|
+| [storage-primitives-canonical-api](storage-primitives-canonical-api.md) | Canonical public API surface derived from first principles | IN_PROGRESS |
+| [storage-contiguous-protocol-conformance](storage-contiguous-protocol-conformance.md) | Memory.Contiguous.Protocol conformance for Storage.Heap/Inline | DECISION |
+| [storage-contiguous-api-design](storage-contiguous-api-design.md) | Optimal API surface for contiguous memory access (Span integration) | DECISION |
+
 ## Foundational Research
 
 | Document | Topic | Status |

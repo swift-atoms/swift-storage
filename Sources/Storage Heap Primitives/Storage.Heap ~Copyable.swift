@@ -163,30 +163,4 @@ extension Storage.Heap where Element: ~Copyable {
         }
     }
 
-    /// Provides read-only range access to elements in the specified slot range.
-    ///
-    /// The span is valid only for the duration of the closure.
-    ///
-    /// - Parameters:
-    ///   - range: The contiguous range of slots to access.
-    ///   - body: A closure that receives the span.
-    /// - Returns: The value returned by the closure.
-    /// - Throws: Rethrows any error thrown by the closure.
-    /// - Precondition: Elements in the range must be initialized and contiguous.
-    @unsafe
-    @inlinable
-    public func withSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Index<Storage>>,
-        _ body: (Span<Element>) throws(E) -> R
-    ) throws(E) -> R {
-        try unsafe withUnsafeMutablePointerToElements { base throws(E) in
-            let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
-            let count = Int(bitPattern: range.count)
-            let span = unsafe Swift.Span(
-                _unsafeStart: UnsafePointer(base + startOffset),
-                count: count
-            )
-            return try body(span)
-        }
-    }
 }

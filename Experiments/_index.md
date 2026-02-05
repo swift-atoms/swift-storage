@@ -9,6 +9,7 @@
 | rawlayout-automatic-sizing | @_rawLayout(likeArrayOf:count:) for AUTOMATIC optimal layout | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | contiguous-protocol-conformance | Test Memory.Contiguous.Protocol conformance for Storage.Heap and Storage.Inline | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| span-copyable-constraint | Validate Span<Element> constraint behavior in ~Copyable extensions | 2026-02-05 | Swift 6.2 | CONFIRMED |
 
 ## Summary
 
