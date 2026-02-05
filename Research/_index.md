@@ -11,6 +11,9 @@ Research documents backing the storage-primitives implementation.
 | [storage-contiguous-protocol-conformance](storage-contiguous-protocol-conformance.md) | Memory.Contiguous.Protocol conformance | DECISION |
 | [storage-inline-invariants](storage-inline-invariants.md) | Complete invariant catalog for Storage.Inline | DECISION |
 | [inline-slot-type-organization](inline-slot-type-organization.md) | @_rawLayout for automatic optimal layout | RECOMMENDATION |
+| [inline-deinitialize-state-reset](inline-deinitialize-state-reset.md) | Preventing double-free footgun in Storage.Inline | RECOMMENDATION |
+| [per-slot-initialization-tracking](per-slot-initialization-tracking.md) | BitVector-based per-slot tracking to eliminate footgun | RECOMMENDATION |
+| [inline-bitvector-wordcount](inline-bitvector-wordcount.md) | Eliminating wordCount generic parameter | DECISION |
 | [inline-storage-read-pointer-escape](inline-storage-read-pointer-escape.md) | Closure-based pointer access pattern | DECISION |
 | [ring-buffer-index-arithmetic](ring-buffer-index-arithmetic.md) | Cyclic index arithmetic (ℤ/Nℤ for Bounded, % for dynamic) | DECISION |
 | [Collection Primitives Architecture](Collection%20Primitives%20Architecture.md) | Nested Storage classes, ~Copyable patterns | DECISION |

@@ -10,6 +10,13 @@
 | rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | contiguous-protocol-conformance | Test Memory.Contiguous.Protocol conformance for Storage.Heap and Storage.Inline | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | span-copyable-constraint | Validate Span<Element> constraint behavior in ~Copyable extensions | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| rawlayout-deinit-crossmodule | Investigate @_rawLayout deinit not called cross-module (bug #86652) | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
+| rawlayout-deinit-incremental | Incremental construction to isolate deinit bug factors | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
+| rawlayout-deinit-investigation | Combined deinit bug investigation | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
+| rawlayout-noncopyable-elements | Test @_rawLayout with ~Copyable elements | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| discard-self-availability | Test `discard self` availability for consuming cleanup methods | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
+| deinit-guard-idempotence | Test reference-type guard for idempotent cleanup from non-mutating | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
+| bitvector-slot-tracking | Test Bit.Vector.Static for per-slot initialization tracking | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
 
 ## Summary
 

@@ -24,7 +24,8 @@ struct StorageInlineTests {
     @Test
     func `inline storage can be created`() {
         let storage = Storage<Int>.Inline<8>()
-        _ = storage
+        #expect(storage.isEmpty == true)
+        #expect(storage.initializedCount == 0)
     }
 
     // MARK: - Initialize and Move Tests
@@ -35,9 +36,11 @@ struct StorageInlineTests {
         let slot: Index<Int> = .zero
 
         storage.initialize(to: 42, at: slot)
-        let value = storage.move(at: slot)
+        #expect(storage.initializedCount == 1)
 
+        let value = storage.move(at: slot)
         #expect(value == 42)
+        #expect(storage.isEmpty == true)
     }
 
     @Test
@@ -50,6 +53,8 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
+        #expect(storage.initializedCount == 8)
+
         // Move in forward order to verify all initialized
         slot = .zero
         for i in 0..<8 {
@@ -57,6 +62,8 @@ struct StorageInlineTests {
             #expect(value == i * 10)
             slot = slot.successor.saturating()
         }
+
+        #expect(storage.isEmpty == true)
     }
 
     // MARK: - Pointer Tests
@@ -96,7 +103,10 @@ struct StorageInlineTests {
         var storage = Storage<Int>.Inline<8>()
 
         storage.initialize(to: 42, at: .zero)
+        #expect(storage.initializedCount == 1)
+
         storage.deinitialize(at: .zero)
+        #expect(storage.isEmpty == true)
     }
 
     @Test
@@ -109,12 +119,16 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
+        #expect(storage.initializedCount == 4)
+
         let range: Swift.Range<Index<Int>> = .zero..<4
         storage.deinitialize(range: range)
+
+        #expect(storage.isEmpty == true)
     }
 
     @Test
-    func `deinitialize all tracked elements`() {
+    func `deinit automatically cleans up tracked elements`() {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -122,18 +136,18 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = Storage<Tracker>.Inline<8>()
+        do {
+            var storage = Storage<Tracker>.Inline<8>()
 
-        var slot: Index<Tracker> = .zero
-        for _ in 0..<4 {
-            storage.initialize(to: Tracker(), at: slot)
-            slot = slot.successor.saturating()
+            var slot: Index<Tracker> = .zero
+            for _ in 0..<4 {
+                storage.initialize(to: Tracker(), at: slot)
+                slot = slot.successor.saturating()
+            }
+
+            #expect(storage.initializedCount == 4)
+            // storage goes out of scope - deinit should clean up
         }
-        storage.initialization = .linear(count: 4)
-
-        storage.deinitialize()
-        storage._initialization = .empty
-        #expect(storage.initialization.isEmpty)
 
         unsafe #expect(Tracker.deinitCount == 4)
     }
@@ -155,15 +169,20 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
+        #expect(storage.initializedCount == 5)
+
         // Deinitialize slots 1..<4
         let range: Swift.Range<Index<Tracker>> = 1..<4
         storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
+        #expect(storage.initializedCount == 2)
 
         // Clean up remaining elements (slots 0 and 4)
         _ = storage.move(at: 0)
         _ = storage.move(at: 4)
+
+        #expect(storage.isEmpty == true)
     }
 
     // MARK: - Type Safety Tests
@@ -220,9 +239,14 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
+        #expect(inline.initializedCount == 4)
+
         let range = Swift.Range<Index<Int>>(start: .zero, count: 4)
         inline.move(range: range, to: heap)
         heap.initialization = .linear(count: 4)
+
+        // Inline slots should be cleared after move
+        #expect(inline.isEmpty == true)
 
         // Verify heap has the values
         slot = .zero
@@ -261,6 +285,9 @@ struct StorageInlineTests {
         let range: Swift.Range<Index<Int>> = .zero..<4
         inline.copy(range: range, to: heap)
         heap.initialization = .linear(count: 4)
+
+        // Inline slots should still be initialized after copy
+        #expect(inline.initializedCount == 4)
 
         // Verify inline still has original values
         slot = .zero
@@ -317,6 +344,7 @@ struct StorageInlineTests {
             var storage = Storage<TrackedValue>.Inline<3>()
 
             // Initialize via pointer (like Vector.Inline.init(initializing:))
+            // Note: pointer-based init bypasses auto-tracking
             let ptr: UnsafeMutablePointer<TrackedValue> = unsafe storage.pointer(at: .zero)
             unsafe (ptr + 0).initialize(to: TrackedValue(1, tracker: tracker))
             unsafe (ptr + 1).initialize(to: TrackedValue(2, tracker: tracker))
@@ -330,57 +358,6 @@ struct StorageInlineTests {
 
             #expect(tracker.count == 3) // All elements should be deinitialized
         }
-    }
-
-    @Test
-    func `wrapper struct deinit calls storage deinitialize range`() {
-        // Mimics Vector.Inline structure: wrapper with deinit that calls storage.deinitialize(range:)
-        final class DeinitTracker: @unchecked Sendable {
-            let _count = Atomic<Int>(0)
-            var count: Int { _count.load(ordering: .relaxed) }
-            func increment() { _count.wrappingAdd(1, ordering: .relaxed) }
-        }
-
-        struct TrackedValue: ~Copyable {
-            let value: Int
-            let tracker: DeinitTracker
-            init(_ value: Int, tracker: DeinitTracker) {
-                self.value = value
-                self.tracker = tracker
-            }
-            deinit { tracker.increment() }
-        }
-
-        // Wrapper that mimics Vector.Inline structure
-        struct Wrapper: ~Copyable {
-            var _storage: Storage<TrackedValue>.Inline<3>
-
-            init(initializing initializer: (UnsafeMutablePointer<TrackedValue>) -> Void) {
-                self._storage = Storage<TrackedValue>.Inline<3>()
-                let ptr: UnsafeMutablePointer<TrackedValue> = unsafe _storage.pointer(at: .zero)
-                unsafe initializer(ptr)
-            }
-
-            deinit {
-                let range: Swift.Range<Index<TrackedValue>> = .zero ..< Index<TrackedValue>(Ordinal(UInt(3)))
-                _storage.deinitialize(range: range)
-            }
-        }
-
-        let tracker = DeinitTracker()
-
-        do {
-            let wrapper = unsafe Wrapper(initializing: { ptr in
-                unsafe (ptr + 0).initialize(to: TrackedValue(1, tracker: tracker))
-                unsafe (ptr + 1).initialize(to: TrackedValue(2, tracker: tracker))
-                unsafe (ptr + 2).initialize(to: TrackedValue(3, tracker: tracker))
-            })
-            #expect(tracker.count == 0) // Elements should be alive
-            _ = wrapper // Keep alive
-        }
-
-        // After scope exit, wrapper.deinit should have deinitialized all elements
-        #expect(tracker.count == 3)
     }
 
     @Test
@@ -442,7 +419,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `Storage_Inline own deinit runs`() {
+    func `Storage_Inline deinit cleans up via bitvector tracking`() {
         // Use a class element to track if Storage.Inline's deinit actually deinitializes
         final class Marker: @unchecked Sendable {
             nonisolated(unsafe) static var instanceCount = 0
@@ -456,70 +433,21 @@ struct StorageInlineTests {
             var storage = Storage<Marker>.Inline<2>()
             storage.initialize(to: Marker(), at: .zero)
             storage.initialize(to: Marker(), at: 1)
-            storage.initialization = .linear(count: 2)
 
+            #expect(storage.initializedCount == 2)
             unsafe #expect(Marker.instanceCount == 2)
             // storage goes out of scope, Storage.Inline.deinit should run
         }
 
-        // If Storage.Inline.deinit ran and called deinitialize(), markers should be gone
+        // If Storage.Inline.deinit ran and called _deinitializeTrackedSlots(), markers should be gone
         unsafe #expect(Marker.instanceCount == 0)
     }
 
-    @Test
-    func `storage deinit cleans up via initialization tracking`() {
-        // Tests that Storage.Inline.deinit properly uses _initialization
-        final class DeinitTracker: @unchecked Sendable {
-            let _count = Atomic<Int>(0)
-            var count: Int { _count.load(ordering: .relaxed) }
-            func increment() { _count.wrappingAdd(1, ordering: .relaxed) }
-        }
-
-        struct TrackedValue: ~Copyable {
-            let value: Int
-            let tracker: DeinitTracker
-            init(_ value: Int, tracker: DeinitTracker) {
-                self.value = value
-                self.tracker = tracker
-            }
-            deinit { tracker.increment() }
-        }
-
-        let tracker = DeinitTracker()
-
-        do {
-            var storage = Storage<TrackedValue>.Inline<3>()
-
-            // Initialize via pointer
-            let ptr: UnsafeMutablePointer<TrackedValue> = unsafe storage.pointer(at: .zero)
-            unsafe (ptr + 0).initialize(to: TrackedValue(1, tracker: tracker))
-            unsafe (ptr + 1).initialize(to: TrackedValue(2, tracker: tracker))
-            unsafe (ptr + 2).initialize(to: TrackedValue(3, tracker: tracker))
-
-            // Set initialization state (like Vector.Inline.init does)
-            storage.initialization = .linear(count: 3)
-
-            // Verify initialization state was set correctly
-            if case .one(let range) = storage.initialization {
-                #expect(range.lowerBound == .zero)
-                #expect(range.count == 3)
-            } else {
-                Issue.record("Expected .one, got \(storage.initialization)")
-            }
-
-            #expect(tracker.count == 0) // Elements should be alive
-
-            // Explicitly call deinitialize() to test if IT works
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
-            #expect(tracker.count == 3) // Should be deinitialized now
-        }
-    }
-
-    // MARK: - Two-Span Deinitialize Tests
+    // MARK: - Sparse Initialization Tests (new capability with BitVector)
 
     @Test
-    func `deinitialize with two-range initialization`() {
+    func `sparse initialization pattern`() {
+        // BitVector supports any initialization pattern, not just contiguous ranges
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -527,23 +455,45 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = Storage<Tracker>.Inline<8>()
+        do {
+            var storage = Storage<Tracker>.Inline<8>()
 
-        // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
-        storage.initialize(to: Tracker(), at: 0)
-        storage.initialize(to: Tracker(), at: 1)
-        storage.initialize(to: Tracker(), at: 2)
-        storage.initialize(to: Tracker(), at: 6)
-        storage.initialize(to: Tracker(), at: 7)
+            // Initialize sparse slots: 0, 3, 7
+            storage.initialize(to: Tracker(), at: 0)
+            storage.initialize(to: Tracker(), at: 3)
+            storage.initialize(to: Tracker(), at: 7)
 
-        let first: Swift.Range<Index<Tracker>> = .init(start: .zero, count: 3)
-        let second: Swift.Range<Index<Tracker>> = .init(start: 6, count: 2)
-        storage.initialization = .two(first: first, second: second)
+            #expect(storage.initializedCount == 3)
+            // deinit will clean up exactly these 3 slots
+        }
 
-        storage.deinitialize()
-        storage._initialization = .empty
+        unsafe #expect(Tracker.deinitCount == 3)
+    }
+
+    @Test
+    func `disjoint ranges cleanup`() {
+        // Simulates wrapped ring buffer pattern
+        final class Tracker: @unchecked Sendable {
+            nonisolated(unsafe) static var deinitCount = 0
+            deinit { unsafe Tracker.deinitCount += 1 }
+        }
+
+        unsafe Tracker.deinitCount = 0
+
+        do {
+            var storage = Storage<Tracker>.Inline<8>()
+
+            // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
+            storage.initialize(to: Tracker(), at: 0)
+            storage.initialize(to: Tracker(), at: 1)
+            storage.initialize(to: Tracker(), at: 2)
+            storage.initialize(to: Tracker(), at: 6)
+            storage.initialize(to: Tracker(), at: 7)
+
+            #expect(storage.initializedCount == 5)
+            // deinit will clean up all 5 slots
+        }
 
         unsafe #expect(Tracker.deinitCount == 5)
-        #expect(storage.initialization.isEmpty)
     }
 }

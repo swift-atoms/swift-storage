@@ -37,6 +37,7 @@ let package = Package(
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-memory-primitives"),
         .package(path: "../swift-standard-library-extensions"),
+        .package(path: "../swift-bit-vector-primitives"),
     ],
     targets: [
         // Core: Type declarations and fundamental access
@@ -45,6 +46,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
+                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
             ]
         ),
         // Heap: Bulk operations on heap storage

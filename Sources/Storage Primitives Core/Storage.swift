@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Index_Primitives
+public import Bit_Vector_Primitives
 
 /// Namespace for storage primitives.
 ///
@@ -125,11 +126,16 @@ public enum Storage<Element: ~Copyable> {
         }
     }
     
-    /// Fixed-capacity inline storage with automatic optimal layout.
+    /// Fixed-capacity inline storage with automatic per-slot initialization tracking.
     ///
     /// Provides stack-allocated storage with compile-time capacity. Elements are
     /// stored inline without heap allocation, making this suitable for small,
     /// fixed-size collections.
+    ///
+    /// ## Capacity Constraint
+    ///
+    /// `Storage.Inline` supports capacities from 0 to 256. For larger capacities,
+    /// use `Storage.Heap` instead.
     ///
     /// ## Layout
     ///
@@ -137,71 +143,98 @@ public enum Storage<Element: ~Copyable> {
     /// - Size: `MemoryLayout<Element>.stride × capacity`
     /// - Alignment: `MemoryLayout<Element>.alignment`
     ///
-    /// This eliminates the 64-byte slot overhead of previous implementations.
+    /// ## Per-Slot Initialization Tracking
     ///
-    /// ## Initialization Tracking
+    /// Uses a 256-bit vector to track which slots are initialized.
+    /// Operations automatically update the tracking:
+    /// - `initialize(to:at:)` sets the slot's bit
+    /// - `move(at:)` clears the slot's bit
+    /// - `deinitialize(at:)` clears the slot's bit
+    /// - `deinit` iterates set bits to clean up only initialized slots
     ///
-    /// Tracks initialization state via the `_initialization` field. Use
-    /// `deinitialize()` to clean up all tracked initialized slots.
+    /// This eliminates the footgun where callers had to manually manage state.
     ///
-    /// ## Span Compatibility
+    /// ## Invariants
     ///
-    /// With optimal layout, `Storage.Inline` now stores elements contiguously
-    /// at their natural stride, enabling potential Span access for Copyable elements.
+    /// - `capacity` is a compile-time constant in range `0...256`
+    /// - `_slots` has 256 bits; only bits `0..<capacity` are semantically meaningful
+    /// - Bit `i` is set iff slot `i` contains an initialized element
     ///
     /// ## Usage
     ///
     /// ```swift
-    /// var storage = Storage.Inline<Int, 8>()
+    /// var storage = Storage<Int>.Inline<8>()
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
+    /// // No manual state management needed — deinit handles cleanup automatically
     /// ```
     public struct Inline<let capacity: Int>: ~Copyable {
         /// Internal raw storage with automatic layout computation.
         ///
         /// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
         /// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
-        ///
-        /// This type has no stored properties — the layout is determined entirely by the attribute.
         @_rawLayout(likeArrayOf: Element, count: capacity)
         @usableFromInline
         package struct _Raw: ~Copyable {
             @usableFromInline
             init() {}
         }
-        
+
         @usableFromInline
         package var _storage: _Raw
 
+        /// Per-slot initialization tracking.
+        ///
+        /// Each bit represents one slot: `true` = initialized, `false` = uninitialized.
+        /// Operations automatically update this state.
+        ///
+        /// Fixed at 4 words (256 bits) to cover all valid capacities without
+        /// requiring an additional generic parameter.
         @usableFromInline
-        package var _initialization: Initialization
-
-        // WORKAROUND: swiftlang/swift#86652
-        // @_rawLayout cross-module deinit bug - remove when fixed
-        @usableFromInline
-        package var _deinitWorkaround: AnyObject? = nil
+        package var _slots: Bit.Vector.Static<4>
+        
+        var _deinitWorkaround: AnyObject? = nil
 
         /// Creates uninitialized inline storage.
         ///
-        /// Layout is computed automatically — no validation required.
+        /// All slots start as uninitialized (all bits cleared).
+        ///
+        /// - Precondition: `capacity` must be in range `0...256`.
         @inlinable
         public init() {
+            precondition(capacity <= 256, "Storage.Inline capacity must be ≤256; use Storage.Heap for larger capacities")
             _storage = _Raw()
-            _initialization = .empty
+            _slots = Bit.Vector.Static<4>()
         }
-        
+
         deinit {
-            self.deinitialize()
+            self._deinitializeTrackedSlots()
         }
-        
+
+        /// Deinitializes the element at the given slot.
+        ///
+        /// - Parameter slot: The slot to deinitialize.
+        /// - Precondition: The slot must be initialized.
+        /// - Note: Automatically clears the slot's tracking bit.
+        @inlinable
+        public mutating func deinitialize(at slot: Index<Element>) {
+            _ = unsafe withUnsafePointer(to: _storage) { base in
+                let raw = unsafe UnsafeMutableRawPointer(mutating: base)
+                unsafe raw
+                    .advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
+                    .assumingMemoryBound(to: Element.self)
+                    .deinitialize(count: 1)
+            }
+            _slots[Bit.Index(slot.rawValue)] = false
+        }
+
         /// Deinitializes all elements in the given range.
         ///
         /// - Parameter range: The contiguous range of slots to deinitialize.
         /// - Precondition: All slots in the range must contain initialized elements.
-        /// - Note: Non-mutating to allow use from deinit-like contexts.
-        /// - Note: The caller is responsible for updating `initialization` state.
+        /// - Note: Automatically clears each slot's tracking bit.
         @inlinable
-        public func deinitialize(range: Swift.Range<Index<Element>>) {
+        public mutating func deinitialize(range: Swift.Range<Index<Element>>) {
             guard !range.isEmpty else { return }
             _ = unsafe withUnsafePointer(to: _storage) { base in
                 let raw = unsafe UnsafeMutableRawPointer(mutating: base)
@@ -210,23 +243,41 @@ public enum Storage<Element: ~Copyable> {
                     .assumingMemoryBound(to: Element.self)
                 unsafe startPtr.deinitialize(count: Int(range.count.rawValue.rawValue))
             }
-        }
-        
-        /// Deinitializes all tracked initialized slots and resets initialization to .empty.
-        ///
-        /// Iterates the `initialization` state and deinitializes exactly those slots
-        /// that are tracked as initialized.
-        @inlinable
-        package func deinitialize() {
-            switch _initialization {
-            case .empty:
-                return
-            case .one(let range):
-                deinitialize(range: range)
-            case .two(let first, let second):
-                deinitialize(range: first)
-                deinitialize(range: second)
+            // Clear bits for each slot in the range
+            var slot = range.lowerBound
+            while slot < range.upperBound {
+                _slots[Bit.Index(slot.rawValue)] = false
+                slot = slot.successor.saturating()
             }
+        }
+
+        /// Internal: Deinitializes all tracked initialized slots.
+        ///
+        /// Iterates set bits in `_slots` and deinitializes exactly those slots.
+        /// Called by deinit to ensure proper cleanup.
+        @usableFromInline
+        package func _deinitializeTrackedSlots() {
+            _slots.ones.forEach { bitIndex in
+                _ = unsafe withUnsafePointer(to: _storage) { base in
+                    let raw = unsafe UnsafeMutableRawPointer(mutating: base)
+                    unsafe raw
+                        .advanced(by: Int(bitIndex.rawValue.rawValue) * MemoryLayout<Element>.stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
+            }
+        }
+
+        /// The number of currently initialized slots.
+        @inlinable
+        public var initializedCount: Int {
+            Int(_slots.popcount.rawValue.rawValue)
+        }
+
+        /// Whether all slots are uninitialized.
+        @inlinable
+        public var isEmpty: Bool {
+            _slots.isEmpty
         }
     }
 }

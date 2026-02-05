@@ -36,6 +36,16 @@ extension Storage.Heap where Element: ~Copyable {
 
 extension Storage.Heap where Element: ~Copyable {
     /// The initialization state describing which slots are initialized.
+    ///
+    /// For simple linear usage, prefer the tracked API:
+    /// - `initialize.next(to:)` - Initialize next slot
+    /// - `move.last()` - Move last element
+    /// - `deinitialize.all()` - Clean up all elements
+    ///
+    /// For advanced patterns (ring buffers, slab allocation), set directly:
+    /// ```swift
+    /// storage.initialization = .two(first: first, second: second)
+    /// ```
     @inlinable
     public var initialization: Storage.Initialization {
         get { header.initialization }

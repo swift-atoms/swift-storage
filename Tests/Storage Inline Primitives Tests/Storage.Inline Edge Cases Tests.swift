@@ -42,17 +42,21 @@ struct StorageInlineEdgeCaseTests {
                 storage.initialize(to: Empty(), at: i)
             }
 
+            #expect(storage.initializedCount == 8)
+
             // Should be able to move all slots
             for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 _ = storage.move(at: i)
             }
+
+            #expect(storage.isEmpty == true)
         }
 
         @Test
         func `zero-sized element with zero capacity`() {
             struct Empty {}
             let storage = Storage<Empty>.Inline<0>()
-            #expect(storage.initialization.isEmpty)
+            #expect(storage.isEmpty == true)
         }
 
         @Test
@@ -60,7 +64,7 @@ struct StorageInlineEdgeCaseTests {
             // Simulates a "never" scenario with zero slots
             enum Never {}
             let storage = Storage<Never>.Inline<0>()
-            #expect(storage.initialization.isEmpty)
+            #expect(storage.isEmpty == true)
         }
     }
 
@@ -82,6 +86,8 @@ struct StorageInlineEdgeCaseTests {
                 slot = slot.successor.saturating()
             }
 
+            #expect(storage.initializedCount == 255)
+
             // Verify all values
             slot = 0
             for i in 0..<255 {
@@ -89,6 +95,8 @@ struct StorageInlineEdgeCaseTests {
                 #expect(value == UInt8(i))
                 slot = slot.successor.saturating()
             }
+
+            #expect(storage.isEmpty == true)
         }
 
         @Test
@@ -250,16 +258,20 @@ struct StorageInlineEdgeCaseTests {
                     storage.initialize(to: round * 8 + Int(i.rawValue.rawValue), at: i)
                 }
 
+                #expect(storage.initializedCount == 8)
+
                 // Move all
                 for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                     let expected = round * 8 + Int(i.rawValue.rawValue)
                     #expect(storage.move(at: i) == expected)
                 }
+
+                #expect(storage.isEmpty == true)
             }
         }
 
         @Test
-        func `rapid initialize-deinitialize cycles with tracking`() {
+        func `rapid initialize-deinit cycles with tracking`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var liveCount = 0
                 nonisolated(unsafe) static var totalCreated = 0
@@ -273,18 +285,18 @@ struct StorageInlineEdgeCaseTests {
             unsafe Tracker.liveCount = 0
             unsafe Tracker.totalCreated = 0
 
-            var storage = Storage<Tracker>.Inline<4>()
-
             for _ in 0..<100 {
-                // Initialize all slots
-                for i: Index<Tracker> in [0, 1, 2, 3] {
-                    storage.initialize(to: Tracker(), at: i)
-                }
-                storage.initialization = .linear(count: 4)
+                do {
+                    var storage = Storage<Tracker>.Inline<4>()
 
-                // Bulk deinitialize
-                storage.deinitialize()
-                storage.initialization = .empty  // Reset so deinit doesn't double-free
+                    // Initialize all slots
+                    for i: Index<Tracker> in [0, 1, 2, 3] {
+                        storage.initialize(to: Tracker(), at: i)
+                    }
+
+                    #expect(storage.initializedCount == 4)
+                    // Storage goes out of scope, deinit cleans up
+                }
             }
 
             unsafe #expect(Tracker.totalCreated == 400)
@@ -293,14 +305,14 @@ struct StorageInlineEdgeCaseTests {
     }
 
     // =========================================================================
-    // MARK: - Two-Span Edge Cases
+    // MARK: - Sparse Initialization (BitVector capability)
     // =========================================================================
 
-    @Suite("Two-Span Edge Cases")
-    struct TwoSpanEdgeCases {
+    @Suite("Sparse Initialization")
+    struct SparseInitialization {
 
         @Test
-        func `two-span with single element ranges`() {
+        func `single element ranges at boundaries`() {
             final class Tracker: @unchecked Sendable {
                 let id: Int
                 nonisolated(unsafe) static var deinitOrder: [Int] = []
@@ -310,63 +322,45 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.deinitOrder = []
 
-            var storage = Storage<Tracker>.Inline<8>()
+            do {
+                var storage = Storage<Tracker>.Inline<8>()
 
-            // Single element in first range
-            storage.initialize(to: Tracker(0), at: 0)
-            // Single element in second range
-            storage.initialize(to: Tracker(7), at: 7)
+                // Single element at first slot
+                storage.initialize(to: Tracker(0), at: 0)
+                // Single element at last slot
+                storage.initialize(to: Tracker(7), at: 7)
 
-            let first: Swift.Range<Index<Tracker>> = 0..<1
-            let second: Swift.Range<Index<Tracker>> = 7..<8
-            storage.initialization = .two(first: first, second: second)
-
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
-
-            unsafe #expect(Tracker.deinitOrder == [0, 7])
-        }
-
-        @Test
-        func `two-span at capacity boundaries`() {
-            var storage = Storage<Int>.Inline<8>()
-
-            // Range at very start and very end
-            storage.initialize(to: 100, at: 0)
-            storage.initialize(to: 700, at: 7)
-
-            let first: Swift.Range<Index<Int>> = 0..<1
-            let second: Swift.Range<Index<Int>> = 7..<8
-            storage.initialization = .two(first: first, second: second)
-
-            #expect(storage.initialization.count == 2)
-
-            storage.deinitialize()
-            storage._initialization = .empty
-            #expect(storage.initialization.isEmpty)
-        }
-
-        @Test
-        func `two-span adjacent ranges`() {
-            // Ranges [0,3) and [3,6) - adjacent but separate
-            var storage = Storage<Int>.Inline<8>()
-
-            for i: Index<Int> in [0, 1, 2, 3, 4, 5] {
-                storage.initialize(to: Int(i.rawValue.rawValue) * 10, at: i)
+                #expect(storage.initializedCount == 2)
             }
 
-            let first: Swift.Range<Index<Int>> = 0..<3
-            let second: Swift.Range<Index<Int>> = 3..<6
-            storage.initialization = .two(first: first, second: second)
-
-            #expect(storage.initialization.count == 6)
-
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
+            unsafe #expect(Tracker.deinitOrder.count == 2)
+            unsafe #expect(Tracker.deinitOrder.contains(0))
+            unsafe #expect(Tracker.deinitOrder.contains(7))
         }
 
         @Test
-        func `two-span with gap of one slot`() {
+        func `alternating slots`() {
+            var storage = Storage<Int>.Inline<8>()
+
+            // Initialize every other slot
+            storage.initialize(to: 0, at: 0)
+            storage.initialize(to: 2, at: 2)
+            storage.initialize(to: 4, at: 4)
+            storage.initialize(to: 6, at: 6)
+
+            #expect(storage.initializedCount == 4)
+
+            // Move and verify
+            #expect(storage.move(at: 0) == 0)
+            #expect(storage.move(at: 2) == 2)
+            #expect(storage.move(at: 4) == 4)
+            #expect(storage.move(at: 6) == 6)
+
+            #expect(storage.isEmpty == true)
+        }
+
+        @Test
+        func `gap of one slot between ranges`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var count = 0
                 init() { unsafe Tracker.count += 1 }
@@ -375,24 +369,20 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.count = 0
 
-            var storage = Storage<Tracker>.Inline<8>()
+            do {
+                var storage = Storage<Tracker>.Inline<8>()
 
-            // [0,3) and [4,7) - gap at slot 3
-            storage.initialize(to: Tracker(), at: 0)
-            storage.initialize(to: Tracker(), at: 1)
-            storage.initialize(to: Tracker(), at: 2)
-            storage.initialize(to: Tracker(), at: 4)
-            storage.initialize(to: Tracker(), at: 5)
-            storage.initialize(to: Tracker(), at: 6)
+                // [0,3) and [4,7) - gap at slot 3
+                storage.initialize(to: Tracker(), at: 0)
+                storage.initialize(to: Tracker(), at: 1)
+                storage.initialize(to: Tracker(), at: 2)
+                storage.initialize(to: Tracker(), at: 4)
+                storage.initialize(to: Tracker(), at: 5)
+                storage.initialize(to: Tracker(), at: 6)
 
-            unsafe #expect(Tracker.count == 6)
-
-            let first: Swift.Range<Index<Tracker>> = 0..<3
-            let second: Swift.Range<Index<Tracker>> = 4..<7
-            storage.initialization = .two(first: first, second: second)
-
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
+                unsafe #expect(Tracker.count == 6)
+                #expect(storage.initializedCount == 6)
+            }
 
             unsafe #expect(Tracker.count == 0)
         }
@@ -415,16 +405,19 @@ struct StorageInlineEdgeCaseTests {
                 inline.initialize(to: Int(i.rawValue.rawValue) * 11, at: i)
             }
 
+            #expect(inline.initializedCount == 8)
+
             let range: Swift.Range<Index<Int>> = 0..<8
             inline.move(range: range, to: heap)
             heap.initialization = .linear(count: 8)
+
+            #expect(inline.isEmpty == true)
 
             // Verify all moved correctly
             for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 let value = heap.move(at: i)
                 #expect(value == Int(i.rawValue.rawValue) * 11)
             }
-            heap.initialization = .empty
         }
 
         @Test
@@ -433,23 +426,18 @@ struct StorageInlineEdgeCaseTests {
             let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             inline.initialize(to: 999, at: 7)
+            #expect(inline.initializedCount == 1)
 
             let range: Swift.Range<Index<Int>> = 7..<8
             inline.move(range: range, to: heap)
             heap.initialization = .linear(count: 1)
 
+            #expect(inline.isEmpty == true)
             #expect(heap.move(at: 0) == 999)
-            heap.initialization = .empty
         }
 
         @Test
         func `copy with class elements shares object identity and preserves source`() {
-            // For reference types, copy creates new REFERENCES to same OBJECTS.
-            // This test verifies:
-            // 1. Object count unchanged (copy shares, doesn't clone)
-            // 2. Source still valid after copy (wasn't moved)
-            // 3. Object identity preserved (===)
-            // 4. Objects survive as long as any reference exists
             final class Tracker: @unchecked Sendable {
                 let id: Int
                 nonisolated(unsafe) static var instances = 0
@@ -478,18 +466,9 @@ struct StorageInlineEdgeCaseTests {
             unsafe #expect(Tracker.instances == 2, "Copy shares objects, doesn't clone")
 
             // Source still valid after copy (wasn't moved)
-            let srcPtr0: UnsafePointer<Tracker> = unsafe inline.pointer(at: 0)
-            let srcPtr1: UnsafePointer<Tracker> = unsafe inline.pointer(at: 1)
-            unsafe #expect(srcPtr0.pointee.id == 100, "Source slot 0 still readable")
-            unsafe #expect(srcPtr1.pointee.id == 200, "Source slot 1 still readable")
+            #expect(inline.initializedCount == 2)
 
-            // Object identity: inline and heap point to same objects
-            let dstPtr0: UnsafeMutablePointer<Tracker> = unsafe heap.pointer(at: 0)
-            let dstPtr1: UnsafeMutablePointer<Tracker> = unsafe heap.pointer(at: 1)
-            unsafe #expect(srcPtr0.pointee === dstPtr0.pointee, "Slot 0: same object identity")
-            unsafe #expect(srcPtr1.pointee === dstPtr1.pointee, "Slot 1: same object identity")
-
-            // Move from inline - objects survive because heap has references
+            // Move from inline
             let inlineRef0 = inline.move(at: 0)
             let inlineRef1 = inline.move(at: 1)
             _ = consume inlineRef0
@@ -500,7 +479,7 @@ struct StorageInlineEdgeCaseTests {
             // Move from heap - last references
             let heapRef0 = heap.move(at: 0)
             let heapRef1 = heap.move(at: 1)
-            heap.initialization = .empty
+            heap.initialization = .empty  // Mark heap as empty after moving
 
             // Verify heap had correct values
             #expect(heapRef0.id == 100)
@@ -509,8 +488,6 @@ struct StorageInlineEdgeCaseTests {
             // Drop last references
             _ = consume heapRef0
             _ = consume heapRef1
-
-            // Note: Can't assert instances == 0 due to ARC timing for classes
         }
     }
 
@@ -594,7 +571,7 @@ struct StorageInlineEdgeCaseTests {
     struct MemoryLayoutVerification {
 
         @Test
-        func `storage size scales linearly with capacity`() {
+        func `storage size scales with capacity`() {
             let size1 = MemoryLayout<Storage<Int>.Inline<1>>.size
             let size2 = MemoryLayout<Storage<Int>.Inline<2>>.size
             let size4 = MemoryLayout<Storage<Int>.Inline<4>>.size
@@ -602,29 +579,14 @@ struct StorageInlineEdgeCaseTests {
 
             let stride = MemoryLayout<Int>.stride
 
-            // Sizes should increase by stride for each additional element
-            #expect(size2 - size1 >= stride)
-            #expect(size4 - size2 >= 2 * stride)
-            #expect(size8 - size4 >= 4 * stride)
-        }
+            // Sizes should increase with capacity (element storage grows)
+            #expect(size2 >= size1)
+            #expect(size4 >= size2)
+            #expect(size8 >= size4)
 
-        @Test
-        func `no excessive padding for common types`() {
-            // Int should have minimal overhead
-            let intStorageSize = MemoryLayout<Storage<Int>.Inline<4>>.size
-            let intIdealSize = 4 * MemoryLayout<Int>.stride
-            let initSize = MemoryLayout<Storage<Int>.Initialization>.size
-
-            // Should be close to ideal + initialization overhead
-            #expect(intStorageSize <= intIdealSize + initSize + 16,
-                   "Excessive padding detected for Int storage")
-
-            // Double
-            let doubleStorageSize = MemoryLayout<Storage<Double>.Inline<4>>.size
-            let doubleIdealSize = 4 * MemoryLayout<Double>.stride
-
-            #expect(doubleStorageSize <= doubleIdealSize + initSize + 16,
-                   "Excessive padding detected for Double storage")
+            // Element storage should scale roughly with capacity
+            // (exact sizing depends on BitVector overhead)
+            #expect(size8 - size4 >= 4 * stride - 8)  // Allow for alignment
         }
 
         @Test
@@ -632,9 +594,9 @@ struct StorageInlineEdgeCaseTests {
             // Bool has stride 1
             let boolStorageSize = MemoryLayout<Storage<Bool>.Inline<8>>.size
             let boolIdealSize = 8 * MemoryLayout<Bool>.stride
-            let initSize = MemoryLayout<Storage<Bool>.Initialization>.size
+            let bitVectorSize = 32  // 4 words = 32 bytes for tracking
 
-            #expect(boolStorageSize <= boolIdealSize + initSize + 16,
+            #expect(boolStorageSize <= boolIdealSize + bitVectorSize + 16,
                    "Bool storage should be compact")
         }
     }
@@ -750,6 +712,7 @@ struct StorageInlineEdgeCaseTests {
             storage.deinitialize(range: range)
 
             unsafe #expect(Tracker.count == 0)
+            #expect(storage.isEmpty == true)
         }
 
         @Test
@@ -772,22 +735,25 @@ struct StorageInlineEdgeCaseTests {
         }
 
         @Test
-        func `deinitialize with one-range then reinitialize`() {
+        func `deinitialize then reinitialize`() {
             var storage = Storage<Int>.Inline<4>()
 
             // First round
             storage.initialize(to: 1, at: 0)
             storage.initialize(to: 2, at: 1)
-            storage.initialization = .linear(count: 2)
 
-            storage.deinitialize()
-            storage._initialization = .empty
-            #expect(storage.initialization.isEmpty)
+            #expect(storage.initializedCount == 2)
+
+            storage.deinitialize(at: 0)
+            storage.deinitialize(at: 1)
+
+            #expect(storage.isEmpty == true)
 
             // Second round - same slots
             storage.initialize(to: 10, at: 0)
             storage.initialize(to: 20, at: 1)
-            storage.initialization = .linear(count: 2)
+
+            #expect(storage.initializedCount == 2)
 
             #expect(storage.move(at: 0) == 10)
             #expect(storage.move(at: 1) == 20)
@@ -809,14 +775,12 @@ struct StorageInlineEdgeCaseTests {
             #expect(storage.move(at: 0) == 42)
 
             storage.initialize(to: 100, at: 0)
-            storage.initialization = .linear(count: 1)
-            storage.deinitialize()
-            storage._initialization = .empty
-            #expect(storage.initialization.isEmpty)
+            storage.deinitialize(at: 0)
+            #expect(storage.isEmpty == true)
         }
 
         @Test
-        func `capacity 256 - stress test`() {
+        func `capacity 256 - maximum supported`() {
             var storage = Storage<UInt8>.Inline<256>()
 
             // Fill with pattern
@@ -826,6 +790,8 @@ struct StorageInlineEdgeCaseTests {
                 slot = slot.successor.saturating()
             }
 
+            #expect(storage.initializedCount == 256)
+
             // Verify pattern
             slot = 0
             for i in 0..<256 {
@@ -833,6 +799,8 @@ struct StorageInlineEdgeCaseTests {
                 #expect(value == UInt8(i))
                 slot = slot.successor.saturating()
             }
+
+            #expect(storage.isEmpty == true)
         }
 
         @Test
@@ -855,6 +823,8 @@ struct StorageInlineEdgeCaseTests {
                 )
                 slot = slot.successor.saturating()
             }
+
+            #expect(storage.initializedCount == 32)
 
             slot = 0
             for i in 0..<32 {

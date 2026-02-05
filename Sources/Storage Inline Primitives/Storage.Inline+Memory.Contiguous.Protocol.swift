@@ -28,7 +28,7 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
     public var span: Span<Element> {
         @_lifetime(borrow self)
         borrowing get {
-            let count = Int(bitPattern: _initialization.count)
+            let count = initializedCount
             let ptr = unsafe withUnsafePointer(to: _storage) { base in
                 unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
             }
@@ -51,7 +51,7 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = Int(bitPattern: _initialization.count)
+        let count = initializedCount
         return try unsafe withUnsafePointer(to: _storage) { base throws(E) in
             let ptr = unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
             let buffer = unsafe UnsafeBufferPointer(start: ptr, count: count)
@@ -75,7 +75,7 @@ extension Storage.Inline where Element: Copyable {
     public var mutableSpan: MutableSpan<Element> {
         @_lifetime(&self)
         mutating get {
-            let count = Int(bitPattern: _initialization.count)
+            let count = initializedCount
             let ptr = unsafe withUnsafeMutablePointer(to: &_storage) { base in
                 unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
             }
@@ -98,7 +98,7 @@ extension Storage.Inline where Element: Copyable {
     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = Int(bitPattern: _initialization.count)
+        let count = initializedCount
         return try unsafe withUnsafeMutablePointer(to: &_storage) { base throws(E) in
             let ptr = unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
             let buffer = unsafe UnsafeMutableBufferPointer(start: ptr, count: count)

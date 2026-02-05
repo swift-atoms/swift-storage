@@ -28,11 +28,11 @@ struct StorageInlineInvariantTests {
     struct Layout {
 
         @Test
-        func `INV-INLINE-001a: size equals stride times capacity plus initialization overhead`() {
+        func `INV-INLINE-001a: size equals stride times capacity plus bitvector overhead`() {
             // For Int with capacity 4
             let intStride = MemoryLayout<Int>.stride
-            let initSize = MemoryLayout<Storage<Int>.Initialization>.size
-            let expectedIntSize = intStride * 4 + initSize
+            let bitvectorSize = 32 // 4 words × 8 bytes = 32 bytes for Bit.Vector.Static<4>
+            let expectedIntSize = intStride * 4 + bitvectorSize
             let actualIntSize = MemoryLayout<Storage<Int>.Inline<4>>.size
 
             // Actual size may include alignment padding, so use >= for lower bound
@@ -41,7 +41,7 @@ struct StorageInlineInvariantTests {
 
             // For Double with capacity 8
             let doubleStride = MemoryLayout<Double>.stride
-            let expectedDoubleSize = doubleStride * 8 + initSize
+            let expectedDoubleSize = doubleStride * 8 + bitvectorSize
             let actualDoubleSize = MemoryLayout<Storage<Double>.Inline<8>>.size
 
             #expect(actualDoubleSize >= doubleStride * 8, "Storage must hold at least 8 Doubles")
@@ -147,42 +147,90 @@ struct StorageInlineInvariantTests {
     }
 
     // =========================================================================
-    // MARK: - INV-INLINE-002: Initialization State Invariants
+    // MARK: - INV-INLINE-002: Initialization State Invariants (BitVector Auto-Tracking)
     // =========================================================================
 
-    @Suite("INV-INLINE-002: Initialization State")
+    @Suite("INV-INLINE-002: Initialization State (Auto-Tracking)")
     struct InitializationState {
 
         @Test
         func `INV-INLINE-002a: storage starts empty on construction`() {
             let storage = Storage<Int>.Inline<8>()
-            #expect(storage.initialization.isEmpty)
-            #expect(storage.initialization.count == 0)
+            #expect(storage.isEmpty == true)
+            #expect(storage.initializedCount == 0)
         }
 
         @Test
-        func `INV-INLINE-002b: individual operations do not update initialization state`() {
+        func `INV-INLINE-002b: initialize automatically sets slot bit`() {
             var storage = Storage<Int>.Inline<4>()
 
-            // Initialize does NOT update state
+            #expect(storage.isEmpty == true)
+
             storage.initialize(to: 42, at: 0)
-            #expect(storage.initialization.isEmpty, "initialize should not update state")
+            #expect(storage.initializedCount == 1, "initialize should set bit")
+            #expect(storage.isEmpty == false)
 
-            // Move does NOT update state
-            _ = storage.move(at: 0)
-            #expect(storage.initialization.isEmpty, "move should not update state")
-
-            // Caller must update manually
-            storage.initialize(to: 100, at: 1)
-            storage.initialization = .linear(count: 1)
-            #expect(!storage.initialization.isEmpty)
+            storage.initialize(to: 100, at: 2)
+            #expect(storage.initializedCount == 2, "initialize should set another bit")
 
             // Cleanup
-            _ = storage.move(at: 1)
+            _ = storage.move(at: 0)
+            _ = storage.move(at: 2)
         }
 
         @Test
-        func `INV-INLINE-002c: bulk deinitialize updates state to empty`() {
+        func `INV-INLINE-002c: move automatically clears slot bit`() {
+            var storage = Storage<Int>.Inline<4>()
+
+            storage.initialize(to: 42, at: 0)
+            storage.initialize(to: 84, at: 1)
+            #expect(storage.initializedCount == 2)
+
+            _ = storage.move(at: 0)
+            #expect(storage.initializedCount == 1, "move should clear bit")
+
+            _ = storage.move(at: 1)
+            #expect(storage.isEmpty == true, "all bits should be cleared")
+        }
+
+        @Test
+        func `INV-INLINE-002d: deinitialize at slot clears bit`() {
+            var storage = Storage<Int>.Inline<4>()
+
+            storage.initialize(to: 42, at: 0)
+            storage.initialize(to: 84, at: 1)
+            #expect(storage.initializedCount == 2)
+
+            storage.deinitialize(at: 0)
+            #expect(storage.initializedCount == 1, "deinitialize should clear bit")
+
+            storage.deinitialize(at: 1)
+            #expect(storage.isEmpty == true)
+        }
+
+        @Test
+        func `INV-INLINE-002e: deinitialize range clears multiple bits`() {
+            var storage = Storage<Int>.Inline<8>()
+
+            // Initialize slots 0-4
+            for i in 0..<5 {
+                storage.initialize(to: i * 10, at: try! Index<Int>(i))
+            }
+            #expect(storage.initializedCount == 5)
+
+            // Deinitialize range 1..<4
+            let range: Swift.Range<Index<Int>> = 1..<4
+            storage.deinitialize(range: range)
+            #expect(storage.initializedCount == 2, "3 bits should be cleared")
+
+            // Cleanup remaining: 0 and 4
+            _ = storage.move(at: 0)
+            _ = storage.move(at: 4)
+            #expect(storage.isEmpty == true)
+        }
+
+        @Test
+        func `INV-INLINE-002f: deinit cleans up all tracked slots`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var count = 0
                 init() { unsafe Tracker.count += 1 }
@@ -191,24 +239,23 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.count = 0
 
-            var storage = Storage<Tracker>.Inline<4>()
+            do {
+                var storage = Storage<Tracker>.Inline<4>()
 
-            storage.initialize(to: Tracker(), at: 0)
-            storage.initialize(to: Tracker(), at: 1)
-            storage.initialize(to: Tracker(), at: 2)
-            storage.initialization = .linear(count: 3)
+                storage.initialize(to: Tracker(), at: 0)
+                storage.initialize(to: Tracker(), at: 1)
+                storage.initialize(to: Tracker(), at: 2)
 
-            unsafe #expect(Tracker.count == 3)
-            #expect(!storage.initialization.isEmpty)
+                unsafe #expect(Tracker.count == 3)
+                #expect(storage.initializedCount == 3)
+                // storage goes out of scope - deinit iterates set bits and cleans up
+            }
 
-            storage.deinitialize()
-            storage._initialization = .empty
-            #expect(storage.initialization.isEmpty, "bulk deinitialize must set state to empty")
-            unsafe #expect(Tracker.count == 0, "all trackers should be deinitialized")
+            unsafe #expect(Tracker.count == 0, "all trackers should be deinitialized by deinit")
         }
 
         @Test
-        func `INV-INLINE-002d: state must accurately reflect initialized slots for correct cleanup`() {
+        func `INV-INLINE-002g: sparse initialization pattern tracked correctly`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var deinitCount = 0
                 deinit { unsafe Tracker.deinitCount += 1 }
@@ -216,21 +263,20 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitCount = 0
 
-            var storage = Storage<Tracker>.Inline<8>()
+            do {
+                var storage = Storage<Tracker>.Inline<8>()
 
-            // Initialize 5 elements
-            for i: Index<Tracker> in [0, 1, 2, 3, 4] {
-                storage.initialize(to: Tracker(), at: i)
+                // Initialize sparse slots: 1, 3, 5, 7
+                storage.initialize(to: Tracker(), at: 1)
+                storage.initialize(to: Tracker(), at: 3)
+                storage.initialize(to: Tracker(), at: 5)
+                storage.initialize(to: Tracker(), at: 7)
+
+                #expect(storage.initializedCount == 4)
+                // deinit should clean up exactly these 4 slots
             }
 
-            // Set accurate state
-            storage.initialization = .linear(count: 5)
-
-            // Bulk deinitialize should clean up exactly 5
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
-
-            unsafe #expect(Tracker.deinitCount == 5, "exactly 5 trackers should be deinitialized")
+            unsafe #expect(Tracker.deinitCount == 4, "exactly 4 sparse slots should be deinitialized")
         }
     }
 
@@ -296,10 +342,10 @@ struct StorageInlineInvariantTests {
     }
 
     // =========================================================================
-    // MARK: - INV-INLINE-005: Initialization Enum Invariants
+    // MARK: - INV-INLINE-005: Initialization Enum Invariants (for Heap storage)
     // =========================================================================
 
-    @Suite("INV-INLINE-005: Initialization Enum")
+    @Suite("INV-INLINE-005: Initialization Enum (Heap)")
     struct InitializationEnum {
 
         @Test
@@ -349,7 +395,7 @@ struct StorageInlineInvariantTests {
         }
 
         @Test
-        func `two-span deinitialize cleans up both ranges correctly`() {
+        func `heap two-span deinitialize cleans up both ranges correctly`() {
             final class Tracker: @unchecked Sendable {
                 let id: Int
                 nonisolated(unsafe) static var deinitOrder: [Int] = []
@@ -359,20 +405,19 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitOrder = []
 
-            var storage = Storage<Tracker>.Inline<8>()
+            let heap = Storage<Tracker>.Heap.create(minimumCapacity: 8)
 
             // Initialize two disjoint ranges: [0,2) and [5,7)
-            storage.initialize(to: Tracker(0), at: 0)
-            storage.initialize(to: Tracker(1), at: 1)
-            storage.initialize(to: Tracker(5), at: 5)
-            storage.initialize(to: Tracker(6), at: 6)
+            heap.initialize(to: Tracker(0), at: 0)
+            heap.initialize(to: Tracker(1), at: 1)
+            heap.initialize(to: Tracker(5), at: 5)
+            heap.initialize(to: Tracker(6), at: 6)
 
             let first: Swift.Range<Index<Tracker>> = 0..<2
             let second: Swift.Range<Index<Tracker>> = 5..<7
-            storage.initialization = .two(first: first, second: second)
+            heap.initialization = .two(first: first, second: second)
 
-            storage.deinitialize()
-            storage.initialization = .empty  // Reset so deinit doesn't double-free
+            heap.deinitialize()
 
             unsafe #expect(Tracker.deinitOrder.count == 4)
             // First range deinitialized first
@@ -410,6 +455,9 @@ struct StorageInlineInvariantTests {
             #expect(heap.move(at: 1) == 200)
             #expect(heap.move(at: 2) == 300)
             heap.initialization = .empty
+
+            // Inline bits should be cleared after move
+            #expect(inline.isEmpty == true)
         }
 
         @Test
@@ -429,6 +477,9 @@ struct StorageInlineInvariantTests {
             #expect(heap.move(at: 0) == 10)
             #expect(heap.move(at: 1) == 20)
             heap.initialization = .empty
+
+            // Inline should still have values (copy doesn't remove)
+            #expect(inline.initializedCount == 2)
 
             // Cleanup inline
             _ = inline.move(at: 3)
@@ -452,6 +503,7 @@ struct StorageInlineInvariantTests {
             inline.initialize(to: Tracker(), at: 1)
 
             unsafe #expect(Tracker.instances == 2)
+            #expect(inline.initializedCount == 2)
 
             let range: Swift.Range<Index<Tracker>> = 0..<2
             inline.move(range: range, to: heap)
@@ -459,6 +511,8 @@ struct StorageInlineInvariantTests {
 
             // Count should still be 2 - moved, not destroyed
             unsafe #expect(Tracker.instances == 2)
+            // Inline bits should be cleared
+            #expect(inline.isEmpty == true)
 
             // Cleanup heap
             _ = heap.move(at: 0)
@@ -480,7 +534,8 @@ struct StorageInlineInvariantTests {
             inline.copy(range: range, to: heap)
             heap.initialization = .linear(count: 2)
 
-            // Source should still have values
+            // Source should still have values and bits set
+            #expect(inline.initializedCount == 2)
             let val0 = inline.move(at: 0)
             let val1 = inline.move(at: 1)
             #expect(val0 == 42, "source slot 0 should be preserved")
@@ -541,10 +596,14 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 2, at: 2)
             storage.initialize(to: 3, at: 3)
 
+            #expect(storage.initializedCount == 4)
+
             #expect(storage.move(at: 0) == 0)
             #expect(storage.move(at: 1) == 1)
             #expect(storage.move(at: 2) == 2)
             #expect(storage.move(at: 3) == 3)
+
+            #expect(storage.isEmpty == true)
         }
     }
 
@@ -558,7 +617,8 @@ struct StorageInlineInvariantTests {
         @Test
         func `zero capacity storage`() {
             let storage = Storage<Int>.Inline<0>()
-            #expect(storage.initialization.isEmpty)
+            #expect(storage.isEmpty == true)
+            #expect(storage.initializedCount == 0)
             // No slots to access - just verify construction works
         }
 
@@ -567,7 +627,9 @@ struct StorageInlineInvariantTests {
             var storage = Storage<Int>.Inline<1>()
 
             storage.initialize(to: 42, at: 0)
+            #expect(storage.initializedCount == 1)
             #expect(storage.move(at: 0) == 42)
+            #expect(storage.isEmpty == true)
         }
 
         @Test
@@ -587,33 +649,52 @@ struct StorageInlineInvariantTests {
 
             let large = LargeStruct(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8)
             storage.initialize(to: large, at: 0)
+            #expect(storage.initializedCount == 1)
 
             let retrieved = storage.move(at: 0)
             #expect(retrieved.a == 1)
             #expect(retrieved.h == 8)
+            #expect(storage.isEmpty == true)
         }
 
         @Test
         func `deinitialize empty range is no-op`() {
             var storage = Storage<Int>.Inline<4>()
             storage.initialize(to: 42, at: 0)
+            #expect(storage.initializedCount == 1)
 
             let emptyRange: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
             storage.deinitialize(range: emptyRange)
 
             // Original value should still be there
+            #expect(storage.initializedCount == 1)
             #expect(storage.move(at: 0) == 42)
         }
 
         @Test
-        func `deinitialize with empty initialization state is no-op`() {
-            var storage = Storage<Int>.Inline<4>()
-            // Don't initialize anything, state is .empty
+        func `deinit with no initialized slots is safe`() {
+            // This test verifies the deinit doesn't crash when nothing is initialized
+            do {
+                let storage = Storage<Int>.Inline<4>()
+                #expect(storage.isEmpty == true)
+                // storage goes out of scope - deinit runs with empty bitvector
+            }
+            // If we get here, deinit didn't crash
+        }
 
-            // This should not crash
-            storage.deinitialize()
+        @Test
+        func `maximum supported capacity 256`() {
+            var storage = Storage<UInt8>.Inline<256>()
 
-            #expect(storage.initialization.isEmpty)
+            // Initialize first and last slots
+            storage.initialize(to: 0, at: 0)
+            storage.initialize(to: 255, at: 255)
+
+            #expect(storage.initializedCount == 2)
+
+            #expect(storage.move(at: 0) == 0)
+            #expect(storage.move(at: 255) == 255)
+            #expect(storage.isEmpty == true)
         }
     }
 }
