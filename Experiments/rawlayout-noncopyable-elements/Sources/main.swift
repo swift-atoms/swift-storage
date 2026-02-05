@@ -5,7 +5,10 @@
 // Toolchain: Swift 6.2
 // Platform: macOS 26
 //
-// Result: [PENDING]
+// Result: REFUTED - @_rawLayout DOES support ~Copyable elements
+//         The actual issue was: extensions on nested types within Storage<Element: ~Copyable>
+//         require explicit `where Element: ~Copyable` constraint, even though it seems redundant.
+//         Example: `extension Storage.Heap where Element: ~Copyable { ... }`
 // Date: 2026-02-05
 
 import Index_Primitives
