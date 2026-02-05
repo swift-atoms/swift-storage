@@ -21,10 +21,10 @@ extension Storage.Heap where Element: Copyable {
     ///
     /// - Returns: A new storage instance with copied elements.
     @inlinable
-    public func copy() -> Storage.Heap<Element> {
+    public func copy() -> Storage.Heap {
         let init_ = self.initialization
         let count = init_.count
-        let new = Storage.Heap<Element>.create(minimumCapacity: count)
+        let new = Storage.Heap.create(minimumCapacity: count)
         new.initialization = .linear(count: count)
 
         guard count > .zero else { return new }
@@ -65,7 +65,7 @@ extension Storage.Heap where Element: Copyable {
     /// - Parameter destination: The destination storage.
     /// - Precondition: Destination must have sufficient capacity.
     @inlinable
-    public func copy(to destination: Storage.Heap<Element>) {
+    public func copy(to destination: Storage.Heap) {
         let init_ = self.initialization
 
         func copySpan(_ range: Swift.Range<Index<Element>>, dstStart: inout Index<Element>) {
@@ -104,7 +104,7 @@ extension Storage.Heap where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     @inlinable
-    public func copy(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
+    public func copy(range: Swift.Range<Index<Element>>, to destination: Storage.Heap) {
         guard !range.isEmpty else { return }
         let count = Int(range.count.rawValue.rawValue)
         _ = unsafe withUnsafeMutablePointerToElements { src in

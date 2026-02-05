@@ -16,7 +16,7 @@ public import Storage_Primitives_Core
 extension Storage.Inline where Element: ~Copyable {
     /// The initialization state tracking which slots are initialized.
     @inlinable
-    public var initialization: Storage.Initialization<Element> {
+    public var initialization: Storage<Element>.Initialization {
         get { _initialization }
         set { _initialization = newValue }
     }
@@ -155,7 +155,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public mutating func move(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
+    public mutating func move(range: Swift.Range<Index<Element>>, to destination: Storage<Element>.Heap) {
         guard !range.isEmpty else { return }
         unsafe destination.withUnsafeMutablePointerToElements { dst in
             var srcSlot = range.lowerBound

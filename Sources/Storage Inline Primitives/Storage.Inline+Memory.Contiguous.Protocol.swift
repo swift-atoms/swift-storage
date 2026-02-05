@@ -9,7 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Memory_Primitives_Core
+public import Storage_Primitives_Core
+public import Memory_Primitives_Core
 
 // MARK: - Memory.Contiguous.Protocol Conformance
 

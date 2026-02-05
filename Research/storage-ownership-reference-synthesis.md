@@ -170,7 +170,7 @@ Keep the current split but rename for clarity.
 
 ```
 Storage.Inline<Element, let capacity>   (current: Storage.Static)
-Storage.Heap<Element>                   (current: Storage.Dynamic)
+Storage.Heap                   (current: Storage.Dynamic)
 ```
 
 **What's primitive**: Inline and Heap.
@@ -185,7 +185,7 @@ Implement the full academically-derived set at the storage layer.
 
 ```
 Storage.Inline<Element, let capacity>   ← Embedded, zero allocation
-Storage.Heap<Element>                   ← Independent lifetime, ARC
+Storage.Heap                   ← Independent lifetime, ARC
 Storage.Arena<Element>                  ← Typed wrapper over Memory.Arena
 Storage.Pool<Element, let slotCount>    ← Fixed-size reusable slots
 Storage.View<Element>                   ← Non-owning typed reference
@@ -308,7 +308,7 @@ Typed pointer access uses Swift stdlib types directly: `UnsafeMutablePointer<Ele
 #### Tier 12 (storage-primitives) — Typed Element Storage
 
 ```
-Storage.Heap<Element>                  ← EXISTS. ARC-managed ManagedBuffer.
+Storage.Heap                  ← EXISTS. ARC-managed ManagedBuffer.
 Storage.Inline<Element, let capacity>  ← EXISTS. @_rawLayout for element-sized slots.
 
 Storage.Initialization  ← EXISTS. Tracks which slots are initialized.

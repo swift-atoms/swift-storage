@@ -29,7 +29,7 @@ This enables Span access for Copyable elements and eliminates the slot/element d
 
 | Type | Placement | Lifetime | Layout |
 |------|-----------|----------|--------|
-| `Storage.Heap<Element>` | Heap | ARC | Dense (element stride) |
+| `Storage.Heap` | Heap | ARC | Dense (element stride) |
 | `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) |
 
 Both support `~Copyable` elements. Both conform to `Memory.Contiguous.Protocol` for Copyable elements.

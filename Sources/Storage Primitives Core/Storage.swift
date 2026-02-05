@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import Index_Primitives
+
 /// Namespace for storage primitives.
 ///
 /// `Storage` provides heap and inline storage building blocks:
@@ -19,4 +21,163 @@
 /// - `Index<Element>`: Physical slot position (typed by element)
 /// - `Swift.Range<Index<Element>>`: Contiguous slot range
 /// - ``Storage/Initialization``: Which slots are initialized
-public enum Storage {}
+public enum Storage<Element: ~Copyable> {
+    
+    /// Describes which physical slots are initialized.
+    ///
+    /// Storage deinit iterates these spans to clean up exactly the
+    /// initialized slots, regardless of buffer discipline.
+    ///
+    /// ## Cases
+    ///
+    /// - `empty`: No slots are initialized
+    /// - `one`: A single contiguous range of initialized slots
+    /// - `two`: Two disjoint ranges (e.g., wrapped ring buffer)
+    ///
+    /// ## Invariants
+    ///
+    /// - `.two` spans are sorted by start: `first.start < second.start`
+    /// - `.two` spans are disjoint: `first.end <= second.start`
+    ///
+    /// ## Example: Ring Buffer Wrapping
+    ///
+    /// A ring buffer with capacity 8, head at slot 6, and 5 elements:
+    /// ```
+    /// Slots: [0][1][2][3][4][5][6][7]
+    /// Data:   X  X  X  -  -  -  X  X
+    ///         └──┴──┘           └──┴── initialized
+    /// ```
+    /// Initialization: `.two(first: [0,3), second: [6,8))`
+    public enum Initialization: Sendable, Equatable {
+        /// No slots are initialized.
+        case empty
+
+        /// A single contiguous range of initialized slots.
+        case one(Swift.Range<Index_Primitives.Index<Element>>)
+
+        /// Two disjoint ranges of initialized slots.
+        ///
+        /// Invariants:
+        /// - `first.start < second.start`
+        /// - `first.end <= second.start`
+        case two(first: Swift.Range<Index_Primitives.Index<Element>>, second: Swift.Range<Index_Primitives.Index<Element>>)
+    }
+    
+    /// Canonical heap storage using ManagedBuffer.
+    ///
+    /// `Storage<Element>.Heap` is the primitive heap storage building block.
+    /// It provides:
+    /// - Contiguous element storage with ARC lifetime
+    /// - Reference semantics with manual element lifecycle
+    /// - Support for ~Copyable elements
+    /// - Initialization tracking via ``Storage/Heap/Header``
+    ///
+    /// ## Initialization Tracking
+    ///
+    /// The storage tracks which slots are initialized via the `initialization`
+    /// property. The deinit uses this information to correctly deinitialize
+    /// only the initialized slots.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let storage = Storage.Heap<Int>.create(minimumCapacity: Index<Int>.Count(10))
+    /// storage.initialize(to: 42, at: .zero)
+    /// let value = storage.move(at: .zero)
+    /// ```
+    public final class Heap: ManagedBuffer<Storage.Heap.Header, Element> {
+        deinit {
+            func deinitialize(range: Swift.Range<Index<Element>>) {
+                guard !range.isEmpty else { return }
+                _ = unsafe withUnsafeMutablePointerToElements { elements in
+                    let offset = Index<Element>.Offset(fromZero: range.lowerBound)
+                    unsafe (elements + offset).deinitialize(count: range.count)
+                }
+            }
+
+            switch header.initialization {
+            case .empty:
+                return
+            case .one(let range):
+                deinitialize(range: range)
+            case .two(let first, let second):
+                deinitialize(range: first)
+                deinitialize(range: second)
+            }
+        }
+    }
+    
+    /// Fixed-capacity inline storage with automatic optimal layout.
+    ///
+    /// Provides stack-allocated storage with compile-time capacity. Elements are
+    /// stored inline without heap allocation, making this suitable for small,
+    /// fixed-size collections.
+    ///
+    /// ## Layout
+    ///
+    /// Storage uses `@_rawLayout` for automatic optimal layout computation:
+    /// - Size: `MemoryLayout<Element>.stride × capacity`
+    /// - Alignment: `MemoryLayout<Element>.alignment`
+    ///
+    /// This eliminates the 64-byte slot overhead of previous implementations.
+    ///
+    /// ## Initialization Tracking
+    ///
+    /// Tracks initialization state via the `_initialization` field. Use
+    /// `deinitialize()` to clean up all tracked initialized slots.
+    ///
+    /// ## Span Compatibility
+    ///
+    /// With optimal layout, `Storage.Inline` now stores elements contiguously
+    /// at their natural stride, enabling potential Span access for Copyable elements.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// var storage = Storage.Inline<Int, 8>()
+    /// storage.initialize(to: 42, at: .zero)
+    /// let value = storage.move(at: .zero)
+    /// ```
+    public struct Inline<let capacity: Int>: ~Copyable {
+        /// Internal raw storage with automatic layout computation.
+        ///
+        /// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
+        /// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
+        ///
+        /// This type has no stored properties — the layout is determined entirely by the attribute.
+        @_rawLayout(likeArrayOf: Element, count: capacity)
+        @usableFromInline
+        package struct _Raw: ~Copyable {
+            @usableFromInline
+            init() {}
+        }
+
+        @usableFromInline
+        package var _storage: _Raw
+
+        @usableFromInline
+        package var _initialization: Initialization
+
+        /// Creates uninitialized inline storage.
+        ///
+        /// Layout is computed automatically — no validation required.
+        @inlinable
+        public init() {
+            _storage = _Raw()
+            _initialization = .empty
+        }
+    }
+}
+
+// MARK: - Conditional Conformances
+
+// @_rawLayout types require @unchecked Sendable
+extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+
+// Note: Storage.Inline cannot be conditionally Copyable because _Raw
+// (an @_rawLayout type) is always ~Copyable. This is acceptable since Storage.Inline
+// manages initialization state and ~Copyable is the correct semantic.
+
+/// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
+/// Requires @unchecked because _Raw uses @unchecked Sendable.
+extension Storage.Inline: @unchecked Sendable where Element: Sendable {}

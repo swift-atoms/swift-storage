@@ -12,7 +12,7 @@ status: DECISION
 
 `Memory.Contiguous.Protocol` (from swift-memory-primitives) defines a standard interface for types providing contiguous memory access.
 
-**Question**: Can `Storage.Heap<Element>` and `Storage.Inline<Element, capacity>` conform to `Memory.Contiguous.Protocol`?
+**Question**: Can `Storage.Heap` and `Storage.Inline<Element, capacity>` conform to `Memory.Contiguous.Protocol`?
 
 **Trigger**: Architectural consistency—storage primitives should integrate with memory primitives' contiguous access protocol.
 

@@ -22,12 +22,12 @@ extension Storage.Heap where Element: ~Copyable {
     @inlinable
     public static func create(
         minimumCapacity: Index<Element>.Count
-    ) -> Storage.Heap<Element> {
+    ) -> Storage.Heap {
         unsafe unsafeDowncast(
-            Storage.Heap<Element>.create(
+            Storage.Heap.create(
                 minimumCapacity: Int(bitPattern: minimumCapacity)
             ) { _ in Storage.Heap.Header() },
-            to: Storage.Heap<Element>.self
+            to: Storage.Heap.self
         )
     }
 }
@@ -37,7 +37,7 @@ extension Storage.Heap where Element: ~Copyable {
 extension Storage.Heap where Element: ~Copyable {
     /// The initialization state describing which slots are initialized.
     @inlinable
-    public var initialization: Storage.Initialization<Element> {
+    public var initialization: Storage.Initialization {
         get { header.initialization }
         set { header.initialization = newValue }
     }
@@ -151,7 +151,7 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     /// - Note: The caller is responsible for updating `initialization` state on both storages.
     @inlinable
-    public func move(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
+    public func move(range: Swift.Range<Index<Element>>, to destination: Storage.Heap) {
         guard !range.isEmpty else { return }
         var srcSlot = range.lowerBound
         var dstSlot: Index<Element> = .zero

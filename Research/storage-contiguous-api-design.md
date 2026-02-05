@@ -433,7 +433,7 @@ Initialization: .two(first: [0,3), second: [6,8))
 
 ### Complete API Surface (Post-Change)
 
-#### Storage.Heap<Element>
+#### Storage.Heap
 
 ```swift
 // Layer 1: Memory.Contiguous.Protocol (Copyable)
@@ -460,7 +460,7 @@ func deinitialize()
 func move(range:to:)
 
 // Layer 5: Bulk (Copyable)
-func copy() -> Storage.Heap<Element>
+func copy() -> Storage.Heap
 func copy(to:)
 func copy(range:to:)
 ```

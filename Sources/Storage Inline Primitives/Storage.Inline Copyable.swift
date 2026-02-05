@@ -25,7 +25,10 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     @inlinable
-    public func copy(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
+    public func copy(
+        range: Swift.Range<Index<Element>>,
+        to destination: Storage.Heap
+    ) {
         guard !range.isEmpty else { return }
         let count = Int(range.count.rawValue.rawValue)
         let srcPtr = unsafe pointer(at: range.lowerBound)
