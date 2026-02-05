@@ -25,7 +25,7 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     @inlinable
-    public func copy(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
+    public func copy(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
         let count = Int(range.count.rawValue.rawValue)
         let srcPtr = unsafe pointer(at: range.lowerBound)
@@ -53,7 +53,7 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Index<Storage>>,
+        _ range: Swift.Range<Index<Element>>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         try unsafe withUnsafePointer(to: _storage) { base throws(E) in
@@ -81,7 +81,7 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     @inlinable
     public mutating func withMutableSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Index<Storage>>,
+        _ range: Swift.Range<Index<Element>>,
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
         try unsafe withUnsafeMutablePointer(to: &_storage) { base throws(E) in

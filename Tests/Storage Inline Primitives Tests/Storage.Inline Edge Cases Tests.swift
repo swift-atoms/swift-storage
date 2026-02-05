@@ -38,12 +38,12 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage.Inline<Empty, 8>()
 
             // Should be able to initialize all slots
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 storage.initialize(to: Empty(), at: i)
             }
 
             // Should be able to move all slots
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 _ = storage.move(at: i)
             }
         }
@@ -76,7 +76,7 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage.Inline<UInt8, 255>()
 
             // Fill all slots
-            var slot: Index<Storage> = 0
+            var slot: Index<UInt8> = 0
             for i in 0..<255 {
                 storage.initialize(to: UInt8(i), at: slot)
                 slot = slot.successor.saturating()
@@ -125,7 +125,7 @@ struct StorageInlineEdgeCaseTests {
 
             var storage = Storage.Inline<MixedPadding, 4>()
 
-            for i: Index<Storage> in [0, 1, 2, 3] {
+            for i: Index<MixedPadding> in [0, 1, 2, 3] {
                 storage.initialize(to: MixedPadding(a: 1, b: 2, c: 3), at: i)
             }
 
@@ -136,7 +136,7 @@ struct StorageInlineEdgeCaseTests {
             #expect(diff == stride)
 
             // Cleanup
-            for i: Index<Storage> in [0, 1, 2, 3] {
+            for i: Index<MixedPadding> in [0, 1, 2, 3] {
                 _ = storage.move(at: i)
             }
         }
@@ -246,12 +246,12 @@ struct StorageInlineEdgeCaseTests {
 
             for round in 0..<100 {
                 // Initialize all
-                for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+                for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                     storage.initialize(to: round * 8 + Int(i.rawValue.rawValue), at: i)
                 }
 
                 // Move all
-                for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+                for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                     let expected = round * 8 + Int(i.rawValue.rawValue)
                     #expect(storage.move(at: i) == expected)
                 }
@@ -277,7 +277,7 @@ struct StorageInlineEdgeCaseTests {
 
             for _ in 0..<100 {
                 // Initialize all slots
-                for i: Index<Storage> in [0, 1, 2, 3] {
+                for i: Index<Tracker> in [0, 1, 2, 3] {
                     storage.initialize(to: Tracker(), at: i)
                 }
                 storage.initialization = .linear(count: 4)
@@ -316,8 +316,8 @@ struct StorageInlineEdgeCaseTests {
             // Single element in second range
             storage.initialize(to: Tracker(7), at: 7)
 
-            let first: Swift.Range<Index<Storage>> = 0..<1
-            let second: Swift.Range<Index<Storage>> = 7..<8
+            let first: Swift.Range<Index<Tracker>> = 0..<1
+            let second: Swift.Range<Index<Tracker>> = 7..<8
             storage.initialization = .two(first: first, second: second)
 
             storage.deinitialize()
@@ -333,8 +333,8 @@ struct StorageInlineEdgeCaseTests {
             storage.initialize(to: 100, at: 0)
             storage.initialize(to: 700, at: 7)
 
-            let first: Swift.Range<Index<Storage>> = 0..<1
-            let second: Swift.Range<Index<Storage>> = 7..<8
+            let first: Swift.Range<Index<Int>> = 0..<1
+            let second: Swift.Range<Index<Int>> = 7..<8
             storage.initialization = .two(first: first, second: second)
 
             #expect(storage.initialization.count == 2)
@@ -348,12 +348,12 @@ struct StorageInlineEdgeCaseTests {
             // Ranges [0,3) and [3,6) - adjacent but separate
             var storage = Storage.Inline<Int, 8>()
 
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5] {
+            for i: Index<Int> in [0, 1, 2, 3, 4, 5] {
                 storage.initialize(to: Int(i.rawValue.rawValue) * 10, at: i)
             }
 
-            let first: Swift.Range<Index<Storage>> = 0..<3
-            let second: Swift.Range<Index<Storage>> = 3..<6
+            let first: Swift.Range<Index<Int>> = 0..<3
+            let second: Swift.Range<Index<Int>> = 3..<6
             storage.initialization = .two(first: first, second: second)
 
             #expect(storage.initialization.count == 6)
@@ -383,8 +383,8 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe #expect(Tracker.count == 6)
 
-            let first: Swift.Range<Index<Storage>> = 0..<3
-            let second: Swift.Range<Index<Storage>> = 4..<7
+            let first: Swift.Range<Index<Tracker>> = 0..<3
+            let second: Swift.Range<Index<Tracker>> = 4..<7
             storage.initialization = .two(first: first, second: second)
 
             storage.deinitialize()
@@ -406,16 +406,16 @@ struct StorageInlineEdgeCaseTests {
             let heap = Storage.Heap<Int>.create(minimumCapacity: 8)
 
             // Fill completely
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 inline.initialize(to: Int(i.rawValue.rawValue) * 11, at: i)
             }
 
-            let range: Swift.Range<Index<Storage>> = 0..<8
+            let range: Swift.Range<Index<Int>> = 0..<8
             inline.move(range: range, to: heap)
             heap.initialization = .linear(count: 8)
 
             // Verify all moved correctly
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 let value = heap.move(at: i)
                 #expect(value == Int(i.rawValue.rawValue) * 11)
             }
@@ -429,7 +429,7 @@ struct StorageInlineEdgeCaseTests {
 
             inline.initialize(to: 999, at: 7)
 
-            let range: Swift.Range<Index<Storage>> = 7..<8
+            let range: Swift.Range<Index<Int>> = 7..<8
             inline.move(range: range, to: heap)
             heap.initialization = .linear(count: 1)
 
@@ -465,7 +465,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe #expect(Tracker.instances == 2, "Two objects created")
 
-            let range: Swift.Range<Index<Storage>> = 0..<2
+            let range: Swift.Range<Index<Tracker>> = 0..<2
             inline.copy(range: range, to: heap)
             heap.initialization = .linear(count: 2)
 
@@ -521,7 +521,7 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage.Inline<Int64, 16>()
 
             // Initialize all
-            var slot: Index<Storage> = 0
+            var slot: Index<Int64> = 0
             for i in 0..<16 {
                 storage.initialize(to: Int64(i), at: slot)
                 slot = slot.successor.saturating()
@@ -561,7 +561,7 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage.Inline<Int, 8>()
 
             // Initialize with sentinel values
-            for i: Index<Storage> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 storage.initialize(to: -1, at: i)
             }
 
@@ -608,7 +608,7 @@ struct StorageInlineEdgeCaseTests {
             // Int should have minimal overhead
             let intStorageSize = MemoryLayout<Storage.Inline<Int, 4>>.size
             let intIdealSize = 4 * MemoryLayout<Int>.stride
-            let initSize = MemoryLayout<Storage.Initialization>.size
+            let initSize = MemoryLayout<Storage.Initialization<Int>>.size
 
             // Should be close to ideal + initialization overhead
             #expect(intStorageSize <= intIdealSize + initSize + 16,
@@ -627,7 +627,7 @@ struct StorageInlineEdgeCaseTests {
             // Bool has stride 1
             let boolStorageSize = MemoryLayout<Storage.Inline<Bool, 8>>.size
             let boolIdealSize = 8 * MemoryLayout<Bool>.stride
-            let initSize = MemoryLayout<Storage.Initialization>.size
+            let initSize = MemoryLayout<Storage.Initialization<Bool>>.size
 
             #expect(boolStorageSize <= boolIdealSize + initSize + 16,
                    "Bool storage should be compact")
@@ -741,7 +741,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe #expect(Tracker.count == 3)
 
-            let range: Swift.Range<Index<Storage>> = 5..<8
+            let range: Swift.Range<Index<Tracker>> = 5..<8
             storage.deinitialize(range: range)
 
             unsafe #expect(Tracker.count == 0)
@@ -814,7 +814,7 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage.Inline<UInt8, 256>()
 
             // Fill with pattern
-            var slot: Index<Storage> = 0
+            var slot: Index<UInt8> = 0
             for i in 0..<256 {
                 storage.initialize(to: UInt8(i), at: slot)
                 slot = slot.successor.saturating()
@@ -841,7 +841,7 @@ struct StorageInlineEdgeCaseTests {
             // 32 bytes × 32 = 1024 bytes of element storage
             var storage = Storage.Inline<Large, 32>()
 
-            var slot: Index<Storage> = 0
+            var slot: Index<Large> = 0
             for i in 0..<32 {
                 storage.initialize(
                     to: Large(a: Int64(i), b: Int64(i*2), c: Int64(i*3), d: Int64(i*4)),

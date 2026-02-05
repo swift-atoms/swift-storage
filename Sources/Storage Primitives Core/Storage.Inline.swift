@@ -59,7 +59,7 @@ extension Storage {
         package var _storage: _Raw
 
         @usableFromInline
-        package var _initialization: Initialization
+        package var _initialization: Initialization<Element>
 
         /// Creates uninitialized inline storage.
         ///

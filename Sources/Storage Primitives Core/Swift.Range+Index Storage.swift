@@ -13,37 +13,36 @@ public import Index_Primitives
 
 // MARK: - Computed Properties
 
-extension Swift.Range<Index<Storage>> {
+extension Swift.Range where Bound: Ordinal.`Protocol` {
     /// Whether the span contains no slots.
     @inlinable
     public var isEmpty: Bool { lowerBound == upperBound }
 
-    /// The number of slots in the span.
+    /// The number of positions in the range.
+    ///
+    /// Returns the cardinal distance from `lowerBound` to `upperBound`.
+    /// The result type is `Bound.Count`, preserving phantom types:
+    /// - `Range<Ordinal>.count` returns `Cardinal`
+    /// - `Range<Index<Element>>.count` returns `Index<Element>.Count`
     @inlinable
     public var count: Bound.Count {
-        try! lowerBound.distance.forward(to: upperBound)
+        try! lowerBound.ordinal.distance.forward(to: upperBound.ordinal)
     }
 }
 
 // MARK: - Factory Methods
 
-extension Swift.Range<Index<Storage>> {
-    /// An empty span starting and ending at slot zero.
-    @inlinable
-    public static var empty: Self {
-        .init(start: .zero, count: .zero)
-    }
-
-    /// Creates a span from a start slot and count.
+extension Swift.Range {
+    /// Creates a span from a start position and count.
     ///
     /// - Parameters:
-    ///   - start: The first slot in the range.
-    ///   - count: The number of slots in the range.
+    ///   - start: The first position in the range.
+    ///   - count: The number of positions in the range.
     @inlinable
-    public init(
+    public init<T: ~Copyable>(
         start: Bound,
-        count: Bound.Count
-    ) {
+        count: Index_Primitives.Index<T>.Count
+    ) where Bound == Index_Primitives.Index<T> {
         unsafe self.init(uncheckedBounds: (lower: start, upper: start + count))
     }
 }

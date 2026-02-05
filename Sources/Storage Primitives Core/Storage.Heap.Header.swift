@@ -17,14 +17,14 @@ extension Storage.Heap where Element: ~Copyable {
     /// this information to correctly deinitialize only initialized slots.
     public struct Header: Sendable {
         /// Which physical slots are initialized.
-        public var initialization: Storage.Initialization
+        public var initialization: Storage.Initialization<Element>
 
         /// Creates a header with the specified initialization state.
         ///
         /// - Parameter initialization: The initial state describing which slots are initialized.
         @inlinable
         public init(
-            initialization: Storage.Initialization = .empty
+            initialization: Storage.Initialization<Element> = .empty
         ) {
             self.initialization = initialization
         }
@@ -36,7 +36,7 @@ extension Storage.Heap where Element: ~Copyable {
 extension Storage.Heap.Header {
     /// The total number of initialized slots.
     @inlinable
-    public var count: Index<Storage>.Count {
+    public var count: Index<Element>.Count {
         initialization.count
     }
 

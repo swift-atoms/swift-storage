@@ -35,28 +35,28 @@ extension Storage {
     ///         └──┴──┘           └──┴── initialized
     /// ```
     /// Initialization: `.two(first: [0,3), second: [6,8))`
-    public enum Initialization: Sendable, Equatable {
+    public enum Initialization<Element: ~Copyable>: Sendable, Equatable {
         /// No slots are initialized.
         case empty
 
         /// A single contiguous range of initialized slots.
-        case one(Swift.Range<Index<Storage>>)
+        case one(Swift.Range<Index_Primitives.Index<Element>>)
 
         /// Two disjoint ranges of initialized slots.
         ///
         /// Invariants:
         /// - `first.start < second.start`
         /// - `first.end <= second.start`
-        case two(first: Swift.Range<Index<Storage>>, second: Swift.Range<Index<Storage>>)
+        case two(first: Swift.Range<Index_Primitives.Index<Element>>, second: Swift.Range<Index_Primitives.Index<Element>>)
     }
 }
 
 // MARK: - Computed Properties
 
-extension Storage.Initialization {
+extension Storage.Initialization where Element: ~Copyable {
     /// The total number of initialized slots across all spans.
     @inlinable
-    public var count: Index<Storage>.Count {
+    public var count: Index_Primitives.Index<Element>.Count {
         switch self {
         case .empty:
             return .zero
@@ -83,7 +83,7 @@ extension Storage.Initialization {
 
 // MARK: - Factory Methods
 
-extension Storage.Initialization {
+extension Storage.Initialization where Element: ~Copyable {
     /// Creates initialization state for a contiguous range starting at zero.
     ///
     /// This is the common case for linear buffers where elements occupy
@@ -91,8 +91,8 @@ extension Storage.Initialization {
     ///
     /// - Parameter count: The number of initialized slots.
     @inlinable
-    public static func linear(count: Index<Storage>.Count) -> Self {
+    public static func linear(count: Index<Element>.Count) -> Self {
         guard count > .zero else { return .empty }
-        return .one(Swift.Range<Index<Storage>>(start: .zero, count: count))
+        return .one(Swift.Range<Index<Element>>(start: .zero, count: count))
     }
 }

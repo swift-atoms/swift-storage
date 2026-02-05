@@ -29,21 +29,21 @@ extension Storage.Heap where Element: Copyable {
 
         guard count > .zero else { return new }
 
-        func copySpan(_ range: Swift.Range<Index<Storage>>, dstStart: inout Index<Storage>) {
+        func copySpan(_ range: Swift.Range<Index<Element>>, dstStart: inout Index<Element>) {
             guard !range.isEmpty else { return }
             let spanCount = Int(range.count.rawValue.rawValue)
             _ = unsafe withUnsafeMutablePointerToElements { src in
-                let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+                let srcOffset = Index<Element>.Offset(fromZero: range.lowerBound)
                 let srcStart = unsafe UnsafePointer(src + srcOffset)
                 unsafe new.withUnsafeMutablePointerToElements { dst in
-                    let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
+                    let dstOffset = Index<Element>.Offset(fromZero: dstStart)
                     unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
             dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
-        var dstSlot: Index<Storage> = .zero
+        var dstSlot: Index<Element> = .zero
         switch init_ {
         case .empty:
             break
@@ -68,21 +68,21 @@ extension Storage.Heap where Element: Copyable {
     public func copy(to destination: Storage.Heap<Element>) {
         let init_ = self.initialization
 
-        func copySpan(_ range: Swift.Range<Index<Storage>>, dstStart: inout Index<Storage>) {
+        func copySpan(_ range: Swift.Range<Index<Element>>, dstStart: inout Index<Element>) {
             guard !range.isEmpty else { return }
             let spanCount = Int(range.count.rawValue.rawValue)
             _ = unsafe withUnsafeMutablePointerToElements { src in
-                let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+                let srcOffset = Index<Element>.Offset(fromZero: range.lowerBound)
                 let srcStart = unsafe UnsafePointer(src + srcOffset)
                 unsafe destination.withUnsafeMutablePointerToElements { dst in
-                    let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
+                    let dstOffset = Index<Element>.Offset(fromZero: dstStart)
                     unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
             dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
-        var dstSlot: Index<Storage> = .zero
+        var dstSlot: Index<Element> = .zero
         switch init_ {
         case .empty:
             break
@@ -104,11 +104,11 @@ extension Storage.Heap where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Precondition: Destination slots 0..<range.count must be uninitialized.
     @inlinable
-    public func copy(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
+    public func copy(range: Swift.Range<Index<Element>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
         let count = Int(range.count.rawValue.rawValue)
         _ = unsafe withUnsafeMutablePointerToElements { src in
-            let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let srcOffset = Index<Element>.Offset(fromZero: range.lowerBound)
             let srcStart = unsafe UnsafePointer(src + srcOffset)
             unsafe destination.withUnsafeMutablePointerToElements { dst in
                 unsafe dst.initialize(from: srcStart, count: count)
@@ -135,11 +135,11 @@ extension Storage.Heap where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Index<Storage>>,
+        _ range: Swift.Range<Index<Element>>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         try unsafe withUnsafeMutablePointerToElements { base throws(E) in
-            let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let startOffset = Index<Element>.Offset(fromZero: range.lowerBound)
             let count = Int(bitPattern: range.count)
             let span = unsafe Span(
                 _unsafeStart: UnsafePointer(base + startOffset),
@@ -164,11 +164,11 @@ extension Storage.Heap where Element: Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     @inlinable
     public func withMutableSpan<R, E: Swift.Error>(
-        _ range: Swift.Range<Index<Storage>>,
+        _ range: Swift.Range<Index<Element>>,
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
         try unsafe withUnsafeMutablePointerToElements { base throws(E) in
-            let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let startOffset = Index<Element>.Offset(fromZero: range.lowerBound)
             let count = Int(bitPattern: range.count)
             var span = unsafe MutableSpan(
                 _unsafeStart: base + startOffset,
