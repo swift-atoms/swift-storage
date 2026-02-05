@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-public import Standard_Library_Extensions
+import Standard_Library_Extensions
 
 // MARK: - Copyable Extensions
 
