@@ -107,7 +107,7 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(4))
+        let range: Swift.Range<Index<Storage>> = .zero..<4
         storage.deinitialize(range: range)
     }
 
@@ -127,7 +127,7 @@ struct StorageInlineTests {
             storage.initialize(to: Tracker(), at: slot)
             slot = slot.successor.saturating()
         }
-        storage.initialization = .linear(count: Index<Storage>.Count(4))
+        storage.initialization = .linear(count: 4)
 
         storage.deinitialize()
         #expect(storage.initialization.isEmpty)
@@ -153,14 +153,14 @@ struct StorageInlineTests {
         }
 
         // Deinitialize slots 1..<4
-        let range = Swift.Range<Index<Storage>>(start: Index<Storage>(1), count: Index<Storage>.Count(3))
+        let range: Swift.Range<Index<Storage>> = 1..<4
         storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
 
         // Clean up remaining elements (slots 0 and 4)
-        _ = storage.move(at: Index<Storage>(0))
-        _ = storage.move(at: Index<Storage>(4))
+        _ = storage.move(at: 0)
+        _ = storage.move(at: 4)
     }
 
     // MARK: - Type Safety Tests
@@ -191,7 +191,7 @@ struct StorageInlineTests {
         }
 
         var storage = Storage.Inline<LargeElement, 2>()
-        let slot1 = Index<Storage>(1)
+        let slot1: Index<Storage> = 1
 
         storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
         storage.initialize(to: LargeElement(a: 4, b: 5, c: 6), at: slot1)
@@ -217,9 +217,9 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(4))
+        let range = Swift.Range<Index<Storage>>(start: .zero, count: 4)
         inline.move(range: range, to: heap)
-        heap.initialization = .linear(count: Index<Storage>.Count(4))
+        heap.initialization = .linear(count: 4)
 
         // Verify heap has the values
         slot = .zero
@@ -255,9 +255,9 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        let range = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(4))
+        let range: Swift.Range<Index<Storage>> = .zero..<4
         inline.copy(range: range, to: heap)
-        heap.initialization = .linear(count: Index<Storage>.Count(4))
+        heap.initialization = .linear(count: 4)
 
         // Verify inline still has original values
         slot = .zero
@@ -301,14 +301,14 @@ struct StorageInlineTests {
         var storage = Storage.Inline<Tracker, 8>()
 
         // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
-        storage.initialize(to: Tracker(), at: Index<Storage>(0))
-        storage.initialize(to: Tracker(), at: Index<Storage>(1))
-        storage.initialize(to: Tracker(), at: Index<Storage>(2))
-        storage.initialize(to: Tracker(), at: Index<Storage>(6))
-        storage.initialize(to: Tracker(), at: Index<Storage>(7))
+        storage.initialize(to: Tracker(), at: 0)
+        storage.initialize(to: Tracker(), at: 1)
+        storage.initialize(to: Tracker(), at: 2)
+        storage.initialize(to: Tracker(), at: 6)
+        storage.initialize(to: Tracker(), at: 7)
 
-        let first = Swift.Range<Index<Storage>>(start: .zero, count: Index<Storage>.Count(3))
-        let second = Swift.Range<Index<Storage>>(start: Index<Storage>(6), count: Index<Storage>.Count(2))
+        let first = Swift.Range<Index<Storage>>(start: .zero, count: 3)
+        let second = Swift.Range<Index<Storage>>(start: 6, count: 2)
         storage.initialization = .two(first: first, second: second)
 
         storage.deinitialize()
