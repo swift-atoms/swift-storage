@@ -20,16 +20,16 @@ struct StorageInlineTests {
     // MARK: - Creation Tests
 
     @Test
-    func `inline storage can be created`() throws {
-        let storage = try Storage.Inline<Int, 8>()
+    func `inline storage can be created`() {
+        let storage = Storage.Inline<Int, 8>()
         _ = storage
     }
 
     // MARK: - Initialize and Move Tests
 
     @Test
-    func `initialize and move element`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `initialize and move element`() {
+        var storage = Storage.Inline<Int, 8>()
         let slot: Index<Storage> = .zero
 
         storage.initialize(to: 42, at: slot)
@@ -39,8 +39,8 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `initialize multiple elements`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `initialize multiple elements`() {
+        var storage = Storage.Inline<Int, 8>()
 
         var slot: Index<Storage> = .zero
         for i in 0..<8 {
@@ -60,8 +60,8 @@ struct StorageInlineTests {
     // MARK: - Pointer Tests
 
     @Test
-    func `pointer returns correct address`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `pointer returns correct address`() {
+        var storage = Storage.Inline<Int, 8>()
         let slot = Index<Storage>(3)
 
         storage.initialize(to: 99, at: slot)
@@ -74,8 +74,8 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `mutable pointer allows modification`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `mutable pointer allows modification`() {
+        var storage = Storage.Inline<Int, 8>()
         let slot: Index<Storage> = .zero
 
         storage.initialize(to: 50, at: slot)
@@ -90,16 +90,16 @@ struct StorageInlineTests {
     // MARK: - Deinitialize Tests
 
     @Test
-    func `deinitialize at single slot`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `deinitialize at single slot`() {
+        var storage = Storage.Inline<Int, 8>()
 
         storage.initialize(to: 42, at: .zero)
         storage.deinitialize(at: .zero)
     }
 
     @Test
-    func `deinitialize range of elements`() throws {
-        var storage = try Storage.Inline<Int, 8>()
+    func `deinitialize range of elements`() {
+        var storage = Storage.Inline<Int, 8>()
 
         var slot: Index<Storage> = .zero
         for i in 0..<4 {
@@ -112,7 +112,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `deinitialize all tracked elements`() throws {
+    func `deinitialize all tracked elements`() {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -120,7 +120,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = try Storage.Inline<Tracker, 8>()
+        var storage = Storage.Inline<Tracker, 8>()
 
         var slot: Index<Storage> = .zero
         for _ in 0..<4 {
@@ -136,7 +136,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `deinitialize partial range`() throws {
+    func `deinitialize partial range`() {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -144,7 +144,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = try Storage.Inline<Tracker, 8>()
+        var storage = Storage.Inline<Tracker, 8>()
 
         var slot: Index<Storage> = .zero
         for _ in 0..<5 {
@@ -166,9 +166,9 @@ struct StorageInlineTests {
     // MARK: - Type Safety Tests
 
     @Test
-    func `different element types have separate storage`() throws {
-        var intStorage = try Storage.Inline<Int, 4>()
-        var doubleStorage = try Storage.Inline<Double, 4>()
+    func `different element types have separate storage`() {
+        var intStorage = Storage.Inline<Int, 4>()
+        var doubleStorage = Storage.Inline<Double, 4>()
 
         intStorage.initialize(to: 42, at: .zero)
         doubleStorage.initialize(to: 3.14, at: .zero)
@@ -183,14 +183,14 @@ struct StorageInlineTests {
     // MARK: - Stride-Based Access Tests
 
     @Test
-    func `stride-based access works for different element sizes`() throws {
+    func `stride-based access works for different element sizes`() {
         struct LargeElement {
             var a: Int
             var b: Int
             var c: Int
         }
 
-        var storage = try Storage.Inline<LargeElement, 2>()
+        var storage = Storage.Inline<LargeElement, 2>()
         let slot1 = Index<Storage>(1)
 
         storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
@@ -206,8 +206,8 @@ struct StorageInlineTests {
     // MARK: - Move to Heap Storage Tests
 
     @Test
-    func `move range to heap storage`() throws {
-        var inline = try Storage.Inline<Int, 8>()
+    func `move range to heap storage`() {
+        var inline = Storage.Inline<Int, 8>()
         let capacity: Index<Storage>.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -232,8 +232,8 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `move empty range to heap storage`() throws {
-        var inline = try Storage.Inline<Int, 8>()
+    func `move empty range to heap storage`() {
+        var inline = Storage.Inline<Int, 8>()
         let capacity: Index<Storage>.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -244,8 +244,8 @@ struct StorageInlineTests {
     // MARK: - Copy to Heap Storage Tests
 
     @Test
-    func `copy range to heap storage`() throws {
-        var inline = try Storage.Inline<Int, 8>()
+    func `copy range to heap storage`() {
+        var inline = Storage.Inline<Int, 8>()
         let capacity: Index<Storage>.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -278,8 +278,8 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `copy empty range to heap storage`() throws {
-        let inline = try Storage.Inline<Int, 8>()
+    func `copy empty range to heap storage`() {
+        let inline = Storage.Inline<Int, 8>()
         let capacity: Index<Storage>.Count = 8
         let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
 
@@ -290,7 +290,7 @@ struct StorageInlineTests {
     // MARK: - Two-Span Deinitialize Tests
 
     @Test
-    func `deinitialize with two-range initialization`() throws {
+    func `deinitialize with two-range initialization`() {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -298,7 +298,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = try Storage.Inline<Tracker, 8>()
+        var storage = Storage.Inline<Tracker, 8>()
 
         // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
         storage.initialize(to: Tracker(), at: Index<Storage>(0))

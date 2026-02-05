@@ -9,11 +9,24 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Affine_Primitives
-import Memory_Primitives_Core
+/// Internal raw storage with automatic layout computation.
+///
+/// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
+/// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
+///
+/// This type has no stored properties — the layout is determined entirely by the attribute.
+@_rawLayout(likeArrayOf: Element, count: capacity)
+@usableFromInline
+package struct _RawInlineStorage<Element: ~Copyable, let capacity: Int>: ~Copyable {
+    @usableFromInline
+    init() {}
+}
+
+// @_rawLayout types require @unchecked Sendable
+extension _RawInlineStorage: @unchecked Sendable where Element: Sendable {}
 
 extension Storage {
-    /// Fixed-capacity inline storage with 64-byte slots.
+    /// Fixed-capacity inline storage with automatic optimal layout.
     ///
     /// Provides stack-allocated storage with compile-time capacity. Elements are
     /// stored inline without heap allocation, making this suitable for small,
@@ -21,9 +34,11 @@ extension Storage {
     ///
     /// ## Layout
     ///
-    /// Storage is backed by `InlineArray` with 64-byte slots, sufficient for most
-    /// element types. Elements are accessed via raw pointer operations to support
-    /// move-only types.
+    /// Storage uses `@_rawLayout` for automatic optimal layout computation:
+    /// - Size: `MemoryLayout<Element>.stride × capacity`
+    /// - Alignment: `MemoryLayout<Element>.alignment`
+    ///
+    /// This eliminates the 64-byte slot overhead of previous implementations.
     ///
     /// ## Initialization Tracking
     ///
@@ -32,43 +47,29 @@ extension Storage {
     ///
     /// ## Span Compatibility
     ///
-    /// Due to the 64-byte slot layout, `Storage.Inline` does NOT support direct
-    /// Span access. Use `pointer(at:)` for element access. For dense Span access,
-    /// use heap-based ``Storage/Heap`` instead.
+    /// With optimal layout, `Storage.Inline` now stores elements contiguously
+    /// at their natural stride, enabling potential Span access for Copyable elements.
     ///
     /// ## Usage
     ///
     /// ```swift
-    /// var storage = try Storage.Inline<Int, 8>()
+    /// var storage = Storage.Inline<Int, 8>()
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
     /// ```
     public struct Inline<Element: ~Copyable, let capacity: Int>: ~Copyable {
         @usableFromInline
-        package var _storage: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+        package var _storage: _RawInlineStorage<Element, capacity>
 
         @usableFromInline
         package var _initialization: Initialization
 
         /// Creates uninitialized inline storage.
         ///
-        /// - Throws: `Error.strideExceedsSlotSize` if element stride exceeds 64 bytes.
-        /// - Throws: `Error.alignmentExceedsStorageAlignment` if element alignment exceeds `Int` alignment.
+        /// Layout is computed automatically — no validation required.
         @inlinable
-        public init() throws(Error) {
-            guard MemoryLayout<Element>.stride <= Affine.Discrete.Ratio<Storage, Memory>.stride.factor else {
-                throw .strideExceedsSlotSize(
-                    stride: MemoryLayout<Element>.stride,
-                    maxSlotSize: Affine.Discrete.Ratio<Storage, Memory>.stride.factor
-                )
-            }
-            guard MemoryLayout<Element>.alignment <= MemoryLayout<Int>.alignment else {
-                throw .alignmentExceedsStorageAlignment(
-                    alignment: MemoryLayout<Element>.alignment,
-                    maxAlignment: MemoryLayout<Int>.alignment
-                )
-            }
-            _storage = .init(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+        public init() {
+            _storage = _RawInlineStorage()
             _initialization = .empty
         }
     }
@@ -76,8 +77,10 @@ extension Storage {
 
 // MARK: - Conditional Conformances
 
-/// `Storage.Inline` is `Copyable` when its elements are `Copyable`.
-extension Storage.Inline: Copyable where Element: Copyable {}
+// Note: Storage.Inline cannot be conditionally Copyable because _RawInlineStorage
+// (an @_rawLayout type) is always ~Copyable. This is acceptable since Storage.Inline
+// manages initialization state and ~Copyable is the correct semantic.
 
 /// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
-extension Storage.Inline: Sendable where Element: Sendable {}
+/// Requires @unchecked because _RawInlineStorage uses @unchecked Sendable.
+extension Storage.Inline: @unchecked Sendable where Element: Sendable {}

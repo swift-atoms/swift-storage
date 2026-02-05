@@ -37,8 +37,8 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func pointer(at slot: Index<Storage>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
-            return unsafe UnsafeRawPointer(base)
-                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+            let raw = unsafe UnsafeRawPointer(base)
+            return unsafe raw.advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
         }
     }
@@ -52,8 +52,8 @@ extension Storage.Inline where Element: ~Copyable {
     @_disfavoredOverload
     public mutating func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            return unsafe UnsafeMutableRawPointer(base)
-                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+            let raw = unsafe UnsafeMutableRawPointer(base)
+            return unsafe raw.advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
         }
     }
@@ -95,7 +95,7 @@ extension Storage.Inline where Element: ~Copyable {
     public func deinitialize(at slot: Index<Storage>) {
         _ = unsafe withUnsafePointer(to: _storage) { base in
             unsafe UnsafeMutableRawPointer(mutating: base)
-                .advanced(by: (Index<Storage>.Offset(fromZero: slot) * .stride).rawValue.rawValue)
+                .advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
                 .deinitialize(count: 1)
         }

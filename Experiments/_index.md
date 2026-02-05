@@ -5,28 +5,60 @@
 | inline-span-access | Investigate approaches to enable Span access for Storage.Static | 2026-01-29 | Swift 6.2.3 | CONFIRMED |
 | inline-span-copyable | Test InlineArray<capacity, Element> for Copyable elements | 2026-01-29 | Swift 6.2.3 | CONFIRMED |
 | inline-uninitialized | Test approaches for uninitialized InlineArray with ~Copyable | 2026-01-29 | Swift 6.2.3 | REFUTED |
+| inline-storage-best-of-both-worlds | Parameterized Slot type for zero-overhead dense packing + ~Copyable | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| rawlayout-automatic-sizing | @_rawLayout(likeArrayOf:count:) for AUTOMATIC optimal layout | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | CONFIRMED |
 
 ## Summary
 
-These experiments investigate whether `Storage.Static` can support `Span`/`MutableSpan` access.
+These experiments investigate how `Storage.Inline` can achieve zero-overhead dense packing while supporting `~Copyable` elements.
 
 ### Key Findings
 
-1. **Fundamental constraint**: `InlineArray` requires `Copyable` for initialization (`init(repeating:)`). There is no `init(uninitializedCapacity:)` API.
+1. **`@_rawLayout` is the ideal solution**: `@_rawLayout(likeArrayOf: Element, count: capacity)` computes optimal layout automatically — no user-specified slot type needed.
 
-2. **~Copyable + Span incompatibility**: For `~Copyable` elements, the only option is oversized slots (current 64-byte design), which breaks Span's dense layout expectation.
+2. **Automatic layout computation**: The compiler derives `size = stride(Element) × capacity` and `alignment = alignment(Element)` at compile time for ANY element type, including `~Copyable`.
 
-3. **Copyable enables Span**: For `Copyable` elements, `InlineArray<capacity, Element>` works and provides true dense packing compatible with Span.
+3. **Parameterized slot as fallback**: If `@_rawLayout` is unacceptable (underscored API), `Storage.Inline<Element, capacity, Slot>` with backing types like `Int`, `UInt8`, or `InlineArray<N, Int>` achieves equivalent results.
+
+4. **No wrapper type needed**: Using primitives directly as the slot type works identically to a `Cell<count, Base>` wrapper.
 
 ### Recommended Solution
 
-**Use the natural type split**:
+**Option 1: `@_rawLayout` (ideal)**
 
-| Need | Type | Layout | Access Pattern |
-|------|------|--------|----------------|
-| `~Copyable` elements | `Storage.Static` | 64-byte slots | `forEach`, `withElement` |
-| Span access | `Storage` (heap) | Dense | `withSpan`, `withMutableSpan` |
+```swift
+@_rawLayout(likeArrayOf: Element, count: capacity)
+struct Inline<Element: ~Copyable, let capacity: Int>: ~Copyable {}
+```
 
-**Rationale**: If you need Span access, you can afford heap allocation. If you need inline storage (stack allocation), you're in a performance-critical path where strided access is acceptable. Adding `Storage.Static.Dense` would add API complexity without enabling the primary use case (`~Copyable` with Span).
+- Automatic optimal layout
+- No slot parameter
+- Works with ALL element types and sizes
+- Trade-off: underscored attribute (not ABI-stable)
 
-See: `Research/inline-storage-span-access.md` for full analysis.
+**Option 2: Parameterized slot (stable)**
+
+```swift
+struct Inline<Element: ~Copyable, let capacity: Int, Slot: BitwiseCopyable & Sendable>: ~Copyable {
+    var _storage: InlineArray<capacity, Slot>
+}
+```
+
+- Consumer specifies slot type
+- ADT layer provides sensible defaults
+- Trade-off: additional generic parameter
+
+### Comparison
+
+| Element | Count | @_rawLayout | Slot param | 64B slots | Savings |
+|---------|------:|------------:|-----------:|----------:|--------:|
+| Double | 4 | 32 B | 32 B | 256 B | 87% |
+| UInt8 | 16 | 16 B | 16 B | 1024 B | 98% |
+| Int32 | 8 | 32 B | 32 B | 512 B | 93% |
+| Resource(16B) | 4 | 64 B | 64 B | 256 B | 75% |
+| FiveInts(40B) | 3 | 120 B | 120 B | 192 B | 37% |
+
+Both approaches achieve identical optimal sizing. `@_rawLayout` eliminates the slot parameter entirely.
+
+See: `Research/inline-slot-type-organization.md` for detailed analysis.

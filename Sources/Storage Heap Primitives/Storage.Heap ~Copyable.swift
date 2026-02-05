@@ -180,7 +180,7 @@ extension Storage.Heap where Element: ~Copyable {
         let result: R? = unsafe withUnsafeMutablePointerToElements { base in
             let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
             let count = Int(bitPattern: range.count)
-            let rangeView = unsafe Span(
+            let rangeView = unsafe Swift.Span(
                 _unsafeStart: UnsafePointer(base + startOffset),
                 count: count
             )

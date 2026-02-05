@@ -73,7 +73,10 @@ This enables property-based Span access per SE-0456:
 var span: Span<Element> {
     @_lifetime(borrow self)
     borrowing get {
-        unsafe Span(_unsafeStart: _cachedPtr, count: count)
+        unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span(_unsafeStart: _cachedPtr, count: count)
     }
 }
 ```

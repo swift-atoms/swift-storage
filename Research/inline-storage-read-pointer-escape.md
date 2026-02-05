@@ -288,7 +288,10 @@ public var span: Span<Element> {
     _read {
         // Use closure-based read, yield within _read scope
         _storage.read(at: .zero) { basePtr in
-            yield unsafe Span(_unsafeStart: basePtr.base, count: _count)
+            yield unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span(_unsafeStart: basePtr.base, count: _count)
         }
     }
 }
@@ -307,7 +310,10 @@ public var span: Span<Element> {
         unsafe withUnsafePointer(to: _storage._storage) { base in
             let address = unsafe Memory.Address(base)
             let ptr = address.pointer(at: .zero, stride: Storage<Element>.Static<capacity>.slotStride, as: Element.self)
-            yield unsafe Span(_unsafeStart: ptr.base, count: _count)
+            yield unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span(_unsafeStart: ptr.base, count: _count)
         }
     }
 }
@@ -374,7 +380,10 @@ public var span: Span<Element> {
         unsafe withUnsafePointer(to: _storage._storage) { base in
             let address = unsafe Memory.Address(base)
             let ptr = address.pointer(at: .zero, stride: Storage<Element>.Static<capacity>.slotStride, as: Element.self)
-            yield unsafe Span(_unsafeStart: ptr.base, count: _count)
+            yield unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span
+unsafe Swift.Span(_unsafeStart: ptr.base, count: _count)
         }
     }
 }

@@ -44,6 +44,9 @@ let package = Package(
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
+            ],
+            swiftSettings: [
+                .enableExperimentalFeature("RawLayout"),
             ]
         ),
         // Heap: Bulk operations on heap storage
