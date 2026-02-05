@@ -31,9 +31,9 @@ struct StorageInlineInvariantTests {
         func `INV-INLINE-001a: size equals stride times capacity plus initialization overhead`() {
             // For Int with capacity 4
             let intStride = MemoryLayout<Int>.stride
-            let initSize = MemoryLayout<Storage.Initialization<Int>>.size
+            let initSize = MemoryLayout<Storage<Int>.Initialization>.size
             let expectedIntSize = intStride * 4 + initSize
-            let actualIntSize = MemoryLayout<Storage.Inline<Int, 4>>.size
+            let actualIntSize = MemoryLayout<Storage<Int>.Inline<4>>.size
 
             // Actual size may include alignment padding, so use >= for lower bound
             #expect(actualIntSize >= intStride * 4, "Storage must hold at least 4 Ints")
@@ -42,7 +42,7 @@ struct StorageInlineInvariantTests {
             // For Double with capacity 8
             let doubleStride = MemoryLayout<Double>.stride
             let expectedDoubleSize = doubleStride * 8 + initSize
-            let actualDoubleSize = MemoryLayout<Storage.Inline<Double, 8>>.size
+            let actualDoubleSize = MemoryLayout<Storage<Double>.Inline<8>>.size
 
             #expect(actualDoubleSize >= doubleStride * 8, "Storage must hold at least 8 Doubles")
             #expect(actualDoubleSize <= expectedDoubleSize + 16, "Size should be close to expected")
@@ -52,23 +52,23 @@ struct StorageInlineInvariantTests {
         func `INV-INLINE-001b: alignment is at least element alignment`() {
             // Int alignment
             let intAlignment = MemoryLayout<Int>.alignment
-            let storageIntAlignment = MemoryLayout<Storage.Inline<Int, 4>>.alignment
+            let storageIntAlignment = MemoryLayout<Storage<Int>.Inline<4>>.alignment
             #expect(storageIntAlignment >= intAlignment)
 
             // Double alignment
             let doubleAlignment = MemoryLayout<Double>.alignment
-            let storageDoubleAlignment = MemoryLayout<Storage.Inline<Double, 4>>.alignment
+            let storageDoubleAlignment = MemoryLayout<Storage<Double>.Inline<4>>.alignment
             #expect(storageDoubleAlignment >= doubleAlignment)
 
             // UInt8 alignment (1 byte)
             let uint8Alignment = MemoryLayout<UInt8>.alignment
-            let storageUInt8Alignment = MemoryLayout<Storage.Inline<UInt8, 16>>.alignment
+            let storageUInt8Alignment = MemoryLayout<Storage<UInt8>.Inline<16>>.alignment
             #expect(storageUInt8Alignment >= uint8Alignment)
         }
 
         @Test
         func `INV-INLINE-001c: elements are contiguous at stride offsets`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
 
             // Initialize all slots
             storage.initialize(to: 100, at: 0)
@@ -101,7 +101,7 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-001d: slot i is at exactly i times stride bytes`() {
-            var storage = Storage.Inline<Double, 4>()
+            var storage = Storage<Double>.Inline<4>()
             let stride = MemoryLayout<Double>.stride
 
             storage.initialize(to: 1.0, at: 0)
@@ -130,17 +130,17 @@ struct StorageInlineInvariantTests {
         @Test
         func `layout is optimal for various element types`() {
             // UInt8 - 1 byte stride
-            let uint8Size = MemoryLayout<Storage.Inline<UInt8, 16>>.size
+            let uint8Size = MemoryLayout<Storage<UInt8>.Inline<16>>.size
             let uint8Ideal = 16 * MemoryLayout<UInt8>.stride
             #expect(uint8Size >= uint8Ideal, "UInt8×16 must fit 16 bytes of elements")
 
             // Int32 - 4 byte stride
-            let int32Size = MemoryLayout<Storage.Inline<Int32, 8>>.size
+            let int32Size = MemoryLayout<Storage<Int32>.Inline<8>>.size
             let int32Ideal = 8 * MemoryLayout<Int32>.stride
             #expect(int32Size >= int32Ideal, "Int32×8 must fit 32 bytes of elements")
 
             // Int64 - 8 byte stride
-            let int64Size = MemoryLayout<Storage.Inline<Int64, 4>>.size
+            let int64Size = MemoryLayout<Storage<Int64>.Inline<4>>.size
             let int64Ideal = 4 * MemoryLayout<Int64>.stride
             #expect(int64Size >= int64Ideal, "Int64×4 must fit 32 bytes of elements")
         }
@@ -155,14 +155,14 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-002a: storage starts empty on construction`() {
-            let storage = Storage.Inline<Int, 8>()
+            let storage = Storage<Int>.Inline<8>()
             #expect(storage.initialization.isEmpty)
             #expect(storage.initialization.count == 0)
         }
 
         @Test
         func `INV-INLINE-002b: individual operations do not update initialization state`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
 
             // Initialize does NOT update state
             storage.initialize(to: 42, at: 0)
@@ -191,7 +191,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.count = 0
 
-            var storage = Storage.Inline<Tracker, 4>()
+            var storage = Storage<Tracker>.Inline<4>()
 
             storage.initialize(to: Tracker(), at: 0)
             storage.initialize(to: Tracker(), at: 1)
@@ -216,7 +216,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitCount = 0
 
-            var storage = Storage.Inline<Tracker, 8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
             // Initialize 5 elements
             for i: Index<Tracker> in [0, 1, 2, 3, 4] {
@@ -250,7 +250,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.instances = 0
 
-            var storage = Storage.Inline<Tracker, 4>()
+            var storage = Storage<Tracker>.Inline<4>()
             storage.initialize(to: Tracker(), at: 0)
 
             unsafe #expect(Tracker.instances == 1)
@@ -274,7 +274,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.instances = 0
 
-            var storage = Storage.Inline<Tracker, 4>()
+            var storage = Storage<Tracker>.Inline<4>()
 
             // Create tracker - count goes to 1
             let tracker = Tracker()
@@ -303,7 +303,7 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-005c: empty semantics - zero initialized slots`() {
-            let empty: Storage.Initialization<Int> = .empty
+            let empty: Storage<Int>.Initialization = .empty
             #expect(empty.isEmpty)
             #expect(empty.count == 0)
         }
@@ -311,7 +311,7 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-005d: one semantics - contiguous range count`() {
             let range: Swift.Range<Index<Int>> = 2..<7
-            let one: Storage.Initialization<Int> = .one(range)
+            let one: Storage<Int>.Initialization = .one(range)
 
             #expect(!one.isEmpty)
             #expect(one.count == 5)
@@ -323,7 +323,7 @@ struct StorageInlineInvariantTests {
             let first: Swift.Range<Index<Int>> = 0..<3
             let second: Swift.Range<Index<Int>> = 6..<8
 
-            let two: Storage.Initialization<Int> = .two(first: first, second: second)
+            let two: Storage<Int>.Initialization = .two(first: first, second: second)
 
             #expect(!two.isEmpty)
             #expect(two.count == 5, "3 + 2 = 5 total elements")
@@ -331,10 +331,10 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `linear factory creates correct one-range state`() {
-            let linear0: Storage.Initialization<Int> = .linear(count: 0)
+            let linear0: Storage<Int>.Initialization = .linear(count: 0)
             #expect(linear0.isEmpty)
 
-            let linear5: Storage.Initialization<Int> = .linear(count: 5)
+            let linear5: Storage<Int>.Initialization = .linear(count: 5)
             #expect(!linear5.isEmpty)
             #expect(linear5.count == 5)
 
@@ -358,7 +358,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitOrder = []
 
-            var storage = Storage.Inline<Tracker, 8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
             // Initialize two disjoint ranges: [0,2) and [5,7)
             storage.initialize(to: Tracker(0), at: 0)
@@ -391,8 +391,8 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-006a: move to heap linearizes to destination 0 to count`() {
-            var inline = Storage.Inline<Int, 8>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 8)
+            var inline = Storage<Int>.Inline<8>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             // Initialize at non-zero slots
             inline.initialize(to: 100, at: 2)
@@ -412,8 +412,8 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-006b: copy to heap linearizes to destination 0 to count`() {
-            var inline = Storage.Inline<Int, 8>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 8)
+            var inline = Storage<Int>.Inline<8>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             // Initialize at non-zero slots
             inline.initialize(to: 10, at: 3)
@@ -443,8 +443,8 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.instances = 0
 
-            var inline = Storage.Inline<Tracker, 4>()
-            let heap = Storage.Heap<Tracker>.create(minimumCapacity: 4)
+            var inline = Storage<Tracker>.Inline<4>()
+            let heap = Storage<Tracker>.Heap.create(minimumCapacity: 4)
 
             inline.initialize(to: Tracker(), at: 0)
             inline.initialize(to: Tracker(), at: 1)
@@ -468,8 +468,8 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `INV-INLINE-006d: copy preserves source slots`() {
-            var inline = Storage.Inline<Int, 4>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 4)
+            var inline = Storage<Int>.Inline<4>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 4)
 
             inline.initialize(to: 42, at: 0)
             inline.initialize(to: 84, at: 1)
@@ -492,8 +492,8 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `empty range operations are no-ops`() {
-            var inline = Storage.Inline<Int, 4>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 4)
+            var inline = Storage<Int>.Inline<4>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 4)
 
             let emptyRange: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
 
@@ -515,12 +515,12 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-008a: capacity is compile-time fixed`() {
             // Different capacities produce different types
-            let storage4 = Storage.Inline<Int, 4>()
-            let storage8 = Storage.Inline<Int, 8>()
+            let storage4 = Storage<Int>.Inline<4>()
+            let storage8 = Storage<Int>.Inline<8>()
 
             // Type system ensures capacity - we verify via layout
-            let size4 = MemoryLayout<Storage.Inline<Int, 4>>.size
-            let size8 = MemoryLayout<Storage.Inline<Int, 8>>.size
+            let size4 = MemoryLayout<Storage<Int>.Inline<4>>.size
+            let size8 = MemoryLayout<Storage<Int>.Inline<8>>.size
 
             // Size 8 should be larger than size 4
             #expect(size8 > size4, "capacity 8 should have larger size than capacity 4")
@@ -531,7 +531,7 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `all slots in 0 to capacity are accessible`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
 
             // Can access all slots 0..<4
             storage.initialize(to: 0, at: 0)
@@ -555,14 +555,14 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `zero capacity storage`() {
-            let storage = Storage.Inline<Int, 0>()
+            let storage = Storage<Int>.Inline<0>()
             #expect(storage.initialization.isEmpty)
             // No slots to access - just verify construction works
         }
 
         @Test
         func `single element capacity`() {
-            var storage = Storage.Inline<Int, 1>()
+            var storage = Storage<Int>.Inline<1>()
 
             storage.initialize(to: 42, at: 0)
             #expect(storage.move(at: 0) == 42)
@@ -581,7 +581,7 @@ struct StorageInlineInvariantTests {
                 var h: Int64
             }
 
-            var storage = Storage.Inline<LargeStruct, 2>()
+            var storage = Storage<LargeStruct>.Inline<2>()
 
             let large = LargeStruct(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8)
             storage.initialize(to: large, at: 0)
@@ -593,7 +593,7 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `deinitialize empty range is no-op`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
             storage.initialize(to: 42, at: 0)
 
             let emptyRange: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
@@ -605,7 +605,7 @@ struct StorageInlineInvariantTests {
 
         @Test
         func `deinitialize with empty initialization state is no-op`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
             // Don't initialize anything, state is .empty
 
             // This should not crash

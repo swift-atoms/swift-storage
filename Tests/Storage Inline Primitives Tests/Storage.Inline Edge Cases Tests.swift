@@ -35,7 +35,7 @@ struct StorageInlineEdgeCaseTests {
             #expect(MemoryLayout<Empty>.size == 0)
             #expect(MemoryLayout<Empty>.stride == 1)
 
-            var storage = Storage.Inline<Empty, 8>()
+            var storage = Storage<Empty>.Inline<8>()
 
             // Should be able to initialize all slots
             for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -51,7 +51,7 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `zero-sized element with zero capacity`() {
             struct Empty {}
-            let storage = Storage.Inline<Empty, 0>()
+            let storage = Storage<Empty>.Inline<0>()
             #expect(storage.initialization.isEmpty)
         }
 
@@ -59,7 +59,7 @@ struct StorageInlineEdgeCaseTests {
         func `never type simulation - zero capacity`() {
             // Simulates a "never" scenario with zero slots
             enum Never {}
-            let storage = Storage.Inline<Never, 0>()
+            let storage = Storage<Never>.Inline<0>()
             #expect(storage.initialization.isEmpty)
         }
     }
@@ -73,7 +73,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `single byte alignment`() {
-            var storage = Storage.Inline<UInt8, 255>()
+            var storage = Storage<UInt8>.Inline<255>()
 
             // Fill all slots
             var slot: Index<UInt8> = 0
@@ -100,7 +100,7 @@ struct StorageInlineEdgeCaseTests {
 
             #expect(MemoryLayout<Aligned16>.alignment == 16)
 
-            var storage = Storage.Inline<Aligned16, 4>()
+            var storage = Storage<Aligned16>.Inline<4>()
 
             let value = Aligned16(a: SIMD4<Float>(1.0, 2.0, 3.0, 4.0))
             storage.initialize(to: value, at: 0)
@@ -123,7 +123,7 @@ struct StorageInlineEdgeCaseTests {
             let stride = MemoryLayout<MixedPadding>.stride
             #expect(stride >= 17, "Should have padding")
 
-            var storage = Storage.Inline<MixedPadding, 4>()
+            var storage = Storage<MixedPadding>.Inline<4>()
 
             for i: Index<MixedPadding> in [0, 1, 2, 3] {
                 storage.initialize(to: MixedPadding(a: 1, b: 2, c: 3), at: i)
@@ -160,7 +160,7 @@ struct StorageInlineEdgeCaseTests {
 
             #expect(MemoryLayout<CacheBuster>.size == 128)
 
-            var storage = Storage.Inline<CacheBuster, 2>()
+            var storage = Storage<CacheBuster>.Inline<2>()
 
             storage.initialize(to: CacheBuster(), at: 0)
             storage.initialize(to: CacheBuster(), at: 1)
@@ -200,7 +200,7 @@ struct StorageInlineEdgeCaseTests {
 
             #expect(MemoryLayout<Kilobyte>.size == 1024)
 
-            var storage = Storage.Inline<Kilobyte, 1>()
+            var storage = Storage<Kilobyte>.Inline<1>()
 
             let kb = Kilobyte(data: (
                 (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16),
@@ -230,7 +230,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `rapid initialize-move cycles same slot`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
 
             // Hammer the same slot repeatedly
             for i in 0..<1000 {
@@ -242,7 +242,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `rapid initialize-move cycles all slots`() {
-            var storage = Storage.Inline<Int, 8>()
+            var storage = Storage<Int>.Inline<8>()
 
             for round in 0..<100 {
                 // Initialize all
@@ -273,7 +273,7 @@ struct StorageInlineEdgeCaseTests {
             unsafe Tracker.liveCount = 0
             unsafe Tracker.totalCreated = 0
 
-            var storage = Storage.Inline<Tracker, 4>()
+            var storage = Storage<Tracker>.Inline<4>()
 
             for _ in 0..<100 {
                 // Initialize all slots
@@ -309,7 +309,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.deinitOrder = []
 
-            var storage = Storage.Inline<Tracker, 8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
             // Single element in first range
             storage.initialize(to: Tracker(0), at: 0)
@@ -327,7 +327,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `two-span at capacity boundaries`() {
-            var storage = Storage.Inline<Int, 8>()
+            var storage = Storage<Int>.Inline<8>()
 
             // Range at very start and very end
             storage.initialize(to: 100, at: 0)
@@ -346,7 +346,7 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `two-span adjacent ranges`() {
             // Ranges [0,3) and [3,6) - adjacent but separate
-            var storage = Storage.Inline<Int, 8>()
+            var storage = Storage<Int>.Inline<8>()
 
             for i: Index<Int> in [0, 1, 2, 3, 4, 5] {
                 storage.initialize(to: Int(i.rawValue.rawValue) * 10, at: i)
@@ -371,7 +371,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.count = 0
 
-            var storage = Storage.Inline<Tracker, 8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
             // [0,3) and [4,7) - gap at slot 3
             storage.initialize(to: Tracker(), at: 0)
@@ -402,8 +402,8 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `move entire capacity to heap`() {
-            var inline = Storage.Inline<Int, 8>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 8)
+            var inline = Storage<Int>.Inline<8>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             // Fill completely
             for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -424,8 +424,8 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `move single element from last slot`() {
-            var inline = Storage.Inline<Int, 8>()
-            let heap = Storage.Heap<Int>.create(minimumCapacity: 8)
+            var inline = Storage<Int>.Inline<8>()
+            let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             inline.initialize(to: 999, at: 7)
 
@@ -457,8 +457,8 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.instances = 0
 
-            var inline = Storage.Inline<Tracker, 4>()
-            let heap = Storage.Heap<Tracker>.create(minimumCapacity: 4)
+            var inline = Storage<Tracker>.Inline<4>()
+            let heap = Storage<Tracker>.Heap.create(minimumCapacity: 4)
 
             inline.initialize(to: Tracker(100), at: 0)
             inline.initialize(to: Tracker(200), at: 1)
@@ -518,7 +518,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `verify all pointers are within storage bounds`() {
-            var storage = Storage.Inline<Int64, 16>()
+            var storage = Storage<Int64>.Inline<16>()
 
             // Initialize all
             var slot: Index<Int64> = 0
@@ -558,7 +558,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `pointer modification affects correct slot only`() {
-            var storage = Storage.Inline<Int, 8>()
+            var storage = Storage<Int>.Inline<8>()
 
             // Initialize with sentinel values
             for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -590,10 +590,10 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `storage size scales linearly with capacity`() {
-            let size1 = MemoryLayout<Storage.Inline<Int, 1>>.size
-            let size2 = MemoryLayout<Storage.Inline<Int, 2>>.size
-            let size4 = MemoryLayout<Storage.Inline<Int, 4>>.size
-            let size8 = MemoryLayout<Storage.Inline<Int, 8>>.size
+            let size1 = MemoryLayout<Storage<Int>.Inline<1>>.size
+            let size2 = MemoryLayout<Storage<Int>.Inline<2>>.size
+            let size4 = MemoryLayout<Storage<Int>.Inline<4>>.size
+            let size8 = MemoryLayout<Storage<Int>.Inline<8>>.size
 
             let stride = MemoryLayout<Int>.stride
 
@@ -606,16 +606,16 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `no excessive padding for common types`() {
             // Int should have minimal overhead
-            let intStorageSize = MemoryLayout<Storage.Inline<Int, 4>>.size
+            let intStorageSize = MemoryLayout<Storage<Int>.Inline<4>>.size
             let intIdealSize = 4 * MemoryLayout<Int>.stride
-            let initSize = MemoryLayout<Storage.Initialization<Int>>.size
+            let initSize = MemoryLayout<Storage<Int>.Initialization>.size
 
             // Should be close to ideal + initialization overhead
             #expect(intStorageSize <= intIdealSize + initSize + 16,
                    "Excessive padding detected for Int storage")
 
             // Double
-            let doubleStorageSize = MemoryLayout<Storage.Inline<Double, 4>>.size
+            let doubleStorageSize = MemoryLayout<Storage<Double>.Inline<4>>.size
             let doubleIdealSize = 4 * MemoryLayout<Double>.stride
 
             #expect(doubleStorageSize <= doubleIdealSize + initSize + 16,
@@ -625,9 +625,9 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `bool storage is compact`() {
             // Bool has stride 1
-            let boolStorageSize = MemoryLayout<Storage.Inline<Bool, 8>>.size
+            let boolStorageSize = MemoryLayout<Storage<Bool>.Inline<8>>.size
             let boolIdealSize = 8 * MemoryLayout<Bool>.stride
-            let initSize = MemoryLayout<Storage.Initialization<Bool>>.size
+            let initSize = MemoryLayout<Storage<Bool>.Initialization>.size
 
             #expect(boolStorageSize <= boolIdealSize + initSize + 16,
                    "Bool storage should be compact")
@@ -643,7 +643,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `storage containing optional`() {
-            var storage = Storage.Inline<Int?, 4>()
+            var storage = Storage<Int?>.Inline<4>()
 
             storage.initialize(to: nil, at: 0)
             storage.initialize(to: 42, at: 1)
@@ -660,7 +660,7 @@ struct StorageInlineEdgeCaseTests {
         func `storage containing result type`() {
             enum TestError: Error { case failed }
 
-            var storage = Storage.Inline<Result<Int, TestError>, 4>()
+            var storage = Storage<Result<Int, TestError>>.Inline<4>()
 
             storage.initialize(to: .success(1), at: 0)
             storage.initialize(to: .failure(.failed), at: 1)
@@ -685,7 +685,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `storage containing tuple`() {
-            var storage = Storage.Inline<(Int, String, Double), 2>()
+            var storage = Storage<(Int, String, Double)>.Inline<2>()
 
             storage.initialize(to: (1, "hello", 3.14), at: 0)
             storage.initialize(to: (2, "world", 2.71), at: 1)
@@ -702,7 +702,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `storage containing array`() {
-            var storage = Storage.Inline<[Int], 2>()
+            var storage = Storage<[Int]>.Inline<2>()
 
             storage.initialize(to: [1, 2, 3, 4, 5], at: 0)
             storage.initialize(to: [], at: 1)
@@ -732,7 +732,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.count = 0
 
-            var storage = Storage.Inline<Tracker, 8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
             // Initialize last 3 slots
             storage.initialize(to: Tracker(), at: 5)
@@ -756,7 +756,7 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.deinitCount = 0
 
-            var storage = Storage.Inline<Tracker, 4>()
+            var storage = Storage<Tracker>.Inline<4>()
 
             for _ in 0..<10 {
                 storage.initialize(to: Tracker(), at: 0)
@@ -768,7 +768,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `deinitialize with one-range then reinitialize`() {
-            var storage = Storage.Inline<Int, 4>()
+            var storage = Storage<Int>.Inline<4>()
 
             // First round
             storage.initialize(to: 1, at: 0)
@@ -797,7 +797,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `capacity 1 - minimal storage`() {
-            var storage = Storage.Inline<Int, 1>()
+            var storage = Storage<Int>.Inline<1>()
 
             storage.initialize(to: 42, at: 0)
             #expect(storage.move(at: 0) == 42)
@@ -811,7 +811,7 @@ struct StorageInlineEdgeCaseTests {
 
         @Test
         func `capacity 256 - stress test`() {
-            var storage = Storage.Inline<UInt8, 256>()
+            var storage = Storage<UInt8>.Inline<256>()
 
             // Fill with pattern
             var slot: Index<UInt8> = 0
@@ -839,7 +839,7 @@ struct StorageInlineEdgeCaseTests {
             }
 
             // 32 bytes × 32 = 1024 bytes of element storage
-            var storage = Storage.Inline<Large, 32>()
+            var storage = Storage<Large>.Inline<32>()
 
             var slot: Index<Large> = 0
             for i in 0..<32 {

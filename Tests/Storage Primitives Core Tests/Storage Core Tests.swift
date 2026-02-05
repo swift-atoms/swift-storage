@@ -20,17 +20,17 @@ struct StorageCoreTests {
 
     @Test
     func `Storage namespace exists`() throws {
-        let _: Storage.Type = Storage.self
+        let _: Storage<Int>.Type = Storage<Int>.self
     }
 
     @Test
     func `Storage Heap type exists`() throws {
-        let _: Storage.Heap<Int>.Type = Storage.Heap<Int>.self
+        let _: Storage<Int>.Heap.Type = Storage<Int>.Heap.self
     }
 
     @Test
     func `Storage Inline type exists`() throws {
-        let _: Storage.Inline<Int, 8>.Type = Storage.Inline<Int, 8>.self
+        let _: Storage<Int>.Inline<8>.Type = Storage<Int>.Inline<8>.self
     }
 
     @Test
@@ -47,12 +47,12 @@ struct StorageCoreTests {
 
     @Test
     func `Storage Initialization type exists`() throws {
-        let _: Storage.Initialization<Int>.Type = Storage.Initialization<Int>.self
+        let _: Storage<Int>.Initialization.Type = Storage<Int>.Initialization.self
     }
 
     @Test
     func `Storage Header type exists`() throws {
-        let _: Storage.Heap.Header.Type = Storage.Heap<Int>.Header.self
+        let _: Storage<Int>.Heap.Header.Type = Storage<Int>.Heap.Header.self
     }
 
     // MARK: - Span Tests
@@ -76,21 +76,21 @@ struct StorageCoreTests {
 
     @Test
     func `initialization empty`() throws {
-        let init_: Storage.Initialization<Int> = .empty
+        let init_: Storage<Int>.Initialization = .empty
         #expect(init_.isEmpty)
         #expect(init_.count == .zero)
     }
 
     @Test
     func `initialization linear`() throws {
-        let init_: Storage.Initialization<Int> = .linear(count: Index<Int>.Count(5))
+        let init_: Storage<Int>.Initialization = .linear(count: Index<Int>.Count(5))
         #expect(!init_.isEmpty)
         #expect(init_.count == Index<Int>.Count(5))
     }
 
     @Test
     func `initialization linear zero is empty`() throws {
-        let init_: Storage.Initialization<Int> = .linear(count: .zero)
+        let init_: Storage<Int>.Initialization = .linear(count: .zero)
         #expect(init_.isEmpty)
     }
 
@@ -98,7 +98,7 @@ struct StorageCoreTests {
     func `initialization two spans`() throws {
         let first = Swift.Range<Index<Int>>(start: .zero, count: Index<Int>.Count(3))
         let second = Swift.Range<Index<Int>>(start: Index<Int>(6), count: Index<Int>.Count(2))
-        let init_: Storage.Initialization<Int> = .two(first: first, second: second)
+        let init_: Storage<Int>.Initialization = .two(first: first, second: second)
         #expect(!init_.isEmpty)
         #expect(init_.count == Index<Int>.Count(5))
     }

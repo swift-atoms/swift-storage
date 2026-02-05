@@ -21,7 +21,7 @@ struct StorageInlineTests {
 
     @Test
     func `inline storage can be created`() {
-        let storage = Storage.Inline<Int, 8>()
+        let storage = Storage<Int>.Inline<8>()
         _ = storage
     }
 
@@ -29,7 +29,7 @@ struct StorageInlineTests {
 
     @Test
     func `initialize and move element`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
         let slot: Index<Int> = .zero
 
         storage.initialize(to: 42, at: slot)
@@ -40,7 +40,7 @@ struct StorageInlineTests {
 
     @Test
     func `initialize multiple elements`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
 
         var slot: Index<Int> = .zero
         for i in 0..<8 {
@@ -61,7 +61,7 @@ struct StorageInlineTests {
 
     @Test
     func `pointer returns correct address`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
         let slot = Index<Int>(3)
 
         storage.initialize(to: 99, at: slot)
@@ -75,7 +75,7 @@ struct StorageInlineTests {
 
     @Test
     func `mutable pointer allows modification`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
         let slot: Index<Int> = .zero
 
         storage.initialize(to: 50, at: slot)
@@ -91,7 +91,7 @@ struct StorageInlineTests {
 
     @Test
     func `deinitialize at single slot`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
 
         storage.initialize(to: 42, at: .zero)
         storage.deinitialize(at: .zero)
@@ -99,7 +99,7 @@ struct StorageInlineTests {
 
     @Test
     func `deinitialize range of elements`() {
-        var storage = Storage.Inline<Int, 8>()
+        var storage = Storage<Int>.Inline<8>()
 
         var slot: Index<Int> = .zero
         for i in 0..<4 {
@@ -120,7 +120,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = Storage.Inline<Tracker, 8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
         var slot: Index<Tracker> = .zero
         for _ in 0..<4 {
@@ -144,7 +144,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = Storage.Inline<Tracker, 8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
         var slot: Index<Tracker> = .zero
         for _ in 0..<5 {
@@ -167,8 +167,8 @@ struct StorageInlineTests {
 
     @Test
     func `different element types have separate storage`() {
-        var intStorage = Storage.Inline<Int, 4>()
-        var doubleStorage = Storage.Inline<Double, 4>()
+        var intStorage = Storage<Int>.Inline<4>()
+        var doubleStorage = Storage<Double>.Inline<4>()
 
         intStorage.initialize(to: 42, at: .zero)
         doubleStorage.initialize(to: 3.14, at: .zero)
@@ -190,7 +190,7 @@ struct StorageInlineTests {
             var c: Int
         }
 
-        var storage = Storage.Inline<LargeElement, 2>()
+        var storage = Storage<LargeElement>.Inline<2>()
         let slot1: Index<LargeElement> = 1
 
         storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
@@ -207,9 +207,9 @@ struct StorageInlineTests {
 
     @Test
     func `move range to heap storage`() {
-        var inline = Storage.Inline<Int, 8>()
+        var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
+        let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
         var slot: Index<Int> = .zero
         for i in 0..<4 {
@@ -233,9 +233,9 @@ struct StorageInlineTests {
 
     @Test
     func `move empty range to heap storage`() {
-        var inline = Storage.Inline<Int, 8>()
+        var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
+        let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
         let range: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
         inline.move(range: range, to: heap)
@@ -245,9 +245,9 @@ struct StorageInlineTests {
 
     @Test
     func `copy range to heap storage`() {
-        var inline = Storage.Inline<Int, 8>()
+        var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
+        let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
         var slot: Index<Int> = .zero
         for i in 0..<4 {
@@ -279,9 +279,9 @@ struct StorageInlineTests {
 
     @Test
     func `copy empty range to heap storage`() {
-        let inline = Storage.Inline<Int, 8>()
+        let inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        let heap = Storage.Heap<Int>.create(minimumCapacity: capacity)
+        let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
         let range: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
         inline.copy(range: range, to: heap)
@@ -298,7 +298,7 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        var storage = Storage.Inline<Tracker, 8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
         // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
         storage.initialize(to: Tracker(), at: 0)
