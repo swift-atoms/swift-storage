@@ -32,17 +32,20 @@ struct StorageInlineInvariantTests {
             // For Int with capacity 4
             let intStride = MemoryLayout<Int>.stride
             let initSize = MemoryLayout<Storage.Initialization>.size
-            let expectedSize = intStride * 4 + initSize
-            
-            // Actual size may include alignment padding, so use >=
-            let actualSize = MemoryLayout<Storage.Inline<Int, 4>>.size
-            #expect(actualSize >= intStride * 4, "Storage must hold at least 4 Ints")
-            
+            let expectedIntSize = intStride * 4 + initSize
+            let actualIntSize = MemoryLayout<Storage.Inline<Int, 4>>.size
+
+            // Actual size may include alignment padding, so use >= for lower bound
+            #expect(actualIntSize >= intStride * 4, "Storage must hold at least 4 Ints")
+            #expect(actualIntSize <= expectedIntSize + 16, "Size should be close to expected")
+
             // For Double with capacity 8
             let doubleStride = MemoryLayout<Double>.stride
             let expectedDoubleSize = doubleStride * 8 + initSize
             let actualDoubleSize = MemoryLayout<Storage.Inline<Double, 8>>.size
+
             #expect(actualDoubleSize >= doubleStride * 8, "Storage must hold at least 8 Doubles")
+            #expect(actualDoubleSize <= expectedDoubleSize + 16, "Size should be close to expected")
         }
         
         @Test
@@ -81,9 +84,9 @@ struct StorageInlineInvariantTests {
             
             let stride = MemoryLayout<Int>.stride
             
-            let diff01 = UnsafeRawPointer(ptr1) - UnsafeRawPointer(ptr0)
-            let diff12 = UnsafeRawPointer(ptr2) - UnsafeRawPointer(ptr1)
-            let diff23 = UnsafeRawPointer(ptr3) - UnsafeRawPointer(ptr2)
+            let diff01 = unsafe UnsafeRawPointer(ptr1) - UnsafeRawPointer(ptr0)
+            let diff12 = unsafe UnsafeRawPointer(ptr2) - UnsafeRawPointer(ptr1)
+            let diff23 = unsafe UnsafeRawPointer(ptr3) - UnsafeRawPointer(ptr2)
             
             #expect(diff01 == stride, "Slot 0 to 1 should be exactly one stride")
             #expect(diff12 == stride, "Slot 1 to 2 should be exactly one stride")
@@ -112,10 +115,10 @@ struct StorageInlineInvariantTests {
             let ptr3: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 3)
             
             let base = UnsafeRawPointer(ptr0)
-            #expect(UnsafeRawPointer(ptr0) == base.advanced(by: 0 * stride))
-            #expect(UnsafeRawPointer(ptr1) == base.advanced(by: 1 * stride))
-            #expect(UnsafeRawPointer(ptr2) == base.advanced(by: 2 * stride))
-            #expect(UnsafeRawPointer(ptr3) == base.advanced(by: 3 * stride))
+            unsafe #expect(UnsafeRawPointer(ptr0) == base.advanced(by: 0 * stride))
+            unsafe #expect(UnsafeRawPointer(ptr1) == base.advanced(by: 1 * stride))
+            unsafe #expect(UnsafeRawPointer(ptr2) == base.advanced(by: 2 * stride))
+            unsafe #expect(UnsafeRawPointer(ptr3) == base.advanced(by: 3 * stride))
             
             // Cleanup
             _ = storage.move(at: 0)
