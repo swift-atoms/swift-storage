@@ -48,6 +48,8 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Parameter slot: The physical slot coordinate.
     /// - Returns: A mutable pointer to the element.
     /// - Precondition: The element at `slot` must be initialized.
+    @unsafe
+    @_lifetime(&self)
     @inlinable
     @_disfavoredOverload
     public mutating func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {

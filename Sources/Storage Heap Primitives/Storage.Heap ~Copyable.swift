@@ -56,8 +56,9 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Parameter slot: The physical slot coordinate.
     /// - Returns: A mutable pointer to the element.
     /// - Warning: The caller must ensure the slot is valid and within capacity.
-    @inlinable
     @unsafe
+    @_lifetime(borrow self)
+    @inlinable
     public func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
             let offset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
@@ -163,14 +164,16 @@ extension Storage.Heap where Element: ~Copyable {
 
     /// Provides read-only range access to elements in the specified slot range.
     ///
-    /// The range is valid only for the duration of the closure.
+    /// The span is valid only for the duration of the closure.
     ///
     /// - Parameters:
     ///   - range: The contiguous range of slots to access.
-    ///   - body: A closure that receives the range.
+    ///   - body: A closure that receives the span.
     /// - Returns: The value returned by the closure.
     /// - Throws: Rethrows any error thrown by the closure.
-    /// - Precondition: Elements in the range range must be initialized and contiguous.
+    /// - Precondition: Elements in the range must be initialized and contiguous.
+    /// - Note: Uses manual error bridging because `rethrows` doesn't support typed throws.
+    @unsafe
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ range: Swift.Range<Index<Storage>>,
@@ -180,12 +183,12 @@ extension Storage.Heap where Element: ~Copyable {
         let result: R? = unsafe withUnsafeMutablePointerToElements { base in
             let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
             let count = Int(bitPattern: range.count)
-            let rangeView = unsafe Swift.Span(
+            let span = unsafe Swift.Span(
                 _unsafeStart: UnsafePointer(base + startOffset),
                 count: count
             )
             do {
-                return try body(rangeView)
+                return try body(span)
             } catch let e as E {
                 thrown = e
                 return nil
