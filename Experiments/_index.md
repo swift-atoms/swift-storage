@@ -8,6 +8,7 @@
 | inline-storage-best-of-both-worlds | Parameterized Slot type for zero-overhead dense packing + ~Copyable | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | rawlayout-automatic-sizing | @_rawLayout(likeArrayOf:count:) for AUTOMATIC optimal layout | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| contiguous-protocol-conformance | Test Memory.Contiguous.Protocol conformance for Storage.Heap and Storage.Inline | 2026-02-05 | Swift 6.2 | CONFIRMED |
 
 ## Summary
 

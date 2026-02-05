@@ -1,0 +1,107 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the swift-primitives open source project
+//
+// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE for license information
+//
+// ===----------------------------------------------------------------------===//
+
+import Memory_Primitives_Core
+
+// MARK: - Memory.Contiguous.Protocol Conformance
+
+extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
+    /// Safe, bounds-checked read access to contiguous storage.
+    ///
+    /// Returns a `Span` over elements `0..<count` where count is derived from
+    /// the initialization state.
+    ///
+    /// - Precondition: Storage must be linearly initialized (`.empty` or `.one(0..<n)`).
+    ///   Using this property with non-linear initialization (`.two`) results in
+    ///   undefined behavior as the elements are not contiguous from zero.
+    /// - Complexity: O(1)
+    @inlinable
+    public var span: Span<Element> {
+        @_lifetime(borrow self)
+        borrowing get {
+            let count = Int(bitPattern: _initialization.count)
+            let ptr = unsafe withUnsafePointer(to: _storage) { base in
+                unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
+            }
+            let span = unsafe Span(_unsafeStart: ptr, count: count)
+            return unsafe _overrideLifetime(span, borrowing: self)
+        }
+    }
+
+    /// Unsafe read access for C interop with unannotated APIs.
+    ///
+    /// Provides raw pointer access to initialized elements for C functions
+    /// that lack lifetime annotations.
+    ///
+    /// - Parameter body: A closure that receives the buffer pointer.
+    /// - Returns: The value returned by `body`.
+    /// - Precondition: Storage must be linearly initialized.
+    /// - Complexity: O(1) plus the complexity of `body`.
+    /// - Warning: The buffer pointer is only valid within `body`.
+    @inlinable
+    public func withUnsafeBufferPointer<R, E: Swift.Error>(
+        _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        let count = Int(bitPattern: _initialization.count)
+        return try unsafe withUnsafePointer(to: _storage) { base throws(E) in
+            let ptr = unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
+            let buffer = unsafe UnsafeBufferPointer(start: ptr, count: count)
+            return try unsafe body(buffer)
+        }
+    }
+}
+
+// MARK: - Type-Specific Mutable Access
+
+extension Storage.Inline where Element: Copyable {
+    /// Safe, bounds-checked write access to contiguous storage.
+    ///
+    /// Returns a `MutableSpan` that exclusively borrows `self`, preventing
+    /// concurrent access. Structs can provide this as a property since they
+    /// support `mutating get`.
+    ///
+    /// - Precondition: Storage must be linearly initialized.
+    /// - Complexity: O(1)
+    @inlinable
+    public var mutableSpan: MutableSpan<Element> {
+        @_lifetime(&self)
+        mutating get {
+            let count = Int(bitPattern: _initialization.count)
+            let ptr = unsafe withUnsafeMutablePointer(to: &_storage) { base in
+                unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
+            }
+            let span = unsafe MutableSpan(_unsafeStart: ptr, count: count)
+            return unsafe _overrideLifetime(span, mutating: &self)
+        }
+    }
+
+    /// Unsafe write access for C interop with unannotated APIs.
+    ///
+    /// Provides mutable raw pointer access for C functions that lack
+    /// lifetime annotations.
+    ///
+    /// - Parameter body: A closure that receives the mutable buffer pointer.
+    /// - Returns: The value returned by `body`.
+    /// - Precondition: Storage must be linearly initialized.
+    /// - Complexity: O(1) plus the complexity of `body`.
+    /// - Warning: The buffer pointer is only valid within `body`.
+    @inlinable
+    public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
+        _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        let count = Int(bitPattern: _initialization.count)
+        return try unsafe withUnsafeMutablePointer(to: &_storage) { base throws(E) in
+            let ptr = unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
+            let buffer = unsafe UnsafeMutableBufferPointer(start: ptr, count: count)
+            return try unsafe body(buffer)
+        }
+    }
+}

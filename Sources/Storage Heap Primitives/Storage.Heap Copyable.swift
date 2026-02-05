@@ -31,18 +31,16 @@ extension Storage.Heap where Element: Copyable {
 
         func copySpan(_ range: Swift.Range<Index<Storage>>, dstStart: inout Index<Storage>) {
             guard !range.isEmpty else { return }
+            let spanCount = Int(range.count.rawValue.rawValue)
             _ = unsafe withUnsafeMutablePointerToElements { src in
+                let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+                let srcStart = unsafe UnsafePointer(src + srcOffset)
                 unsafe new.withUnsafeMutablePointerToElements { dst in
-                    var slot = range.lowerBound
-                    while slot < range.upperBound {
-                        let srcOffset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
-                        let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
-                        unsafe (dst + dstOffset).initialize(to: (src + srcOffset).pointee)
-                        slot = slot.successor.saturating()
-                        dstStart = dstStart.successor.saturating()
-                    }
+                    let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
+                    unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
+            dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
         var dstSlot: Index<Storage> = .zero
@@ -72,18 +70,16 @@ extension Storage.Heap where Element: Copyable {
 
         func copySpan(_ range: Swift.Range<Index<Storage>>, dstStart: inout Index<Storage>) {
             guard !range.isEmpty else { return }
+            let spanCount = Int(range.count.rawValue.rawValue)
             _ = unsafe withUnsafeMutablePointerToElements { src in
+                let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+                let srcStart = unsafe UnsafePointer(src + srcOffset)
                 unsafe destination.withUnsafeMutablePointerToElements { dst in
-                    var slot = range.lowerBound
-                    while slot < range.upperBound {
-                        let srcOffset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
-                        let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
-                        unsafe (dst + dstOffset).initialize(to: (src + srcOffset).pointee)
-                        slot = slot.successor.saturating()
-                        dstStart = dstStart.successor.saturating()
-                    }
+                    let dstOffset = Index<Storage>.Offset(fromZero: dstStart).retag(Element.self)
+                    unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
+            dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
         var dstSlot: Index<Storage> = .zero
@@ -100,8 +96,7 @@ extension Storage.Heap where Element: Copyable {
 
     /// Copies elements in the given range to linear positions in the destination.
     ///
-    /// Elements from the source range are placed at slots 0..<range.count in the
-    /// destination storage.
+    /// Uses bulk initialization for better performance on contiguous ranges.
     ///
     /// - Parameters:
     ///   - range: The contiguous range of slots to copy from.
@@ -111,17 +106,12 @@ extension Storage.Heap where Element: Copyable {
     @inlinable
     public func copy(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
+        let count = Int(range.count.rawValue.rawValue)
         _ = unsafe withUnsafeMutablePointerToElements { src in
+            let srcOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+            let srcStart = unsafe UnsafePointer(src + srcOffset)
             unsafe destination.withUnsafeMutablePointerToElements { dst in
-                var srcSlot = range.lowerBound
-                var dstSlot: Index<Storage> = .zero
-                while srcSlot < range.upperBound {
-                    let srcOffset = Index<Storage>.Offset(fromZero: srcSlot).retag(Element.self)
-                    let dstOffset = Index<Storage>.Offset(fromZero: dstSlot).retag(Element.self)
-                    unsafe (dst + dstOffset).initialize(to: (src + srcOffset).pointee)
-                    srcSlot = srcSlot.successor.saturating()
-                    dstSlot = dstSlot.successor.saturating()
-                }
+                unsafe dst.initialize(from: srcStart, count: count)
             }
         }
     }

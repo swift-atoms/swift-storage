@@ -112,10 +112,12 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func deinitialize(range: Swift.Range<Index<Storage>>) {
         guard !range.isEmpty else { return }
-        var slot = range.lowerBound
-        while slot < range.upperBound {
-            deinitialize(at: slot)
-            slot = slot.successor.saturating()
+        _ = unsafe withUnsafePointer(to: _storage) { base in
+            let raw = unsafe UnsafeMutableRawPointer(mutating: base)
+            let startPtr = unsafe raw
+                .advanced(by: Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride)
+                .assumingMemoryBound(to: Element.self)
+            unsafe startPtr.deinitialize(count: Int(range.count.rawValue.rawValue))
         }
     }
 

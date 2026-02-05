@@ -107,7 +107,7 @@ extension Storage.Heap where Element: ~Copyable {
 extension Storage.Heap where Element: ~Copyable {
     /// Deinitializes all elements in the given range.
     ///
-    /// Iterates through all slots in the range and deinitializes each element.
+    /// Uses bulk deinitialization for better performance on contiguous ranges.
     ///
     /// - Parameter range: The contiguous range of slots to deinitialize.
     /// - Precondition: All slots in the range must contain initialized elements.
@@ -115,10 +115,10 @@ extension Storage.Heap where Element: ~Copyable {
     @inlinable
     public func deinitialize(range: Swift.Range<Index<Storage>>) {
         guard !range.isEmpty else { return }
-        var slot = range.lowerBound
-        while slot < range.upperBound {
-            deinitialize(at: slot)
-            slot = slot.successor.saturating()
+        let count = Int(range.count.rawValue.rawValue)
+        unsafe withUnsafeMutablePointerToElements { elements in
+            let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+            unsafe (elements + startOffset).deinitialize(count: count)
         }
     }
 

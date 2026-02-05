@@ -27,15 +27,10 @@ extension Storage.Inline where Element: Copyable {
     @inlinable
     public func copy(range: Swift.Range<Index<Storage>>, to destination: Storage.Heap<Element>) {
         guard !range.isEmpty else { return }
+        let count = Int(range.count.rawValue.rawValue)
+        let srcPtr = unsafe pointer(at: range.lowerBound)
         unsafe destination.withUnsafeMutablePointerToElements { dst in
-            var srcSlot = range.lowerBound
-            var dstSlot: Index<Storage> = .zero
-            while srcSlot < range.upperBound {
-                let dstOffset = Index<Storage>.Offset(fromZero: dstSlot).retag(Element.self)
-                unsafe (dst + dstOffset).initialize(to: pointer(at: srcSlot).pointee)
-                srcSlot = srcSlot.successor.saturating()
-                dstSlot = dstSlot.successor.saturating()
-            }
+            unsafe dst.initialize(from: srcPtr, count: count)
         }
     }
 }

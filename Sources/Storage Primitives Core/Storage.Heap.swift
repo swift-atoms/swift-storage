@@ -38,13 +38,10 @@ extension Storage {
         deinit {
             func deinitialize(range: Swift.Range<Index<Storage>>) {
                 guard !range.isEmpty else { return }
+                let count = Int(range.count.rawValue.rawValue)
                 _ = unsafe withUnsafeMutablePointerToElements { elements in
-                    var slot = range.lowerBound
-                    while slot < range.upperBound {
-                        let offset = Index<Storage>.Offset(fromZero: slot).retag(Element.self)
-                        unsafe (elements + offset).deinitialize(count: 1)
-                        slot = slot.successor.saturating()
-                    }
+                    let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
+                    unsafe (elements + startOffset).deinitialize(count: count)
                 }
             }
 
