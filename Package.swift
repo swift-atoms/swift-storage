@@ -36,6 +36,7 @@ let package = Package(
     dependencies: [
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-memory-primitives"),
+        .package(path: "../swift-standard-library-extensions"),
     ],
     targets: [
         // Core: Type declarations and fundamental access
@@ -54,6 +55,7 @@ let package = Package(
             name: "Storage Heap Primitives",
             dependencies: [
                 "Storage Primitives Core",
+                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
         ),
         // Inline: Inline storage operations

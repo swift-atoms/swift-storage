@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+internal import Standard_Library_Extensions
 
 // MARK: - Factory
 
@@ -172,31 +173,20 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Returns: The value returned by the closure.
     /// - Throws: Rethrows any error thrown by the closure.
     /// - Precondition: Elements in the range must be initialized and contiguous.
-    /// - Note: Uses manual error bridging because `rethrows` doesn't support typed throws.
     @unsafe
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ range: Swift.Range<Index<Storage>>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        var thrown: E? = nil
-        let result: R? = unsafe withUnsafeMutablePointerToElements { base in
+        try unsafe withUnsafeMutablePointerToElements { base throws(E) in
             let startOffset = Index<Storage>.Offset(fromZero: range.lowerBound).retag(Element.self)
             let count = Int(bitPattern: range.count)
             let span = unsafe Swift.Span(
                 _unsafeStart: UnsafePointer(base + startOffset),
                 count: count
             )
-            do {
-                return try body(span)
-            } catch let e as E {
-                thrown = e
-                return nil
-            } catch {
-                preconditionFailure("unexpected error type")
-            }
+            return try body(span)
         }
-        if let thrown { throw thrown }
-        return result!
     }
 }
