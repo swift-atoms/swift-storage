@@ -307,8 +307,8 @@ struct StorageInlineTests {
         storage.initialize(to: Tracker(), at: 6)
         storage.initialize(to: Tracker(), at: 7)
 
-        let first = Swift.Range<Index<Storage>>(start: .zero, count: 3)
-        let second = Swift.Range<Index<Storage>>(start: 6, count: 2)
+        let first: Swift.Range<Index<Storage>> = .init(start: .zero, count: 3)
+        let second: Swift.Range<Index<Storage>> = .init(start: 6, count: 2)
         storage.initialization = .two(first: first, second: second)
 
         storage.deinitialize()
