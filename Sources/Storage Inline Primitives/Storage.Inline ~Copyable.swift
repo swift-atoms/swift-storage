@@ -52,7 +52,7 @@ extension Storage.Inline where Element: ~Copyable {
     @_disfavoredOverload
     public mutating func pointer(at slot: Index<Storage>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) { base in
-            let raw = unsafe UnsafeMutableRawPointer(base)
+            let raw = UnsafeMutableRawPointer(base)
             return unsafe raw.advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
         }

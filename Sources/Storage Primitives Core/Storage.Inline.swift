@@ -9,22 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-/// Internal raw storage with automatic layout computation.
-///
-/// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
-/// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
-///
-/// This type has no stored properties — the layout is determined entirely by the attribute.
-@_rawLayout(likeArrayOf: Element, count: capacity)
-@usableFromInline
-package struct _RawInlineStorage<Element: ~Copyable, let capacity: Int>: ~Copyable {
-    @usableFromInline
-    init() {}
-}
-
-// @_rawLayout types require @unchecked Sendable
-extension _RawInlineStorage: @unchecked Sendable where Element: Sendable {}
-
 extension Storage {
     /// Fixed-capacity inline storage with automatic optimal layout.
     ///
@@ -58,8 +42,21 @@ extension Storage {
     /// let value = storage.move(at: .zero)
     /// ```
     public struct Inline<Element: ~Copyable, let capacity: Int>: ~Copyable {
+        /// Internal raw storage with automatic layout computation.
+        ///
+        /// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
+        /// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
+        ///
+        /// This type has no stored properties — the layout is determined entirely by the attribute.
+        @_rawLayout(likeArrayOf: Element, count: capacity)
         @usableFromInline
-        package var _storage: _RawInlineStorage<Element, capacity>
+        package struct _Raw: ~Copyable {
+            @usableFromInline
+            init() {}
+        }
+
+        @usableFromInline
+        package var _storage: _Raw
 
         @usableFromInline
         package var _initialization: Initialization
@@ -69,7 +66,7 @@ extension Storage {
         /// Layout is computed automatically — no validation required.
         @inlinable
         public init() {
-            _storage = _RawInlineStorage()
+            _storage = _Raw()
             _initialization = .empty
         }
     }
@@ -77,10 +74,13 @@ extension Storage {
 
 // MARK: - Conditional Conformances
 
-// Note: Storage.Inline cannot be conditionally Copyable because _RawInlineStorage
+// @_rawLayout types require @unchecked Sendable
+extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+
+// Note: Storage.Inline cannot be conditionally Copyable because _Raw
 // (an @_rawLayout type) is always ~Copyable. This is acceptable since Storage.Inline
 // manages initialization state and ~Copyable is the correct semantic.
 
 /// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
-/// Requires @unchecked because _RawInlineStorage uses @unchecked Sendable.
+/// Requires @unchecked because _Raw uses @unchecked Sendable.
 extension Storage.Inline: @unchecked Sendable where Element: Sendable {}
