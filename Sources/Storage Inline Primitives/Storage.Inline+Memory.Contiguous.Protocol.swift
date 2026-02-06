@@ -14,7 +14,7 @@ public import Memory_Primitives_Core
 
 // MARK: - Memory.Contiguous.Protocol Conformance
 
-extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
+extension Storage.Inline: Memory.Contiguous.`Protocol` {
     /// Safe, bounds-checked read access to contiguous storage.
     ///
     /// Returns a `Span` over elements `0..<count` where count is derived from
