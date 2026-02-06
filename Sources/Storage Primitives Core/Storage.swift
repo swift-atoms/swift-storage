@@ -82,7 +82,7 @@ public enum Storage<Element: ~Copyable> {
     /// ## Usage
     ///
     /// ```swift
-    /// let storage = Storage.Heap<Int>.create(minimumCapacity: Index<Int>.Count(10))
+    /// let storage = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(10))
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
     /// ```
@@ -208,7 +208,15 @@ public enum Storage<Element: ~Copyable> {
         }
 
         deinit {
-            self._deinitializeTrackedSlots()
+            _slots.ones.forEach { bitIndex in
+                _ = unsafe withUnsafePointer(to: _storage) { base in
+                    let raw = unsafe UnsafeMutableRawPointer(mutating: base)
+                    unsafe raw
+                        .advanced(by: Int(bitIndex.rawValue.rawValue) * MemoryLayout<Element>.stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
+            }
         }
 
         /// Deinitializes the element at the given slot.
@@ -251,23 +259,6 @@ public enum Storage<Element: ~Copyable> {
             }
         }
 
-        /// Internal: Deinitializes all tracked initialized slots.
-        ///
-        /// Iterates set bits in `_slots` and deinitializes exactly those slots.
-        /// Called by deinit to ensure proper cleanup.
-        @usableFromInline
-        package func _deinitializeTrackedSlots() {
-            _slots.ones.forEach { bitIndex in
-                _ = unsafe withUnsafePointer(to: _storage) { base in
-                    let raw = unsafe UnsafeMutableRawPointer(mutating: base)
-                    unsafe raw
-                        .advanced(by: Int(bitIndex.rawValue.rawValue) * MemoryLayout<Element>.stride)
-                        .assumingMemoryBound(to: Element.self)
-                        .deinitialize(count: 1)
-                }
-            }
-        }
-
         /// The number of currently initialized slots.
         @inlinable
         public var initializedCount: Int {
@@ -278,6 +269,53 @@ public enum Storage<Element: ~Copyable> {
         @inlinable
         public var isEmpty: Bool {
             _slots.isEmpty
+        }
+
+        /// Initialization state for compatibility with buffer-primitives.
+        ///
+        /// Setter updates the BitVector tracking based on the initialization ranges.
+        /// This allows buffer-primitives to sync header state with storage via
+        /// `storage.initialization = header.initialization`.
+        ///
+        /// - Note: The getter computes the state from the BitVector, assuming
+        ///   linear or ring buffer patterns (contiguous or two disjoint ranges).
+        @inlinable
+        public var initialization: Storage.Initialization {
+            get {
+                if _slots.isEmpty {
+                    return .empty
+                }
+                // For linear patterns, compute the range from 0 to count
+                let count = Index<Element>.Count(Cardinal(UInt(_slots.popcount.rawValue.rawValue)))
+                return .linear(count: count)
+            }
+            set {
+                // Clear all bits first
+                _slots = Bit.Vector.Static<4>()
+
+                // Set bits according to the initialization state
+                switch newValue {
+                case .empty:
+                    break
+                case .one(let range):
+                    var slot = range.lowerBound
+                    while slot < range.upperBound {
+                        _slots[Bit.Index(slot.rawValue)] = true
+                        slot = slot.successor.saturating()
+                    }
+                case .two(let first, let second):
+                    var slot = first.lowerBound
+                    while slot < first.upperBound {
+                        _slots[Bit.Index(slot.rawValue)] = true
+                        slot = slot.successor.saturating()
+                    }
+                    slot = second.lowerBound
+                    while slot < second.upperBound {
+                        _slots[Bit.Index(slot.rawValue)] = true
+                        slot = slot.successor.saturating()
+                    }
+                }
+            }
         }
     }
 }
