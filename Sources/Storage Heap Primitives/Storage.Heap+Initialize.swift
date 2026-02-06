@@ -57,7 +57,7 @@ extension Storage.Heap where Element: ~Copyable {
         @discardableResult
         public func next(to element: consuming Element) -> Index<Element> {
             let currentCount = heap.initialization.count
-            let slot = Index<Element>(currentCount)
+            let slot = Index<Element>(__unchecked: (), Ordinal(currentCount.rawValue))
             precondition(slot.rawValue < heap.slotCapacity.rawValue, "Storage capacity exceeded")
             heap.initialize(to: element, at: slot)
             let newCount = Index<Element>.Count(currentCount.rawValue + 1)

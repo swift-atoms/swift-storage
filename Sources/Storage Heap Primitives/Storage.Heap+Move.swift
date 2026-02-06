@@ -57,7 +57,7 @@ extension Storage.Heap where Element: ~Copyable {
             let currentCount = heap.initialization.count
             precondition(currentCount > .zero, "Cannot move.last() from empty storage")
             let newCount = try! currentCount.subtract.exact(.one)
-            let slot = Index<Element>(newCount)
+            let slot = Index<Element>(__unchecked: (), Ordinal(newCount.rawValue))
             let element = heap.move(at: slot)
             heap.initialization = newCount == .zero ? .empty : .linear(count: newCount)
             return element

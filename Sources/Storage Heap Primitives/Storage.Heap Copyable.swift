@@ -40,7 +40,7 @@ extension Storage.Heap where Element: Copyable {
                     unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
-            dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
+            dstStart = Index(__unchecked: (), Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
         var dstSlot: Index<Element> = .zero
@@ -79,7 +79,7 @@ extension Storage.Heap where Element: Copyable {
                     unsafe (dst + dstOffset).initialize(from: srcStart, count: spanCount)
                 }
             }
-            dstStart = Index(Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
+            dstStart = Index(__unchecked: (), Ordinal(dstStart.rawValue.rawValue + UInt(spanCount)))
         }
 
         var dstSlot: Index<Element> = .zero
