@@ -25,7 +25,7 @@ struct StorageInlineTests {
     func `inline storage can be created`() {
         let storage = Storage<Int>.Inline<8>()
         #expect(storage.isEmpty == true)
-        #expect(storage.initializedCount == 0)
+        #expect(storage.initialization.count == 0)
     }
 
     // MARK: - Initialize and Move Tests
@@ -36,7 +36,7 @@ struct StorageInlineTests {
         let slot: Index<Int> = .zero
 
         storage.initialize(to: 42, at: slot)
-        #expect(storage.initializedCount == 1)
+        #expect(storage.initialization.count == 1)
 
         let value = storage.move(at: slot)
         #expect(value == 42)
@@ -53,7 +53,7 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        #expect(storage.initializedCount == 8)
+        #expect(storage.initialization.count == 8)
 
         // Move in forward order to verify all initialized
         slot = .zero
@@ -75,7 +75,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 99, at: slot)
 
-        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: slot)
+        let ptr = unsafe storage.pointer(at: slot)
         let pointee = unsafe ptr.pointee
         #expect(pointee == 99)
 
@@ -89,7 +89,7 @@ struct StorageInlineTests {
 
         storage.initialize(to: 50, at: slot)
 
-        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: slot)
+        let ptr = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: slot))
         unsafe ptr.pointee = 100
 
         let value = storage.move(at: slot)
@@ -103,7 +103,7 @@ struct StorageInlineTests {
         var storage = Storage<Int>.Inline<8>()
 
         storage.initialize(to: 42, at: .zero)
-        #expect(storage.initializedCount == 1)
+        #expect(storage.initialization.count == 1)
 
         storage.deinitialize(at: .zero)
         #expect(storage.isEmpty == true)
@@ -119,7 +119,7 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        #expect(storage.initializedCount == 4)
+        #expect(storage.initialization.count == 4)
 
         let range: Swift.Range<Index<Int>> = .zero..<4
         storage.deinitialize(range: range)
@@ -145,7 +145,7 @@ struct StorageInlineTests {
                 slot = slot.successor.saturating()
             }
 
-            #expect(storage.initializedCount == 4)
+            #expect(storage.initialization.count == 4)
             // storage goes out of scope - deinit should clean up
         }
 
@@ -169,14 +169,14 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        #expect(storage.initializedCount == 5)
+        #expect(storage.initialization.count == 5)
 
         // Deinitialize slots 1..<4
         let range: Swift.Range<Index<Tracker>> = 1..<4
         storage.deinitialize(range: range)
 
         unsafe #expect(Tracker.deinitCount == 3)
-        #expect(storage.initializedCount == 2)
+        #expect(storage.initialization.count == 2)
 
         // Clean up remaining elements (slots 0 and 4)
         _ = storage.move(at: 0)
@@ -239,7 +239,7 @@ struct StorageInlineTests {
             slot = slot.successor.saturating()
         }
 
-        #expect(inline.initializedCount == 4)
+        #expect(inline.initialization.count == 4)
 
         let range = Swift.Range<Index<Int>>(start: .zero, count: 4)
         inline.move(range: range, to: heap)
@@ -287,7 +287,7 @@ struct StorageInlineTests {
         heap.initialization = .linear(count: 4)
 
         // Inline slots should still be initialized after copy
-        #expect(inline.initializedCount == 4)
+        #expect(inline.initialization.count == 4)
 
         // Verify inline still has original values
         slot = .zero
@@ -345,7 +345,7 @@ struct StorageInlineTests {
 
             // Initialize via pointer (like Vector.Inline.init(initializing:))
             // Note: pointer-based init bypasses auto-tracking
-            let ptr: UnsafeMutablePointer<TrackedValue> = unsafe storage.pointer(at: .zero)
+            let ptr: UnsafeMutablePointer<TrackedValue> = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: .zero))
             unsafe (ptr + 0).initialize(to: TrackedValue(1, tracker: tracker))
             unsafe (ptr + 1).initialize(to: TrackedValue(2, tracker: tracker))
             unsafe (ptr + 2).initialize(to: TrackedValue(3, tracker: tracker))
@@ -434,7 +434,7 @@ struct StorageInlineTests {
             storage.initialize(to: Marker(), at: .zero)
             storage.initialize(to: Marker(), at: 1)
 
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
             unsafe #expect(Marker.instanceCount == 2)
             // storage goes out of scope, Storage.Inline.deinit should run
         }
@@ -463,7 +463,7 @@ struct StorageInlineTests {
             storage.initialize(to: Tracker(), at: 3)
             storage.initialize(to: Tracker(), at: 7)
 
-            #expect(storage.initializedCount == 3)
+            #expect(storage.initialization.count == 3)
             // deinit will clean up exactly these 3 slots
         }
 
@@ -490,7 +490,7 @@ struct StorageInlineTests {
             storage.initialize(to: Tracker(), at: 6)
             storage.initialize(to: Tracker(), at: 7)
 
-            #expect(storage.initializedCount == 5)
+            #expect(storage.initialization.count == 5)
             // deinit will clean up all 5 slots
         }
 

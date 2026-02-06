@@ -36,6 +36,8 @@ let package = Package(
     dependencies: [
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-memory-primitives"),
+        .package(path: "../swift-property-primitives"),
+        .package(path: "../swift-range-primitives"),
         .package(path: "../swift-standard-library-extensions"),
         .package(path: "../swift-bit-vector-primitives"),
     ],
@@ -54,6 +56,7 @@ let package = Package(
             name: "Storage Heap Primitives",
             dependencies: [
                 "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
         ),
@@ -62,6 +65,8 @@ let package = Package(
             name: "Storage Inline Primitives",
             dependencies: [
                 "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Range Primitives", package: "swift-range-primitives"),
             ]
         ),
         // Public: Re-exports all modules

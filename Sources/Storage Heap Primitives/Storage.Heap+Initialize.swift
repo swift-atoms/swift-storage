@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+public import Property_Primitives
 
 // MARK: - Initialize Accessor
 
@@ -22,47 +23,59 @@ extension Storage.Heap where Element: ~Copyable {
     /// let slot = heap.initialize.next(to: value)  // Initializes next slot, updates state
     /// ```
     @inlinable
-    public var initialize: Initialize {
-        Initialize(heap: self)
+    public var initialize: Property<Storage.Initialize, Storage.Heap> {
+        Property(self)
     }
+}
 
-    /// Nested accessor for tracked initialize operations.
-    public struct Initialize: ~Copyable, ~Escapable {
-        @usableFromInline
-        let heap: Storage.Heap
+extension Property {
+    
+    /// Initializes storage at the given physical slot with the provided value.
+    ///
+    /// - Parameters:
+    ///   - element: The value to store.
+    ///   - slot: The physical slot to initialize.
+    /// - Precondition: The element at `slot` must be uninitialized.
+    /// - Note: The caller is responsible for updating `initialization` state.
+    @inlinable
+    public func callAsFunction<Element: ~Copyable>(
+        to element: consuming Element,
+        at slot: Index<Element>
+    ) where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Heap {
+        unsafe base.pointer(at: slot).initialize(to: element)
+    }
+}
 
-        @inlinable
-        @_lifetime(borrow heap)
-        init(heap: borrowing Storage.Heap) {
-            self.heap = copy heap
-        }
+// MARK: - Initialize Methods
 
-        /// Initializes the next available slot with the given element.
-        ///
-        /// This method maintains linear discipline: elements are stored
-        /// contiguously from slot 0. The initialization state is updated
-        /// automatically.
-        ///
-        /// ```swift
-        /// var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
-        /// heap.initialize.next(to: 1)  // Stored at slot 0
-        /// heap.initialize.next(to: 2)  // Stored at slot 1
-        /// ```
-        ///
-        /// - Parameter element: The value to store.
-        /// - Returns: The slot where the element was stored.
-        /// - Precondition: Storage must have available capacity.
-        /// - Precondition: Storage must be using linear discipline (`.empty` or `.linear`).
-        @inlinable
-        @discardableResult
-        public func next(to element: consuming Element) -> Index<Element> {
-            let currentCount = heap.initialization.count
-            let slot = Index<Element>(__unchecked: (), Ordinal(currentCount.rawValue))
-            precondition(slot.rawValue < heap.slotCapacity.rawValue, "Storage capacity exceeded")
-            heap.initialize(to: element, at: slot)
-            let newCount = Index<Element>.Count(currentCount.rawValue + 1)
-            heap.initialization = .linear(count: newCount)
-            return slot
-        }
+
+extension Property {
+    /// Initializes the next available slot with the given element.
+    ///
+    /// This method maintains linear discipline: elements are stored
+    /// contiguously from slot 0. The initialization state is updated
+    /// automatically.
+    ///
+    /// ```swift
+    /// var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+    /// try heap.initialize.next(to: 1)  // Stored at slot 0
+    /// try heap.initialize.next(to: 2)  // Stored at slot 1
+    /// ```
+    ///
+    /// - Parameter element: The value to store.
+    /// - Returns: The slot where the element was stored.
+    /// - Throws: ``Storage/Error/capacityExceeded`` if storage is full.
+    ///   If thrown, the `consuming` element is destroyed (callee owns it).
+    ///   For `~Copyable` elements, verify capacity before calling.
+    @inlinable
+    @discardableResult
+    public func next<Element: ~Copyable>(to element: consuming Element) throws(Storage<Element>.Error) -> Index<Element>
+    where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Heap {
+        let currentCount = base.initialization.count
+        let slot = currentCount.map(Ordinal.init)
+        guard slot < base.slotCapacity else { throw .capacityExceeded }
+        base.initialize(to: element, at: slot)
+        base.initialization = .linear(count: currentCount + .one)
+        return slot
     }
 }

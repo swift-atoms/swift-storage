@@ -77,10 +77,10 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 400, at: 3)
 
             // Get pointers and verify stride-based layout
-            let ptr0: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 0)
-            let ptr1: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 1)
-            let ptr2: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 2)
-            let ptr3: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 3)
+            let ptr0 = unsafe storage.pointer(at: 0)
+            let ptr1 = unsafe storage.pointer(at: 1)
+            let ptr2 = unsafe storage.pointer(at: 2)
+            let ptr3 = unsafe storage.pointer(at: 3)
 
             let stride = MemoryLayout<Int>.stride
 
@@ -109,16 +109,16 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 3.0, at: 2)
             storage.initialize(to: 4.0, at: 3)
 
-            let ptr0: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 0)
-            let ptr1: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 1)
-            let ptr2: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 2)
-            let ptr3: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 3)
+            let ptr0 = unsafe storage.pointer(at: 0)
+            let ptr1 = unsafe storage.pointer(at: 1)
+            let ptr2 = unsafe storage.pointer(at: 2)
+            let ptr3 = unsafe storage.pointer(at: 3)
 
-            let base = UnsafeRawPointer(ptr0)
-            unsafe #expect(UnsafeRawPointer(ptr0) == base.advanced(by: 0 * stride))
-            unsafe #expect(UnsafeRawPointer(ptr1) == base.advanced(by: 1 * stride))
-            unsafe #expect(UnsafeRawPointer(ptr2) == base.advanced(by: 2 * stride))
-            unsafe #expect(UnsafeRawPointer(ptr3) == base.advanced(by: 3 * stride))
+            let base = unsafe UnsafeRawPointer(ptr0)
+            unsafe #expect(UnsafeRawPointer(ptr0) == base + 0 * stride)
+            unsafe #expect(UnsafeRawPointer(ptr1) == base + 1 * stride)
+            unsafe #expect(UnsafeRawPointer(ptr2) == base + 2 * stride)
+            unsafe #expect(UnsafeRawPointer(ptr3) == base + 3 * stride)
 
             // Cleanup
             _ = storage.move(at: 0)
@@ -157,7 +157,7 @@ struct StorageInlineInvariantTests {
         func `INV-INLINE-002a: storage starts empty on construction`() {
             let storage = Storage<Int>.Inline<8>()
             #expect(storage.isEmpty == true)
-            #expect(storage.initializedCount == 0)
+            #expect(storage.initialization.count == 0)
         }
 
         @Test
@@ -167,11 +167,11 @@ struct StorageInlineInvariantTests {
             #expect(storage.isEmpty == true)
 
             storage.initialize(to: 42, at: 0)
-            #expect(storage.initializedCount == 1, "initialize should set bit")
+            #expect(storage.initialization.count == 1, "initialize should set bit")
             #expect(storage.isEmpty == false)
 
             storage.initialize(to: 100, at: 2)
-            #expect(storage.initializedCount == 2, "initialize should set another bit")
+            #expect(storage.initialization.count == 2, "initialize should set another bit")
 
             // Cleanup
             _ = storage.move(at: 0)
@@ -184,10 +184,10 @@ struct StorageInlineInvariantTests {
 
             storage.initialize(to: 42, at: 0)
             storage.initialize(to: 84, at: 1)
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
 
             _ = storage.move(at: 0)
-            #expect(storage.initializedCount == 1, "move should clear bit")
+            #expect(storage.initialization.count == 1, "move should clear bit")
 
             _ = storage.move(at: 1)
             #expect(storage.isEmpty == true, "all bits should be cleared")
@@ -199,10 +199,10 @@ struct StorageInlineInvariantTests {
 
             storage.initialize(to: 42, at: 0)
             storage.initialize(to: 84, at: 1)
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
 
             storage.deinitialize(at: 0)
-            #expect(storage.initializedCount == 1, "deinitialize should clear bit")
+            #expect(storage.initialization.count == 1, "deinitialize should clear bit")
 
             storage.deinitialize(at: 1)
             #expect(storage.isEmpty == true)
@@ -214,14 +214,17 @@ struct StorageInlineInvariantTests {
 
             // Initialize slots 0-4
             for i in 0..<5 {
-                storage.initialize(to: i * 10, at: try! Index<Int>(i))
+                storage.initialize(
+                    to: i * 10,
+                    at: .init(integerLiteral: UInt(i))
+                )
             }
-            #expect(storage.initializedCount == 5)
+            #expect(storage.initialization.count == 5)
 
             // Deinitialize range 1..<4
             let range: Swift.Range<Index<Int>> = 1..<4
             storage.deinitialize(range: range)
-            #expect(storage.initializedCount == 2, "3 bits should be cleared")
+            #expect(storage.initialization.count == 2, "3 bits should be cleared")
 
             // Cleanup remaining: 0 and 4
             _ = storage.move(at: 0)
@@ -247,7 +250,7 @@ struct StorageInlineInvariantTests {
                 storage.initialize(to: Tracker(), at: 2)
 
                 unsafe #expect(Tracker.count == 3)
-                #expect(storage.initializedCount == 3)
+                #expect(storage.initialization.count == 3)
                 // storage goes out of scope - deinit iterates set bits and cleans up
             }
 
@@ -272,7 +275,7 @@ struct StorageInlineInvariantTests {
                 storage.initialize(to: Tracker(), at: 5)
                 storage.initialize(to: Tracker(), at: 7)
 
-                #expect(storage.initializedCount == 4)
+                #expect(storage.initialization.count == 4)
                 // deinit should clean up exactly these 4 slots
             }
 
@@ -479,7 +482,7 @@ struct StorageInlineInvariantTests {
             heap.initialization = .empty
 
             // Inline should still have values (copy doesn't remove)
-            #expect(inline.initializedCount == 2)
+            #expect(inline.initialization.count == 2)
 
             // Cleanup inline
             _ = inline.move(at: 3)
@@ -503,7 +506,7 @@ struct StorageInlineInvariantTests {
             inline.initialize(to: Tracker(), at: 1)
 
             unsafe #expect(Tracker.instances == 2)
-            #expect(inline.initializedCount == 2)
+            #expect(inline.initialization.count == 2)
 
             let range: Swift.Range<Index<Tracker>> = 0..<2
             inline.move(range: range, to: heap)
@@ -535,7 +538,7 @@ struct StorageInlineInvariantTests {
             heap.initialization = .linear(count: 2)
 
             // Source should still have values and bits set
-            #expect(inline.initializedCount == 2)
+            #expect(inline.initialization.count == 2)
             let val0 = inline.move(at: 0)
             let val1 = inline.move(at: 1)
             #expect(val0 == 42, "source slot 0 should be preserved")
@@ -596,7 +599,7 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 2, at: 2)
             storage.initialize(to: 3, at: 3)
 
-            #expect(storage.initializedCount == 4)
+            #expect(storage.initialization.count == 4)
 
             #expect(storage.move(at: 0) == 0)
             #expect(storage.move(at: 1) == 1)
@@ -618,7 +621,7 @@ struct StorageInlineInvariantTests {
         func `zero capacity storage`() {
             let storage = Storage<Int>.Inline<0>()
             #expect(storage.isEmpty == true)
-            #expect(storage.initializedCount == 0)
+            #expect(storage.initialization.count == 0)
             // No slots to access - just verify construction works
         }
 
@@ -627,7 +630,7 @@ struct StorageInlineInvariantTests {
             var storage = Storage<Int>.Inline<1>()
 
             storage.initialize(to: 42, at: 0)
-            #expect(storage.initializedCount == 1)
+            #expect(storage.initialization.count == 1)
             #expect(storage.move(at: 0) == 42)
             #expect(storage.isEmpty == true)
         }
@@ -649,7 +652,7 @@ struct StorageInlineInvariantTests {
 
             let large = LargeStruct(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8)
             storage.initialize(to: large, at: 0)
-            #expect(storage.initializedCount == 1)
+            #expect(storage.initialization.count == 1)
 
             let retrieved = storage.move(at: 0)
             #expect(retrieved.a == 1)
@@ -661,13 +664,13 @@ struct StorageInlineInvariantTests {
         func `deinitialize empty range is no-op`() {
             var storage = Storage<Int>.Inline<4>()
             storage.initialize(to: 42, at: 0)
-            #expect(storage.initializedCount == 1)
+            #expect(storage.initialization.count == 1)
 
             let emptyRange: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
             storage.deinitialize(range: emptyRange)
 
             // Original value should still be there
-            #expect(storage.initializedCount == 1)
+            #expect(storage.initialization.count == 1)
             #expect(storage.move(at: 0) == 42)
         }
 
@@ -690,7 +693,7 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 0, at: 0)
             storage.initialize(to: 255, at: 255)
 
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
 
             #expect(storage.move(at: 0) == 0)
             #expect(storage.move(at: 255) == 255)

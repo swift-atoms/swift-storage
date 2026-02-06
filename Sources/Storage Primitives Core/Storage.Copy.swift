@@ -9,13 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Bit_Vector_Primitives
-
-extension Storage.Inline where Element: ~Copyable {
-    
-    /// Whether all slots are uninitialized.
-    @inlinable
-    public var isEmpty: Bool {
-        _slots.isEmpty
-    }
+extension Storage where Element: ~Copyable {
+    /// Tag type for `copy` property accessor.
+    public enum Copy {}
 }

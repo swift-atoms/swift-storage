@@ -101,10 +101,7 @@ public enum Storage<Element: ~Copyable> {
         @inlinable
         public func deinitialize(range: Swift.Range<Index<Element>>) {
             guard !range.isEmpty else { return }
-            unsafe withUnsafeMutablePointerToElements { elements in
-                let startOffset = Index<Element>.Offset(fromZero: range.lowerBound)
-                unsafe (elements + startOffset).deinitialize(count: range.count)
-            }
+            unsafe pointer(at: range.lowerBound).deinitialize(count: range.count)
         }
         
         /// Deinitializes all tracked initialized slots and resets initialization to .empty.
@@ -113,14 +110,8 @@ public enum Storage<Element: ~Copyable> {
         /// that are tracked as initialized.
         @inlinable
         public func deinitialize() {
-            switch header.initialization {
-            case .empty:
-                return
-            case .one(let range):
+            header.initialization.forEach { range in
                 deinitialize(range: range)
-            case .two(let first, let second):
-                deinitialize(range: first)
-                deinitialize(range: second)
             }
             header.initialization = .empty
         }
@@ -209,113 +200,67 @@ public enum Storage<Element: ~Copyable> {
 
         deinit {
             _slots.ones.forEach { bitIndex in
-                _ = unsafe withUnsafePointer(to: _storage) { base in
-                    let raw = unsafe UnsafeMutableRawPointer(mutating: base)
-                    unsafe raw
-                        .advanced(by: Int(bitIndex.rawValue.rawValue) * MemoryLayout<Element>.stride)
-                        .assumingMemoryBound(to: Element.self)
-                        .deinitialize(count: 1)
-                }
-            }
-        }
-
-        /// Deinitializes the element at the given slot.
-        ///
-        /// - Parameter slot: The slot to deinitialize.
-        /// - Precondition: The slot must be initialized.
-        /// - Note: Automatically clears the slot's tracking bit.
-        @inlinable
-        public mutating func deinitialize(at slot: Index<Element>) {
-            _ = unsafe withUnsafePointer(to: _storage) { base in
-                let raw = unsafe UnsafeMutableRawPointer(mutating: base)
-                unsafe raw
-                    .advanced(by: Int(slot.rawValue.rawValue) * MemoryLayout<Element>.stride)
-                    .assumingMemoryBound(to: Element.self)
+                unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
                     .deinitialize(count: 1)
             }
-            _slots[Bit.Index(slot.rawValue)] = false
         }
+    }
+}
 
-        /// Deinitializes all elements in the given range.
-        ///
-        /// - Parameter range: The contiguous range of slots to deinitialize.
-        /// - Precondition: All slots in the range must contain initialized elements.
-        /// - Note: Automatically clears each slot's tracking bit.
-        @inlinable
-        public mutating func deinitialize(range: Swift.Range<Index<Element>>) {
-            guard !range.isEmpty else { return }
-            _ = unsafe withUnsafePointer(to: _storage) { base in
-                let raw = unsafe UnsafeMutableRawPointer(mutating: base)
-                let startPtr = unsafe raw
-                    .advanced(by: Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride)
-                    .assumingMemoryBound(to: Element.self)
-                unsafe startPtr.deinitialize(count: Int(range.count.rawValue.rawValue))
-            }
-            // Clear bits for each slot in the range
-            var slot = range.lowerBound
-            while slot < range.upperBound {
-                _slots[Bit.Index(slot.rawValue)] = false
-                slot = slot.successor.saturating()
-            }
+// MARK: - Fundamental Slot Access (Heap)
+
+extension Storage.Heap where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given physical slot.
+    ///
+    /// This is the primitive address computation for heap storage.
+    /// All other slot access methods delegate to this.
+    ///
+    /// - Parameter slot: The physical slot coordinate.
+    /// - Returns: A mutable pointer to the element.
+    /// - Warning: The caller must ensure the slot is valid and within capacity.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe withUnsafeMutablePointerToElements {
+            let offset = Index<Element>.Offset(fromZero: slot)
+            return unsafe $0 + offset
         }
+    }
 
-        /// The number of currently initialized slots.
-        @inlinable
-        public var initializedCount: Int {
-            Int(_slots.popcount.rawValue.rawValue)
-        }
+    /// Returns an immutable pointer to the element at the given physical slot.
+    ///
+    /// - Parameter slot: The physical slot coordinate.
+    /// - Returns: An immutable pointer to the element.
+    /// - Warning: The caller must ensure the slot is valid and within capacity.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+        unsafe UnsafePointer(pointer(at: slot))
+    }
+}
 
-        /// Whether all slots are uninitialized.
-        @inlinable
-        public var isEmpty: Bool {
-            _slots.isEmpty
-        }
+// MARK: - Fundamental Slot Access (Inline)
 
-        /// Initialization state for compatibility with buffer-primitives.
-        ///
-        /// Setter updates the BitVector tracking based on the initialization ranges.
-        /// This allows buffer-primitives to sync header state with storage via
-        /// `storage.initialization = header.initialization`.
-        ///
-        /// - Note: The getter computes the state from the BitVector, assuming
-        ///   linear or ring buffer patterns (contiguous or two disjoint ranges).
-        @inlinable
-        public var initialization: Storage.Initialization {
-            get {
-                if _slots.isEmpty {
-                    return .empty
-                }
-                // For linear patterns, compute the range from 0 to count
-                let count = Index<Element>.Count(Cardinal(UInt(_slots.popcount.rawValue.rawValue)))
-                return .linear(count: count)
-            }
-            set {
-                // Clear all bits first
-                _slots = Bit.Vector.Static<4>()
-
-                // Set bits according to the initialization state
-                switch newValue {
-                case .empty:
-                    break
-                case .one(let range):
-                    var slot = range.lowerBound
-                    while slot < range.upperBound {
-                        _slots[Bit.Index(slot.rawValue)] = true
-                        slot = slot.successor.saturating()
-                    }
-                case .two(let first, let second):
-                    var slot = first.lowerBound
-                    while slot < first.upperBound {
-                        _slots[Bit.Index(slot.rawValue)] = true
-                        slot = slot.successor.saturating()
-                    }
-                    slot = second.lowerBound
-                    while slot < second.upperBound {
-                        _slots[Bit.Index(slot.rawValue)] = true
-                        slot = slot.successor.saturating()
-                    }
-                }
-            }
+extension Storage.Inline where Element: ~Copyable {
+    /// Returns an immutable pointer to the element at the given physical slot.
+    ///
+    /// This is the primitive address computation for inline storage.
+    /// All other slot access methods delegate to this.
+    ///
+    /// - Parameter slot: The physical slot coordinate.
+    /// - Returns: An immutable pointer to the element.
+    /// - Precondition: The element at `slot` must be initialized.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) { base in
+            let raw = unsafe UnsafeRawPointer(base)
+            return unsafe raw.advanced(by: Int(bitPattern: slot) * MemoryLayout<Element>.stride)
+                .assumingMemoryBound(to: Element.self)
         }
     }
 }

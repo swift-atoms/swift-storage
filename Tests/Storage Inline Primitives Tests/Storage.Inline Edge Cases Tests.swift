@@ -42,7 +42,7 @@ struct StorageInlineEdgeCaseTests {
                 storage.initialize(to: Empty(), at: i)
             }
 
-            #expect(storage.initializedCount == 8)
+            #expect(storage.initialization.count == 8)
 
             // Should be able to move all slots
             for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -86,7 +86,7 @@ struct StorageInlineEdgeCaseTests {
                 slot = slot.successor.saturating()
             }
 
-            #expect(storage.initializedCount == 255)
+            #expect(storage.initialization.count == 255)
 
             // Verify all values
             slot = 0
@@ -138,8 +138,8 @@ struct StorageInlineEdgeCaseTests {
             }
 
             // Verify pointer spacing
-            let ptr0: UnsafeMutablePointer<MixedPadding> = unsafe storage.pointer(at: 0)
-            let ptr1: UnsafeMutablePointer<MixedPadding> = unsafe storage.pointer(at: 1)
+            let ptr0 = unsafe storage.pointer(at: 0)
+            let ptr1 = unsafe storage.pointer(at: 1)
             let diff = unsafe UnsafeRawPointer(ptr1) - UnsafeRawPointer(ptr0)
             #expect(diff == stride)
 
@@ -258,7 +258,7 @@ struct StorageInlineEdgeCaseTests {
                     storage.initialize(to: round * 8 + Int(i.rawValue.rawValue), at: i)
                 }
 
-                #expect(storage.initializedCount == 8)
+                #expect(storage.initialization.count == 8)
 
                 // Move all
                 for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -294,7 +294,7 @@ struct StorageInlineEdgeCaseTests {
                         storage.initialize(to: Tracker(), at: i)
                     }
 
-                    #expect(storage.initializedCount == 4)
+                    #expect(storage.initialization.count == 4)
                     // Storage goes out of scope, deinit cleans up
                 }
             }
@@ -330,7 +330,7 @@ struct StorageInlineEdgeCaseTests {
                 // Single element at last slot
                 storage.initialize(to: Tracker(7), at: 7)
 
-                #expect(storage.initializedCount == 2)
+                #expect(storage.initialization.count == 2)
             }
 
             unsafe #expect(Tracker.deinitOrder.count == 2)
@@ -348,7 +348,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialize(to: 4, at: 4)
             storage.initialize(to: 6, at: 6)
 
-            #expect(storage.initializedCount == 4)
+            #expect(storage.initialization.count == 4)
 
             // Move and verify
             #expect(storage.move(at: 0) == 0)
@@ -381,7 +381,7 @@ struct StorageInlineEdgeCaseTests {
                 storage.initialize(to: Tracker(), at: 6)
 
                 unsafe #expect(Tracker.count == 6)
-                #expect(storage.initializedCount == 6)
+                #expect(storage.initialization.count == 6)
             }
 
             unsafe #expect(Tracker.count == 0)
@@ -405,7 +405,7 @@ struct StorageInlineEdgeCaseTests {
                 inline.initialize(to: Int(i.rawValue.rawValue) * 11, at: i)
             }
 
-            #expect(inline.initializedCount == 8)
+            #expect(inline.initialization.count == 8)
 
             let range: Swift.Range<Index<Int>> = 0..<8
             inline.move(range: range, to: heap)
@@ -426,7 +426,7 @@ struct StorageInlineEdgeCaseTests {
             let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             inline.initialize(to: 999, at: 7)
-            #expect(inline.initializedCount == 1)
+            #expect(inline.initialization.count == 1)
 
             let range: Swift.Range<Index<Int>> = 7..<8
             inline.move(range: range, to: heap)
@@ -466,7 +466,7 @@ struct StorageInlineEdgeCaseTests {
             unsafe #expect(Tracker.instances == 2, "Copy shares objects, doesn't clone")
 
             // Source still valid after copy (wasn't moved)
-            #expect(inline.initializedCount == 2)
+            #expect(inline.initialization.count == 2)
 
             // Move from inline
             let inlineRef0 = inline.move(at: 0)
@@ -513,7 +513,7 @@ struct StorageInlineEdgeCaseTests {
             var pointers: [UnsafeRawPointer] = unsafe []
             slot = 0
             for _ in 0..<16 {
-                let ptr: UnsafeMutablePointer<Int64> = unsafe storage.pointer(at: slot)
+                let ptr = unsafe storage.pointer(at: slot)
                 unsafe pointers.append(UnsafeRawPointer(ptr))
                 slot = slot.successor.saturating()
             }
@@ -548,7 +548,7 @@ struct StorageInlineEdgeCaseTests {
             }
 
             // Modify slot 4 via pointer
-            let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 4)
+            let ptr = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: 4))
             unsafe ptr.pointee = 42
 
             // Verify only slot 4 changed
@@ -742,7 +742,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialize(to: 1, at: 0)
             storage.initialize(to: 2, at: 1)
 
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
 
             storage.deinitialize(at: 0)
             storage.deinitialize(at: 1)
@@ -753,7 +753,7 @@ struct StorageInlineEdgeCaseTests {
             storage.initialize(to: 10, at: 0)
             storage.initialize(to: 20, at: 1)
 
-            #expect(storage.initializedCount == 2)
+            #expect(storage.initialization.count == 2)
 
             #expect(storage.move(at: 0) == 10)
             #expect(storage.move(at: 1) == 20)
@@ -790,7 +790,7 @@ struct StorageInlineEdgeCaseTests {
                 slot = slot.successor.saturating()
             }
 
-            #expect(storage.initializedCount == 256)
+            #expect(storage.initialization.count == 256)
 
             // Verify pattern
             slot = 0
@@ -824,7 +824,7 @@ struct StorageInlineEdgeCaseTests {
                 slot = slot.successor.saturating()
             }
 
-            #expect(storage.initializedCount == 32)
+            #expect(storage.initialization.count == 32)
 
             slot = 0
             for i in 0..<32 {

@@ -9,9 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage {
+extension Storage where Element: ~Copyable {
     /// Tag type for `initialize` property accessor.
-    ///
-    /// Used with `Property.View` to enable `.initialize.next(to:)` syntax.
-    public enum Initialize {}
+    public typealias Initialize = Storage.Initialization
 }

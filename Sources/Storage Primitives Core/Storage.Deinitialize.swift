@@ -9,9 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage {
+extension Storage where Element: ~Copyable {
     /// Tag type for `deinitialize` property accessor.
-    ///
-    /// Used with `Property.View` to enable `.deinitialize.all()` syntax.
     public enum Deinitialize {}
 }

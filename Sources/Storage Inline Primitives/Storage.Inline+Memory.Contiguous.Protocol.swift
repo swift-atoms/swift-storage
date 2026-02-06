@@ -28,11 +28,10 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` {
     public var span: Span<Element> {
         @_lifetime(borrow self)
         borrowing get {
-            let count = initializedCount
-            let ptr = unsafe withUnsafePointer(to: _storage) { base in
-                unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
-            }
-            let span = unsafe Span(_unsafeStart: ptr, count: count)
+            let span = unsafe Span(
+                _unsafeStart: pointer(at: .zero),
+                count: initialization.count
+            )
             return unsafe _overrideLifetime(span, borrowing: self)
         }
     }
@@ -51,12 +50,10 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = initializedCount
-        return try unsafe withUnsafePointer(to: _storage) { base throws(E) in
-            let ptr = unsafe UnsafeRawPointer(base).assumingMemoryBound(to: Element.self)
-            let buffer = unsafe UnsafeBufferPointer(start: ptr, count: count)
-            return try unsafe body(buffer)
-        }
+        return try unsafe body(UnsafeBufferPointer(
+            start: pointer(at: .zero),
+            count: initialization.count
+        ))
     }
 }
 
@@ -75,11 +72,10 @@ extension Storage.Inline where Element: Copyable {
     public var mutableSpan: MutableSpan<Element> {
         @_lifetime(&self)
         mutating get {
-            let count = initializedCount
-            let ptr = unsafe withUnsafeMutablePointer(to: &_storage) { base in
-                unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
-            }
-            let span = unsafe MutableSpan(_unsafeStart: ptr, count: count)
+            let span = unsafe MutableSpan(
+                _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: .zero)),
+                count: initialization.count
+            )
             return unsafe _overrideLifetime(span, mutating: &self)
         }
     }
@@ -98,11 +94,9 @@ extension Storage.Inline where Element: Copyable {
     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = initializedCount
-        return try unsafe withUnsafeMutablePointer(to: &_storage) { base throws(E) in
-            let ptr = unsafe UnsafeMutableRawPointer(base).assumingMemoryBound(to: Element.self)
-            let buffer = unsafe UnsafeMutableBufferPointer(start: ptr, count: count)
-            return try unsafe body(buffer)
-        }
+        return try unsafe body(UnsafeMutableBufferPointer(
+            start: UnsafeMutablePointer(mutating: pointer(at: .zero)),
+            count: initialization.count
+        ))
     }
 }

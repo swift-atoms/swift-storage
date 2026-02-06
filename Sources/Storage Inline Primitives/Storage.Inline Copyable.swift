@@ -11,7 +11,7 @@
 
 public import Storage_Primitives_Core
 
-// MARK: - Copyable Extensions for Inline Storage
+// MARK: - Copy
 
 extension Storage.Inline where Element: Copyable {
     /// Copies elements in range to linear positions in destination heap storage.
@@ -30,11 +30,25 @@ extension Storage.Inline where Element: Copyable {
         to destination: Storage.Heap
     ) {
         guard !range.isEmpty else { return }
-        let count = Int(range.count.rawValue.rawValue)
-        let srcPtr = unsafe pointer(at: range.lowerBound)
-        unsafe destination.withUnsafeMutablePointerToElements { dst in
-            unsafe dst.initialize(from: srcPtr, count: count)
-        }
+        unsafe destination.pointer(at: .zero)
+            .initialize(from: pointer(at: range.lowerBound), count: range.count)
+    }
+
+    /// Copies all initialized elements to destination heap storage.
+    ///
+    /// Elements are copied to linear positions starting at slot 0 in the destination.
+    /// Under linear discipline, this copies the range `0..<count`.
+    ///
+    /// - Parameter destination: The destination heap storage.
+    /// - Precondition: Destination must have sufficient capacity.
+    /// - Precondition: Storage must be using linear discipline (contiguous from zero).
+    /// - Note: Caller must update destination's initialization state.
+    @inlinable
+    public func copy(to destination: Storage.Heap) {
+        let count = initialization.count
+        guard count > .zero else { return }
+        let range: Swift.Range<Index<Element>> = .zero ..< count.map(Ordinal.init)
+        copy(range: range, to: destination)
     }
 }
 
@@ -59,14 +73,10 @@ extension Storage.Inline where Element: Copyable {
         _ range: Swift.Range<Index<Element>>,
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        try unsafe withUnsafePointer(to: _storage) { base throws(E) in
-            let raw = unsafe UnsafeRawPointer(base)
-            let startOffset = Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride
-            let ptr = unsafe raw.advanced(by: startOffset).assumingMemoryBound(to: Element.self)
-            let count = Int(bitPattern: range.count)
-            let span = unsafe Span(_unsafeStart: ptr, count: count)
-            return try body(span)
-        }
+        return try body(unsafe Span(
+            _unsafeStart: pointer(at: range.lowerBound),
+            count: Int(bitPattern: range.count)
+        ))
     }
 
     /// Provides mutable access to elements in the specified slot range.
@@ -87,13 +97,10 @@ extension Storage.Inline where Element: Copyable {
         _ range: Swift.Range<Index<Element>>,
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
-        try unsafe withUnsafeMutablePointer(to: &_storage) { base throws(E) in
-            let raw = UnsafeMutableRawPointer(base)
-            let startOffset = Int(range.lowerBound.rawValue.rawValue) * MemoryLayout<Element>.stride
-            let ptr = unsafe raw.advanced(by: startOffset).assumingMemoryBound(to: Element.self)
-            let count = Int(bitPattern: range.count)
-            var span = unsafe MutableSpan(_unsafeStart: ptr, count: count)
-            return try body(&span)
-        }
+        var span = unsafe MutableSpan(
+            _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: range.lowerBound)),
+            count: Int(bitPattern: range.count)
+        )
+        return try body(&span)
     }
 }

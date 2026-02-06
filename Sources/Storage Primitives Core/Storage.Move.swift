@@ -9,9 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Storage {
+extension Storage where Element: ~Copyable {
     /// Tag type for `move` property accessor.
-    ///
-    /// Used with `Property.View` to enable `.move.last()` syntax.
     public enum Move {}
 }

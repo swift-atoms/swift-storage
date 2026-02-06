@@ -17,6 +17,7 @@
 | discard-self-availability | Test `discard self` availability for consuming cleanup methods | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
 | deinit-guard-idempotence | Test reference-type guard for idempotent cleanup from non-mutating | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
 | bitvector-slot-tracking | Test Bit.Vector.Static for per-slot initialization tracking | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
+| nonmutating-copy-accessor | Non-mutating Property accessor for copy on ~Copyable types | 2026-02-06 | Swift 6.2 | CONFIRMED |
 
 ## Summary
 
