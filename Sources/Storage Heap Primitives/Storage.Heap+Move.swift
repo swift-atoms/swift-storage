@@ -61,13 +61,8 @@ extension Property {
         to destination: Storage<Element>.Heap
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
         guard !range.isEmpty else { return }
-        var srcSlot = range.lowerBound
-        var dstSlot: Index<Element> = .zero
-        while srcSlot < range.upperBound {
-            destination.initialize(to: base.move(at: srcSlot), at: dstSlot)
-            srcSlot = srcSlot.successor.saturating()
-            dstSlot = dstSlot.successor.saturating()
-        }
+        unsafe destination.pointer(at: .zero)
+            .move.initialize(from: base.pointer(at: range.lowerBound), count: range.count)
     }
     
     /// Moves and returns the last initialized element.

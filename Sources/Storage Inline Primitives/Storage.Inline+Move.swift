@@ -57,14 +57,11 @@ extension Property.View where Base: ~Copyable {
         to destination: Storage<Element>.Heap
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
         guard !range.isEmpty else { return }
-        var srcSlot = range.lowerBound
-        var dstSlot: Index<Element> = .zero
-        while srcSlot < range.upperBound {
-            unsafe destination.pointer(at: dstSlot)
-                .initialize(to: UnsafeMutablePointer(mutating: base.pointee.pointer(at: srcSlot)).move())
-            srcSlot = srcSlot.successor.saturating()
-            dstSlot = dstSlot.successor.saturating()
-        }
+        unsafe destination.pointer(at: .zero)
+            .move.initialize(
+                from: UnsafeMutablePointer(mutating: base.pointee.pointer(at: range.lowerBound)),
+                count: range.count
+            )
         unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
     }
     
