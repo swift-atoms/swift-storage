@@ -12,9 +12,9 @@
 public import Storage_Primitives_Core
 public import Memory_Primitives_Core
 
-// MARK: - Memory.Contiguous.Protocol Conformance
+// MARK: - Span / MutableSpan (~Copyable)
 
-extension Storage.Inline: Memory.Contiguous.`Protocol` {
+extension Storage.Inline where Element: ~Copyable {
     /// Safe, bounds-checked read access to contiguous storage.
     ///
     /// Returns a `Span` over elements `0..<count` where count is derived from
@@ -36,6 +36,29 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` {
         }
     }
 
+    /// Safe, bounds-checked write access to contiguous storage.
+    ///
+    /// Returns a `MutableSpan` that exclusively borrows `self`, preventing
+    /// concurrent access.
+    ///
+    /// - Precondition: Storage must be linearly initialized.
+    /// - Complexity: O(1)
+    @inlinable
+    public var mutableSpan: MutableSpan<Element> {
+        @_lifetime(&self)
+        mutating get {
+            let span = unsafe MutableSpan(
+                _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: .zero)),
+                count: initialization.count
+            )
+            return unsafe _overrideLifetime(span, mutating: &self)
+        }
+    }
+}
+
+// MARK: - Memory.Contiguous.Protocol Conformance
+
+extension Storage.Inline: Memory.Contiguous.`Protocol` {
     /// Unsafe read access for C interop with unannotated APIs.
     ///
     /// Provides raw pointer access to initialized elements for C functions
@@ -57,29 +80,9 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` {
     }
 }
 
-// MARK: - Type-Specific Mutable Access
+// MARK: - Unsafe Mutable Access (Copyable)
 
 extension Storage.Inline where Element: Copyable {
-    /// Safe, bounds-checked write access to contiguous storage.
-    ///
-    /// Returns a `MutableSpan` that exclusively borrows `self`, preventing
-    /// concurrent access. Structs can provide this as a property since they
-    /// support `mutating get`.
-    ///
-    /// - Precondition: Storage must be linearly initialized.
-    /// - Complexity: O(1)
-    @inlinable
-    public var mutableSpan: MutableSpan<Element> {
-        @_lifetime(&self)
-        mutating get {
-            let span = unsafe MutableSpan(
-                _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: .zero)),
-                count: initialization.count
-            )
-            return unsafe _overrideLifetime(span, mutating: &self)
-        }
-    }
-
     /// Unsafe write access for C interop with unannotated APIs.
     ///
     /// Provides mutable raw pointer access for C functions that lack

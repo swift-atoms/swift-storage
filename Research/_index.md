@@ -17,6 +17,8 @@ Research documents backing the storage-primitives implementation.
 | [inline-storage-read-pointer-escape](inline-storage-read-pointer-escape.md) | Closure-based pointer access pattern | DECISION |
 | [ring-buffer-index-arithmetic](ring-buffer-index-arithmetic.md) | Cyclic index arithmetic (ℤ/Nℤ for Bounded, % for dynamic) | DECISION |
 | [Collection Primitives Architecture](Collection%20Primitives%20Architecture.md) | Nested Storage classes, ~Copyable patterns | DECISION |
+| [split-storage-design](split-storage-design.md) | Tier 2: Field-handle-based dual-lane metadata-driven storage | RECOMMENDATION |
+| [split-storage-naming](split-storage-naming.md) | Tier 2: Literature study on naming for dual-lane storage type | RECOMMENDATION |
 
 ## Key Architectural Decisions
 
@@ -28,14 +30,15 @@ Research documents backing the storage-primitives implementation.
 
 This enables Span access for Copyable elements and eliminates the slot/element distinction.
 
-### Two Storage Primitives
+### Storage Primitives
 
-| Type | Placement | Lifetime | Layout |
-|------|-----------|----------|--------|
-| `Storage.Heap` | Heap | ARC | Dense (element stride) |
-| `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) |
+| Type | Placement | Lifetime | Layout | Init Tracking |
+|------|-----------|----------|--------|---------------|
+| `Storage.Heap` | Heap | ARC | Dense (element stride) | `Storage.Initialization` |
+| `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) | `Bit.Vector.Static` |
+| `Storage.Split<Lane>` (proposed) | Heap | ARC | Dual-lane `[Lane...][Element...]` | None (metadata-driven) |
 
-Both support `~Copyable` elements. Both conform to `Memory.Contiguous.Protocol` for Copyable elements.
+`Heap` and `Inline` support `~Copyable` elements and conform to `Memory.Contiguous.Protocol` for Copyable elements. `Split` (see `split-storage-design.md` v3.0.0) is proposed for metadata-driven dual-array structures like hash table metadata+payload. Access is via field handles (`Storage.Field<Value>`); design converged via Claude-ChatGPT collaborative review.
 
 ## Status Legend
 

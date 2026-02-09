@@ -11,7 +11,7 @@
 
 public import Storage_Primitives_Core
 public import Bit_Vector_Primitives
-internal import Range_Primitives
+internal import Vector_Primitives
 
 // MARK: - Properties
 

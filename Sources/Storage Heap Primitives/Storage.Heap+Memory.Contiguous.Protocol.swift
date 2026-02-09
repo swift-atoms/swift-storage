@@ -10,9 +10,9 @@
 // ===----------------------------------------------------------------------===//
 
 
-// MARK: - Memory.Contiguous.Protocol Conformance
+// MARK: - Span (~Copyable)
 
-extension Storage.Heap: Memory.Contiguous.`Protocol` {
+extension Storage.Heap where Element: ~Copyable {
     /// Safe, bounds-checked read access to contiguous storage.
     ///
     /// Returns a `Span` over elements `0..<count` where count is derived from
@@ -33,7 +33,11 @@ extension Storage.Heap: Memory.Contiguous.`Protocol` {
             return unsafe _overrideLifetime(span, borrowing: self)
         }
     }
+}
 
+// MARK: - Memory.Contiguous.Protocol Conformance
+
+extension Storage.Heap: Memory.Contiguous.`Protocol` {
     /// Unsafe read access for C interop with unannotated APIs.
     ///
     /// Provides raw pointer access to initialized elements for C functions

@@ -29,6 +29,10 @@ let package = Package(
             targets: ["Storage Inline Primitives"]
         ),
         .library(
+            name: "Storage Split Primitives",
+            targets: ["Storage Split Primitives"]
+        ),
+        .library(
             name: "Storage Primitives Test Support",
             targets: ["Storage Primitives Test Support"]
         ),
@@ -37,7 +41,7 @@ let package = Package(
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-memory-primitives"),
         .package(path: "../swift-property-primitives"),
-        .package(path: "../swift-range-primitives"),
+        .package(path: "../swift-vector-primitives"),
         .package(path: "../swift-standard-library-extensions"),
         .package(path: "../swift-bit-vector-primitives"),
     ],
@@ -66,7 +70,16 @@ let package = Package(
             dependencies: [
                 "Storage Primitives Core",
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
+                .product(name: "Vector Primitives", package: "swift-vector-primitives"),
+            ]
+        ),
+        // Split: Metadata-driven dual-lane storage
+        .target(
+            name: "Storage Split Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
             ]
         ),
         // Public: Re-exports all modules
@@ -76,6 +89,7 @@ let package = Package(
                 "Storage Primitives Core",
                 "Storage Heap Primitives",
                 "Storage Inline Primitives",
+                "Storage Split Primitives",
             ]
         ),
         .target(
@@ -105,6 +119,13 @@ let package = Package(
             dependencies: [
                 .target(name: "Storage Primitives Core"),
                 .target(name: "Storage Inline Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
+            name: "Storage Split Primitives Tests",
+            dependencies: [
+                .target(name: "Storage Split Primitives"),
                 .target(name: "Storage Primitives Test Support")
             ]
         ),
