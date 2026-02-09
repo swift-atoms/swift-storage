@@ -60,24 +60,3 @@ extension Storage.Inline where Element: ~Copyable {
     }
 }
 
-//// MARK: - Mutable Slot Access
-//
-//extension Storage.Inline where Element: ~Copyable {
-//    /// Returns a mutable pointer to the element at the given physical slot.
-//    ///
-//    /// Delegates to the immutable `pointer(at:)` primitive (defined in Core)
-//    /// and casts to mutable. Safe because `mutating` guarantees exclusive access.
-//    ///
-//    /// - Parameter slot: The physical slot coordinate.
-//    /// - Returns: A mutable pointer to the element.
-//    /// - Precondition: The element at `slot` must be initialized.
-//    @unsafe
-//    @_disfavoredOverload
-//    @_lifetime(&self)
-//    @inlinable
-//    public mutating func pointer(
-//        at slot: Index<Element>
-//    ) -> UnsafeMutablePointer<Element> {
-//        unsafe UnsafeMutablePointer(mutating: pointer(at: slot))
-//    }
-//}

@@ -17,8 +17,7 @@ extension Storage.Split where Element: ~Copyable {
     /// Computes the byte offset where the element region begins.
     @inlinable
     static func _elementRegionOffset(capacity: Index<Element>.Count) -> Memory.Address.Count {
-        let laneStride: Affine.Discrete.Ratio<Lane, Memory> = .init(MemoryLayout<Lane>.stride)
-        let laneBytes: Memory.Address.Count = capacity.retag(Lane.self) * laneStride
+        let laneBytes: Memory.Address.Count = capacity.retag(Lane.self) * .stride
         let elementAlignment = try! Memory.Alignment(max(MemoryLayout<Element>.alignment, 1))
         return elementAlignment.align.up(laneBytes)
     }
@@ -26,8 +25,7 @@ extension Storage.Split where Element: ~Copyable {
     /// Total bytes needed for the raw elements region of the ManagedBuffer.
     @inlinable
     static func _totalBytes(capacity: Index<Element>.Count) -> Memory.Address.Count {
-        let elementStride: Affine.Discrete.Ratio<Element, Memory> = .init(MemoryLayout<Element>.stride)
-        return _elementRegionOffset(capacity: capacity) + capacity * elementStride
+        return _elementRegionOffset(capacity: capacity) + capacity * .stride
     }
 }
 
@@ -76,7 +74,7 @@ extension Storage.Split where Element: ~Copyable {
     public var laneField: Storage.Field<Lane> {
         Storage.Field<Lane>(
             _offset: .zero,
-            _stride: Affine.Discrete.Ratio<Lane, Memory>(MemoryLayout<Lane>.stride)
+            _stride: .stride
         )
     }
 
@@ -90,7 +88,7 @@ extension Storage.Split where Element: ~Copyable {
     public var elementField: Storage.Field<Element> {
         Storage.Field<Element>(
             _offset: Memory.Address.Offset(Storage.Split<Lane>._elementRegionOffset(capacity: header.capacity)),
-            _stride: Affine.Discrete.Ratio<Element, Memory>(MemoryLayout<Element>.stride)
+            _stride: .stride
         )
     }
 }

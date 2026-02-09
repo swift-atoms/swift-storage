@@ -58,6 +58,6 @@ extension Property {
     public func callAsFunction<Element: ~Copyable>(
         at slot: Index<Element>
     ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
-        unsafe base.pointer(at: slot).deinitialize(count: 1)
+        unsafe base.pointer(at: slot).deinitialize(count: .one)
     }
 }

@@ -205,7 +205,7 @@ public enum Storage<Element: ~Copyable> {
         deinit {
             _slots.ones.forEach { bitIndex in
                 unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
-                    .deinitialize(count: 1)
+                    .deinitialize(count: .one)
             }
         }
     }
@@ -263,7 +263,8 @@ extension Storage.Inline where Element: ~Copyable {
     public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
             let raw = unsafe UnsafeRawPointer(base)
-            return unsafe raw.advanced(by: Int(bitPattern: slot) * MemoryLayout<Element>.stride)
+            let byteOffset = Index<Element>.Offset(fromZero: slot) * .stride
+            return unsafe raw.advanced(by: Int(bitPattern: byteOffset))
                 .assumingMemoryBound(to: Element.self)
         }
     }

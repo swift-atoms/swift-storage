@@ -50,7 +50,7 @@ extension Property.View where Base: ~Copyable {
         Element: ~Copyable,
         let capacity: Int
     >(at slot: Index<Element>) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe UnsafeMutablePointer(mutating: base.pointee.pointer(at: slot)).deinitialize(count: 1)
+        unsafe UnsafeMutablePointer(mutating: base.pointee.pointer(at: slot)).deinitialize(count: .one)
         unsafe base.pointee._slots[slot.retag()] = false
     }
     
@@ -91,7 +91,7 @@ extension Property.View where Base: ~Copyable {
         unsafe base.pointee._slots.ones.forEach { bitIndex in
             unsafe UnsafeMutablePointer(
                 mutating: base.pointee.pointer(at: bitIndex.retag(Element.self))
-            ).deinitialize(count: 1)
+            ).deinitialize(count: .one)
         }
         unsafe base.pointee._slots.clear.all()
     }
