@@ -14,7 +14,7 @@ public import Property_Primitives
 
 // MARK: - Initialize Accessor
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Accessor for initialize operations on split storage.
     ///
     /// ```swift
@@ -35,7 +35,7 @@ extension Property {
     ///   - slot: The physical slot to initialize.
     /// - Precondition: The slot must be uninitialized.
     @inlinable
-    public func callAsFunction<Element: ~Copyable, Lane: ~Copyable, Value: ~Copyable>(
+    public func callAsFunction<Element: ~Copyable, Lane: BitwiseCopyable, Value: ~Copyable>(
         _ field: Storage<Element>.Field<Value>,
         to value: consuming Value,
         at slot: Index<Element>

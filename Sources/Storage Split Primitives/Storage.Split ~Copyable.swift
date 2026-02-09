@@ -13,7 +13,7 @@ public import Storage_Primitives_Core
 
 // MARK: - Layout Computation
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Computes the byte offset where the element region begins.
     @inlinable
     static func _elementRegionOffset(capacity: Index<Element>.Count) -> Memory.Address.Count {
@@ -33,7 +33,7 @@ extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
 
 // MARK: - Factory
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Creates split storage with the given capacity.
     ///
     /// Both lanes are uninitialized. The consumer must initialize slots
@@ -58,7 +58,7 @@ extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
 
 // MARK: - Properties
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Storage capacity in slot count.
     @inlinable
     public var slotCapacity: Index<Element>.Count {
@@ -68,7 +68,7 @@ extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
 
 // MARK: - Field Handles
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// The field handle for the lane (secondary/metadata) array.
     ///
     /// The lane array starts at byte 0 of the elements region.
@@ -97,7 +97,7 @@ extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
 
 // MARK: - Core Access Primitive
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Returns a mutable pointer to the value at the given slot in the given field.
     ///
     /// This is the core access primitive. ALL other access methods delegate to this.

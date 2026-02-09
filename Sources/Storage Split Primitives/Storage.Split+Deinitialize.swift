@@ -14,7 +14,7 @@ public import Property_Primitives
 
 // MARK: - Deinitialize Accessor
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Accessor for deinitialize operations on split storage.
     ///
     /// ```swift
@@ -34,7 +34,7 @@ extension Property {
     ///   - slot: The physical slot to deinitialize.
     /// - Precondition: The slot must contain an initialized value.
     @inlinable
-    public func callAsFunction<Element: ~Copyable, Lane: ~Copyable, Value: ~Copyable>(
+    public func callAsFunction<Element: ~Copyable, Lane: BitwiseCopyable, Value: ~Copyable>(
         _ field: Storage<Element>.Field<Value>,
         at slot: Index<Element>
     ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Split<Lane> {

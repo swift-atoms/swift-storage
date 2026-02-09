@@ -14,7 +14,7 @@ public import Property_Primitives
 
 // MARK: - Move Accessor
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Accessor for move operations on split storage.
     ///
     /// ```swift
@@ -35,7 +35,7 @@ extension Property {
     /// - Returns: The moved value.
     /// - Precondition: The slot must contain an initialized value.
     @inlinable
-    public func callAsFunction<Element: ~Copyable, Lane: ~Copyable, Value: ~Copyable>(
+    public func callAsFunction<Element: ~Copyable, Lane: BitwiseCopyable, Value: ~Copyable>(
         _ field: Storage<Element>.Field<Value>,
         at slot: Index<Element>
     ) -> Value where Tag == Storage<Element>.Move, Base == Storage<Element>.Split<Lane> {

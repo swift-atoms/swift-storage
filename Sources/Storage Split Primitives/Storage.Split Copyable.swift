@@ -47,7 +47,7 @@ extension Storage.Split where Element: ~Copyable, Lane: Copyable {
 
 // MARK: - Copyable Field Subscript
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Subscript access for Copyable field values.
     ///
     /// This is a field-qualified access, not a collection subscript.
@@ -73,7 +73,7 @@ extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
 
 // MARK: - Copyable Bulk Operations
 
-extension Storage.Split where Element: ~Copyable, Lane: ~Copyable {
+extension Storage.Split where Element: ~Copyable {
     /// Fills all slots of the given field with the given value.
     ///
     /// Requires the field's value type to be Copyable.

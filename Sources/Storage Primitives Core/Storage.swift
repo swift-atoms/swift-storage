@@ -14,14 +14,18 @@ public import Bit_Vector_Primitives
 
 /// Namespace for storage primitives.
 ///
-/// `Storage` provides heap and inline storage building blocks:
-/// - ``Storage/Heap``: Heap-allocated storage via ManagedBuffer
-/// - ``Storage/Inline``: Fixed-capacity inline storage
+/// `Storage` provides three storage disciplines with different lifecycle contracts:
+///
+/// | Need | Choose | Lifecycle |
+/// |------|--------|-----------|
+/// | Automatic cleanup, contiguous elements | ``Storage/Heap`` | **Tracked** — range-based initialization tracking with automatic cleanup in `deinit` |
+/// | Stack-allocated, fixed capacity ≤256 | ``Storage/Inline`` | **Auto-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
+/// | Dual-array with consumer-defined metadata | ``Storage/Split`` | **Metadata-driven** — no tracking; consumer interprets lane metadata to determine element validity |
 ///
 /// And physical coordinate types for slot-based access:
 /// - `Index<Element>`: Physical slot position (typed by element)
 /// - `Swift.Range<Index<Element>>`: Contiguous slot range
-/// - ``Storage/Initialization``: Which slots are initialized
+/// - ``Storage/Initialization``: Which slots are initialized (Heap and Inline only)
 public enum Storage<Element: ~Copyable> {
     
     /// Describes which physical slots are initialized.
