@@ -38,6 +38,35 @@ extension Storage.Inline where Element: ~Copyable {
 // MARK: - Move Methods
 
 extension Property.View where Base: ~Copyable {
+    /// Moves elements from a range to the destination heap storage starting at offset.
+    ///
+    /// Elements from the source range are placed at slots offset..<(offset + range.count)
+    /// in the destination storage. Source slots are deinitialized after moving.
+    ///
+    /// - Parameters:
+    ///   - range: The contiguous range of slots to move from.
+    ///   - destination: The destination heap storage.
+    ///   - offset: The destination slot to start writing at.
+    /// - Precondition: All slots in the range must contain initialized elements.
+    /// - Precondition: Destination slots offset..<(offset + range.count) must be uninitialized.
+    /// - Note: Automatically clears slot tracking bits for moved slots.
+    /// - Note: Caller must update destination's initialization state.
+    @inlinable
+    @_lifetime(&self)
+    public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
+        range: Swift.Range<Index<Element>>,
+        to destination: Storage<Element>.Heap,
+        at offset: Index<Element>
+    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
+        guard !range.isEmpty else { return }
+        unsafe destination.pointer(at: offset)
+            .move.initialize(
+                from: UnsafeMutablePointer(mutating: base.pointee.pointer(at: range.lowerBound)),
+                count: range.count
+            )
+        unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
+    }
+
     /// Moves elements in range to linear positions in destination heap storage.
     ///
     /// Elements from the source range are placed at slots 0..<range.count in the
@@ -56,13 +85,7 @@ extension Property.View where Base: ~Copyable {
         range: Swift.Range<Index<Element>>,
         to destination: Storage<Element>.Heap
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
-        guard !range.isEmpty else { return }
-        unsafe destination.pointer(at: .zero)
-            .move.initialize(
-                from: UnsafeMutablePointer(mutating: base.pointee.pointer(at: range.lowerBound)),
-                count: range.count
-            )
-        unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
+        self(range: range, to: destination, at: .zero)
     }
     
     

@@ -52,6 +52,7 @@ let package = Package(
         .package(path: "../swift-vector-primitives"),
         .package(path: "../swift-standard-library-extensions"),
         .package(path: "../swift-bit-vector-primitives"),
+        .package(path: "../swift-finite-primitives"),
     ],
     targets: [
         // Core: Type declarations and fundamental access
@@ -61,6 +62,7 @@ let package = Package(
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
                 .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
         // Heap: Bulk operations on heap storage
@@ -88,6 +90,7 @@ let package = Package(
                 "Storage Primitives Core",
                 .product(name: "Memory Pool Primitives", package: "swift-memory-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
         // Arena: Bump-allocated typed storage with bulk reset
@@ -98,6 +101,7 @@ let package = Package(
                 .product(name: "Memory Arena Primitives", package: "swift-memory-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
         // Split: Metadata-driven dual-lane storage

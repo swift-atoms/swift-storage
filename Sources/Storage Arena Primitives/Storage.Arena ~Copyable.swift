@@ -13,41 +13,6 @@ public import Storage_Primitives_Core
 public import Bit_Vector_Primitives
 internal import Property_Primitives
 
-// MARK: - Pointer Primitive
-
-extension Storage.Arena where Element: ~Copyable {
-    /// Returns a mutable pointer to the element at the given slot index.
-    ///
-    /// - Parameter slot: A slot index. Must be < capacity.
-    /// - Returns: Mutable pointer to the element's memory.
-    /// - Precondition: `slot` is within bounds.
-    @unsafe
-    @inlinable
-    public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        precondition(slot < _capacity, "Slot index out of bounds")
-        return unsafe _arena.baseAddress
-            .advanced(by: Int(bitPattern: slot) * _stride)
-            .assumingMemoryBound(to: Element.self)
-    }
-
-    /// Returns an immutable pointer to the element at the given slot index.
-    ///
-    /// - Parameter slot: A slot index. Must be < capacity.
-    /// - Returns: Immutable pointer to the element's memory.
-    /// - Precondition: `slot` is within bounds.
-    @unsafe
-    @inlinable
-    @_disfavoredOverload
-    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
-        precondition(slot < _capacity, "Slot index out of bounds")
-        return unsafe UnsafePointer(
-            _arena.baseAddress
-                .advanced(by: Int(bitPattern: slot) * _stride)
-                .assumingMemoryBound(to: Element.self)
-        )
-    }
-}
-
 // MARK: - Properties
 
 extension Storage.Arena where Element: ~Copyable {

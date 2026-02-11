@@ -44,6 +44,30 @@ extension Property {
         return unsafe base.pointer(at: slot).move()
     }
     
+    /// Moves elements from a range to the destination storage starting at offset.
+    ///
+    /// Elements are moved from the source range and placed at slots
+    /// offset..<(offset + range.count) in the destination storage.
+    /// Source slots are deinitialized after moving.
+    ///
+    /// - Parameters:
+    ///   - range: The contiguous range of slots to move from.
+    ///   - destination: The destination storage to move elements into.
+    ///   - offset: The destination slot to start writing at.
+    /// - Precondition: All slots in the range must contain initialized elements.
+    /// - Precondition: Destination slots offset..<(offset + range.count) must be uninitialized.
+    /// - Note: The caller is responsible for updating `initialization` state on both storages.
+    @inlinable
+    public func callAsFunction<Element: ~Copyable>(
+        range: Swift.Range<Index<Element>>,
+        to destination: Storage<Element>.Heap,
+        at offset: Index<Element>
+    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
+        guard !range.isEmpty else { return }
+        unsafe destination.pointer(at: offset)
+            .move.initialize(from: base.pointer(at: range.lowerBound), count: range.count)
+    }
+
     /// Moves elements from a range to linear positions in the destination storage.
     ///
     /// Elements are moved from the source range and placed at slots 0..<range.count
@@ -60,9 +84,7 @@ extension Property {
         range: Swift.Range<Index<Element>>,
         to destination: Storage<Element>.Heap
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
-        guard !range.isEmpty else { return }
-        unsafe destination.pointer(at: .zero)
-            .move.initialize(from: base.pointer(at: range.lowerBound), count: range.count)
+        self(range: range, to: destination, at: .zero)
     }
     
     /// Moves and returns the last initialized element.

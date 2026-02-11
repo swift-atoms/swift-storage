@@ -11,3 +11,4 @@
 
 @_exported public import Storage_Primitives_Core
 @_exported public import Memory_Pool_Primitives
+@_exported public import Finite_Primitives

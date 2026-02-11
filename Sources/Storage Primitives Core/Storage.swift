@@ -11,6 +11,7 @@
 
 import Index_Primitives
 public import Bit_Vector_Primitives
+public import Finite_Primitives
 
 /// Namespace for storage primitives.
 ///
@@ -279,6 +280,71 @@ public enum Storage<Element: ~Copyable> {
             /// The slot has already been deallocated (double free).
             case doubleFree
         }
+
+        // MARK: - Inline Pool
+
+        /// Static-capacity inline pool with bitmap-scanned per-slot reuse.
+        ///
+        /// `Storage<Element>.Pool.Inline<N>` is a stack-backed pool allocator for typed elements.
+        /// It provides:
+        /// - O(capacity) allocation via bitmap scanning (no in-band free list)
+        /// - O(1) deallocation via bit flip
+        /// - Per-slot reuse (bitmap-tracked)
+        /// - Automatic element deinit in `deinit` (via bitmap iteration)
+        /// - `Index<Element>.Bounded<N>` for precondition-free pointer access
+        ///
+        /// ## Design
+        ///
+        /// Uses bitmap scanning instead of in-band free list links:
+        /// - Single source of truth (no inconsistent secondary structure)
+        /// - No `Element` stride constraint (works with `UInt8`)
+        /// - Acceptable performance for N ≤ 256 (at most 4 words to scan)
+        ///
+        /// ## Invariants
+        ///
+        /// - `capacity` is a compile-time constant in range `0...256`
+        /// - `_slots` bit `i` is set iff slot `i` contains an allocated element
+        /// - `_allocated == _slots.popcount` (cached for O(1) access)
+        ///
+        /// ## Usage
+        ///
+        /// ```swift
+        /// var pool = Storage<Node>.Pool.Inline<16>()
+        /// let slot = try pool.allocate()
+        /// pool.pointer(at: slot).initialize(to: node)
+        /// // ... use ...
+        /// _ = pool.pointer(at: slot).move()
+        /// try pool.deallocate(at: slot)
+        /// ```
+        public struct Inline<let capacity: Int>: ~Copyable {
+            @_rawLayout(likeArrayOf: Element, count: capacity)
+            @usableFromInline
+            package struct _Raw: ~Copyable {
+                @usableFromInline init() {}
+            }
+
+            @usableFromInline package var _storage: _Raw
+            @usableFromInline package var _slots: Bit.Vector.Static<4>
+            @usableFromInline package var _allocated: Index<Element>.Count
+            // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
+            // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
+            var _deinitWorkaround: AnyObject? = nil
+
+            /// Creates an empty inline pool with all slots unallocated.
+            @inlinable
+            public init() {
+                precondition(capacity <= 256, "Storage.Pool.Inline capacity must be ≤256")
+                _storage = _Raw()
+                _slots = Bit.Vector.Static<4>()
+                _allocated = .zero
+            }
+
+            deinit {
+                _slots.ones.forEach { bitIndex in
+                    unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+                }
+            }
+        }
     }
 
     /// Bump-allocated typed storage with bulk reset.
@@ -350,11 +416,103 @@ public enum Storage<Element: ~Copyable> {
             self._stride = stride
         }
 
+        // MARK: - Pointer Primitive
+
+        /// Returns a mutable pointer to the element at the given slot index.
+        ///
+        /// - Parameter slot: A slot index. Must be < capacity.
+        /// - Returns: Mutable pointer to the element's memory.
+        /// - Precondition: `slot` is within bounds.
+        @unsafe
+        @inlinable
+        public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+            precondition(slot < _capacity, "Slot index out of bounds")
+            return unsafe _arena.baseAddress
+                .advanced(by: Int(bitPattern: slot) * _stride)
+                .assumingMemoryBound(to: Element.self)
+        }
+
+        /// Returns an immutable pointer to the element at the given slot index.
+        ///
+        /// - Parameter slot: A slot index. Must be < capacity.
+        /// - Returns: Immutable pointer to the element's memory.
+        /// - Precondition: `slot` is within bounds.
+        @unsafe
+        @inlinable
+        @_disfavoredOverload
+        public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+            precondition(slot < _capacity, "Slot index out of bounds")
+            return unsafe UnsafePointer(
+                _arena.baseAddress
+                    .advanced(by: Int(bitPattern: slot) * _stride)
+                    .assumingMemoryBound(to: Element.self)
+            )
+        }
+
         // MARK: - Deinit
 
         deinit {
             _initializationBits.ones.forEach { bitIndex in
                 unsafe pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+            }
+        }
+
+        // MARK: - Inline Arena
+
+        /// Static-capacity inline arena with bump allocation and bulk reset.
+        ///
+        /// `Storage<Element>.Arena.Inline<N>` is a stack-backed bump allocator for typed elements.
+        /// It provides:
+        /// - O(1) allocation (sequential bump)
+        /// - No individual deallocation
+        /// - Bulk reset via `deinitialize.all()`
+        /// - Automatic element deinit in `deinit` (via bitmap iteration)
+        /// - `Index<Element>.Bounded<N>` for precondition-free pointer access
+        ///
+        /// ## Invariants
+        ///
+        /// - `capacity` is a compile-time constant in range `0...256`
+        /// - `_slots` bit `i` is set iff slot `i` contains an allocated element
+        /// - `_allocated == _slots.popcount` (cached for O(1) access)
+        /// - Allocation is sequential: slots 0..<_allocated are allocated
+        ///
+        /// ## Usage
+        ///
+        /// ```swift
+        /// var arena = Storage<Node>.Arena.Inline<16>()
+        /// if let slot = arena.allocate() {
+        ///     arena.pointer(at: slot).initialize(to: node)
+        ///     // ... use ...
+        /// }
+        /// arena.deinitialize.all()
+        /// ```
+        public struct Inline<let capacity: Int>: ~Copyable {
+            @_rawLayout(likeArrayOf: Element, count: capacity)
+            @usableFromInline
+            package struct _Raw: ~Copyable {
+                @usableFromInline init() {}
+            }
+
+            @usableFromInline package var _storage: _Raw
+            @usableFromInline package var _slots: Bit.Vector.Static<4>
+            @usableFromInline package var _allocated: Index<Element>.Count
+            // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
+            // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
+            var _deinitWorkaround: AnyObject? = nil
+
+            /// Creates an empty inline arena with all slots unallocated.
+            @inlinable
+            public init() {
+                precondition(capacity <= 256, "Storage.Arena.Inline capacity must be ≤256")
+                _storage = _Raw()
+                _slots = Bit.Vector.Static<4>()
+                _allocated = .zero
+            }
+
+            deinit {
+                _slots.ones.forEach { bitIndex in
+                    unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+                }
             }
         }
     }
@@ -470,6 +628,96 @@ extension Storage.Inline where Element: ~Copyable {
     }
 }
 
+// MARK: - Fundamental Slot Access (Pool.Inline)
+
+extension Storage.Pool.Inline where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Mutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
+        unsafe _pointer(at: Index<Element>(slot))
+    }
+
+    /// Returns an immutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Immutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
+        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
+    }
+
+    /// Internal unbounded pointer for deinit iteration.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) { base in
+            unsafe UnsafeMutablePointer(mutating:
+                UnsafeRawPointer(base)
+                    .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
+                    .assumingMemoryBound(to: Element.self)
+            )
+        }
+    }
+}
+
+// MARK: - Fundamental Slot Access (Arena.Inline)
+
+extension Storage.Arena.Inline where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Mutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
+        unsafe _pointer(at: Index<Element>(slot))
+    }
+
+    /// Returns an immutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Immutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
+        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
+    }
+
+    /// Internal unbounded pointer for deinit iteration.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) { base in
+            unsafe UnsafeMutablePointer(mutating:
+                UnsafeRawPointer(base)
+                    .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
+                    .assumingMemoryBound(to: Element.self)
+            )
+        }
+    }
+}
+
 // MARK: - Conditional Conformances
 
 // @_rawLayout types require @unchecked Sendable
@@ -482,3 +730,11 @@ extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
 /// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
 /// Requires @unchecked because _Raw uses @unchecked Sendable.
 extension Storage.Inline: @unchecked Sendable where Element: Sendable {}
+
+// Pool.Inline
+extension Storage.Pool.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+extension Storage.Pool.Inline: @unchecked Sendable where Element: Sendable {}
+
+// Arena.Inline
+extension Storage.Arena.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+extension Storage.Arena.Inline: @unchecked Sendable where Element: Sendable {}
