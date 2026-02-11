@@ -212,31 +212,10 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Stored Properties
 
-        /// Backing storage for all slots.
+        /// Composed memory pool that manages raw slot storage, free list,
+        /// virgin cursor, and allocation tracking.
         @usableFromInline
-        package var _storage: UnsafeMutablePointer<Element>
-
-        /// Total number of element slots.
-        @usableFromInline
-        package let _capacity: Index<Element>.Count
-
-        /// Number of currently allocated (in-use) slots.
-        @usableFromInline
-        package var _allocated: Index<Element>.Count
-
-        /// Head of the free list (previously used then freed slots).
-        /// Equal to sentinel when no freed slots are available.
-        @usableFromInline
-        package var _freeHead: Index<Element>
-
-        /// Next virgin (never-used) slot. Advances monotonically from `.zero` to sentinel.
-        /// Provides O(1) init by deferring free list construction.
-        @usableFromInline
-        package var _nextUnused: Index<Element>
-
-        /// Tracks which slots are currently allocated for deinit iteration and double-free detection.
-        @usableFromInline
-        package var _allocationBits: Bit.Vector
+        package var _pool: Memory.Pool
 
         // MARK: - Initializers
 
@@ -249,45 +228,42 @@ public enum Storage<Element: ~Copyable> {
         /// - Precondition: `MemoryLayout<Element>.stride >= MemoryLayout<Index<Element>>.size`
         @inlinable
         public init(capacity: Index<Element>.Count) throws(Pool.Error) {
-            guard capacity > .zero else { throw .invalidCapacity }
             precondition(
                 MemoryLayout<Element>.stride >= MemoryLayout<Index<Element>>.size,
                 "Element stride must be >= MemoryLayout<Index<Element>>.size for in-band free list"
             )
-            self._capacity = capacity
-            self._allocated = .zero
-            self._freeHead = capacity.map(Ordinal.init) // sentinel
-            self._nextUnused = .zero
-            self._allocationBits = Bit.Vector(capacity: capacity.retag(Bit.self))
-            unsafe self._storage = .allocate(capacity: Int(bitPattern: capacity))
+            do {
+                self._pool = try Memory.Pool(
+                    slotSize: Memory.Address.Count(UInt(MemoryLayout<Element>.stride)),
+                    slotAlignment: try! Memory.Alignment(MemoryLayout<Element>.alignment),
+                    capacity: capacity.retag(Memory.Pool.Slot.self)
+                )
+            } catch {
+                switch error {
+                case .invalidCapacity:
+                    throw .invalidCapacity
+                case .exhausted(let capacity):
+                    throw .exhausted(capacity: capacity.retag(Element.self))
+                case .slotSizeTooSmall, .foreignPointer, .doubleFree:
+                    fatalError("Unreachable: \(error)")
+                }
+            }
         }
 
-        /// Internal initializer for copy construction.
+        /// Internal initializer wrapping an existing Memory.Pool.
         @usableFromInline
-        package init(
-            _copying storage: UnsafeMutablePointer<Element>,
-            capacity: Index<Element>.Count,
-            allocated: Index<Element>.Count,
-            freeHead: Index<Element>,
-            nextUnused: Index<Element>,
-            allocationBits: consuming Bit.Vector
-        ) {
-            unsafe self._storage = storage
-            self._capacity = capacity
-            self._allocated = allocated
-            self._freeHead = freeHead
-            self._nextUnused = nextUnused
-            self._allocationBits = allocationBits
+        package init(_wrapping pool: consuming Memory.Pool) {
+            self._pool = pool
         }
 
         // MARK: - Deinit
 
         deinit {
-            _allocationBits.ones.forEach { bitIndex in
-                unsafe (_storage + Index<Element>.Offset(fromZero: bitIndex.retag(Element.self)))
+            _pool.allocatedSlotIndices.forEach { bitIndex in
+                unsafe UnsafeMutableRawPointer(_pool.pointer(at: bitIndex.retag(Memory.Pool.Slot.self)))
+                    .assumingMemoryBound(to: Element.self)
                     .deinitialize(count: .one)
             }
-            unsafe _storage.deallocate()
         }
 
         // MARK: - Error
@@ -302,6 +278,84 @@ public enum Storage<Element: ~Copyable> {
 
             /// The slot has already been deallocated (double free).
             case doubleFree
+        }
+    }
+
+    /// Bump-allocated typed storage with bulk reset.
+    ///
+    /// `Storage<Element>.Arena` is a reference-semantic bump allocator for typed elements.
+    /// It provides:
+    /// - O(1) allocation (bump pointer)
+    /// - No individual deallocation
+    /// - Bulk reset via `deinitialize.all()`
+    /// - Automatic element deinit in `deinit` (via bitmap iteration)
+    /// - Reference semantics for conditional Copyability in buffer compositions
+    ///
+    /// ## Design Pattern
+    ///
+    /// Composes `Memory.Arena` for raw byte management. Storage.Arena adds typed
+    /// element lifecycle tracking via `Bit.Vector`. Memory.Arena manages the bump
+    /// pointer and raw storage; Storage.Arena adds initialization tracking and
+    /// typed pointer access.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let arena = try Storage<Node>.Arena(capacity: 64)
+    /// if let slot = arena.allocate() {
+    ///     arena.pointer(at: slot).initialize(to: node)
+    ///     // ... use ...
+    /// }
+    /// arena.deinitialize.all()  // Deinitializes all elements, resets arena
+    /// ```
+    public final class Arena {
+
+        // MARK: - Stored Properties
+
+        /// Composed memory arena that manages raw bump allocation.
+        @usableFromInline
+        package var _arena: Memory.Arena
+
+        /// Tracks which slots are currently initialized for deinit iteration.
+        @usableFromInline
+        package var _initializationBits: Bit.Vector
+
+        /// Number of currently allocated (initialized) slots.
+        @usableFromInline
+        package var _allocated: Index<Element>.Count
+
+        /// Total number of element slots.
+        @usableFromInline
+        package let _capacity: Index<Element>.Count
+
+        /// Element stride in bytes, for pointer arithmetic.
+        @usableFromInline
+        package let _stride: Int
+
+        // MARK: - Initializers
+
+        /// Creates an arena with the specified element capacity.
+        ///
+        /// - Parameter capacity: Number of element slots. Must be > 0.
+        /// - Precondition: `capacity > .zero`
+        @inlinable
+        public init(capacity: Index<Element>.Count) {
+            precondition(capacity > .zero, "Arena capacity must be > 0")
+            let stride = MemoryLayout<Element>.stride
+            let totalBytes = Memory.Address.Count(UInt(Int(bitPattern: capacity) * stride))
+            self._arena = Memory.Arena(capacity: totalBytes)
+            self._initializationBits = Bit.Vector(capacity: capacity.retag(Bit.self))
+            self._allocated = .zero
+            self._capacity = capacity
+            self._stride = stride
+        }
+
+        // MARK: - Deinit
+
+        deinit {
+            _initializationBits.ones.forEach { bitIndex in
+                unsafe pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+            }
         }
     }
 
@@ -409,9 +463,8 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
-            let raw = unsafe UnsafeRawPointer(base)
-            let byteOffset = Index<Element>.Offset(fromZero: slot) * .stride
-            return unsafe raw.advanced(by: Int(bitPattern: byteOffset))
+            unsafe UnsafeRawPointer(base)
+                .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
                 .assumingMemoryBound(to: Element.self)
         }
     }

@@ -13,18 +13,6 @@ public import Storage_Primitives_Core
 public import Bit_Vector_Primitives
 internal import Property_Primitives
 
-// MARK: - Free List Sentinel
-
-extension Storage.Pool where Element: ~Copyable {
-    /// The end-of-list sentinel: one-past-last valid slot index.
-    ///
-    /// Analogous to `endIndex` in Swift collections. A free list link
-    /// equal to the sentinel means "no next free slot." Derived from
-    /// capacity — not an arbitrary magic constant.
-    @inlinable
-    internal var _sentinel: Index<Element> { _capacity.map(Ordinal.init) }
-}
-
 // MARK: - Pointer Primitive
 
 extension Storage.Pool where Element: ~Copyable {
@@ -36,8 +24,8 @@ extension Storage.Pool where Element: ~Copyable {
     @unsafe
     @inlinable
     public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        precondition(slot < _sentinel, "Slot index out of bounds")
-        return unsafe _storage + Index<Element>.Offset(fromZero: slot)
+        unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
+            .assumingMemoryBound(to: Element.self)
     }
 
     /// Returns an immutable pointer to the element at the given slot index.
@@ -49,8 +37,10 @@ extension Storage.Pool where Element: ~Copyable {
     @inlinable
     @_disfavoredOverload
     public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
-        precondition(slot < _sentinel, "Slot index out of bounds")
-        return unsafe UnsafePointer(_storage + Index<Element>.Offset(fromZero: slot))
+        unsafe UnsafePointer(
+            _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
+                .assumingMemoryBound(to: Element.self)
+        )
     }
 }
 
@@ -59,29 +49,23 @@ extension Storage.Pool where Element: ~Copyable {
 extension Storage.Pool where Element: ~Copyable {
     /// Total number of element slots.
     @inlinable
-    public var capacity: Index<Element>.Count { _capacity }
+    public var capacity: Index<Element>.Count { _pool.capacity.retag(Element.self) }
 
     /// Number of currently allocated (in-use) slots.
     @inlinable
-    public var allocated: Index<Element>.Count { _allocated }
+    public var allocated: Index<Element>.Count { _pool.allocated.retag(Element.self) }
 
     /// Number of available (free + virgin) slots.
     @inlinable
-    public var available: Index<Element>.Count {
-        _capacity.subtract.saturating(_allocated)
-    }
+    public var available: Index<Element>.Count { _pool.available.retag(Element.self) }
 
     /// Whether all slots are allocated.
     @inlinable
-    public var isExhausted: Bool {
-        _freeHead == _sentinel && _nextUnused >= _sentinel
-    }
+    public var isExhausted: Bool { _pool.isExhausted }
 
     /// Whether no slots are allocated.
     @inlinable
-    public var isEmpty: Bool {
-        _allocated == .zero
-    }
+    public var isEmpty: Bool { _pool.allocated == .zero }
 }
 
 // MARK: - Operations
@@ -98,26 +82,16 @@ extension Storage.Pool where Element: ~Copyable {
     /// - Complexity: O(1)
     @inlinable
     public func allocate() throws(Error) -> Index<Element> {
-        // Try free list first (reused slots)
-        if _freeHead != _sentinel {
-            let slot = _freeHead
-            _freeHead = unsafe UnsafeMutableRawPointer(pointer(at: slot))
-                .load(as: Index<Element>.self)
-            _allocationBits[slot.retag(Bit.self)] = true
-            _allocated += .one
-            return slot
+        do {
+            return try _pool.allocateSlot().retag(Element.self)
+        } catch {
+            switch error {
+            case .exhausted(let capacity):
+                throw .exhausted(capacity: capacity.retag(Element.self))
+            case .invalidCapacity, .slotSizeTooSmall, .foreignPointer, .doubleFree:
+                fatalError("Unreachable: \(error)")
+            }
         }
-
-        // Try virgin cursor
-        guard _nextUnused < _sentinel else {
-            throw .exhausted(capacity: _capacity)
-        }
-
-        let slot = _nextUnused
-        _nextUnused = _nextUnused + .one
-        _allocationBits[slot.retag(Bit.self)] = true
-        _allocated += .one
-        return slot
     }
 
     /// Returns a slot to the free list.
@@ -130,19 +104,16 @@ extension Storage.Pool where Element: ~Copyable {
     /// - Complexity: O(1)
     @inlinable
     public func deallocate(at slot: Index<Element>) throws(Error) {
-        let bitIndex = slot.retag(Bit.self)
-        guard _allocationBits[bitIndex] else {
-            throw .doubleFree
+        do {
+            try _pool.deallocate(at: slot.retag(Memory.Pool.Slot.self))
+        } catch {
+            switch error {
+            case .doubleFree:
+                throw .doubleFree
+            case .exhausted, .invalidCapacity, .slotSizeTooSmall, .foreignPointer:
+                fatalError("Unreachable: \(error)")
+            }
         }
-
-        // Clear allocation bit.
-        _allocationBits[bitIndex] = false
-
-        // Push current head into this slot, make slot new head (LIFO).
-        unsafe UnsafeMutableRawPointer(pointer(at: slot))
-            .storeBytes(of: _freeHead, as: Index<Element>.self)
-        _freeHead = slot
-        _allocated = _allocated.subtract.saturating(.one)
     }
 
 }
@@ -175,13 +146,10 @@ extension Property {
     @inlinable
     public func all<Element: ~Copyable>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool {
-        base._allocationBits.ones.forEach { bitIndex in
+        base._pool.allocatedSlotIndices.forEach { bitIndex in
             unsafe base.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
-        base._allocationBits.clear.all()
-        base._freeHead = base._sentinel
-        base._nextUnused = .zero
-        base._allocated = .zero
+        base._pool.reset()
     }
 }
 

@@ -9,7 +9,5 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Re-export dependencies for consumers.
-
-@_exported public import Index_Primitives
-@_exported public import Memory_Primitives
+@_exported public import Storage_Primitives_Core
+@_exported public import Memory_Arena_Primitives

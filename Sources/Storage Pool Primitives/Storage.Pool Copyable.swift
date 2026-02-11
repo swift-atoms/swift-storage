@@ -24,40 +24,10 @@ extension Storage.Pool where Element: Copyable {
     /// - Returns: A new pool with the same capacity, allocation state, and element values.
     @inlinable
     public func copy() -> Storage.Pool {
-        let newStorage = UnsafeMutablePointer<Element>.allocate(
-            capacity: Int(bitPattern: _capacity)
-        )
-
-        let newBits = Bit.Vector(capacity: _capacity.retag(Bit.self))
-
-        // Copy used region (bounded by virgin cursor).
-        var slot: Index<Element> = .zero
-        while slot < _nextUnused {
-            let bitIndex = slot.retag(Bit.self)
-            let offset = Index<Element>.Offset(fromZero: slot)
-            if _allocationBits[bitIndex] {
-                // Allocated slot: copy element.
-                unsafe (newStorage + offset).initialize(
-                    to: (_storage + offset).pointee
-                )
-                newBits[bitIndex] = true
-            } else {
-                // Freed slot: copy in-band free list link.
-                let src = unsafe UnsafeMutableRawPointer(_storage + offset)
-                let link = unsafe src.load(as: Index<Element>.self)
-                unsafe UnsafeMutableRawPointer(newStorage + offset)
-                    .storeBytes(of: link, as: Index<Element>.self)
-            }
-            slot = slot + .one
+        let newPool = unsafe _pool.duplicate { src, dst in
+            unsafe dst.assumingMemoryBound(to: Element.self)
+                .initialize(to: src.assumingMemoryBound(to: Element.self).pointee)
         }
-
-        return unsafe Storage.Pool(
-            _copying: newStorage,
-            capacity: _capacity,
-            allocated: _allocated,
-            freeHead: _freeHead,
-            nextUnused: _nextUnused,
-            allocationBits: newBits
-        )
+        return Storage.Pool(_wrapping: newPool)
     }
 }

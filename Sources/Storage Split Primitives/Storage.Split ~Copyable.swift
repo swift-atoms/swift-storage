@@ -114,11 +114,9 @@ extension Storage.Split where Element: ~Copyable {
             slot < slotCapacity,
             "Storage.Split: slot out of bounds for capacity"
         )
-        let offset = Index<Element>.Offset(fromZero: slot)
         return unsafe withUnsafeMutablePointerToElements { base in
-            let byteOffset: Memory.Address.Offset = field._offset + offset.retag(Value.self) * field._stride
-            return unsafe UnsafeMutableRawPointer(base)
-                .advanced(by: byteOffset)
+            unsafe UnsafeMutableRawPointer(base)
+                .advanced(by: field._offset + Index<Element>.Offset(fromZero: slot).retag(Value.self) * field._stride)
                 .assumingMemoryBound(to: Value.self)
         }
     }
