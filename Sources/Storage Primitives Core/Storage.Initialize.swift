@@ -11,5 +11,5 @@
 
 extension Storage where Element: ~Copyable {
     /// Tag type for `initialize` property accessor.
-    public typealias Initialize = Storage.Initialization
+    public enum Initialize {}
 }

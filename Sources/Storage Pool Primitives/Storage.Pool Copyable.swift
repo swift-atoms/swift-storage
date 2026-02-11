@@ -32,8 +32,7 @@ extension Storage.Pool where Element: Copyable {
 
         // Copy used region (bounded by virgin cursor).
         var slot: Index<Element> = .zero
-        let boundary = _nextUnused
-        while slot < boundary {
+        while slot < _nextUnused {
             let bitIndex = slot.retag(Bit.self)
             let offset = Index<Element>.Offset(fromZero: slot)
             if _allocationBits[bitIndex] {

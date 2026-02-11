@@ -101,8 +101,8 @@ extension Storage.Pool where Element: ~Copyable {
         // Try free list first (reused slots)
         if _freeHead != _sentinel {
             let slot = _freeHead
-            let raw = unsafe UnsafeMutableRawPointer(_storage + Index<Element>.Offset(fromZero: slot))
-            _freeHead = unsafe raw.load(as: Index<Element>.self)
+            _freeHead = unsafe UnsafeMutableRawPointer(pointer(at: slot))
+                .load(as: Index<Element>.self)
             _allocationBits[slot.retag(Bit.self)] = true
             _allocated += .one
             return slot
@@ -139,12 +139,33 @@ extension Storage.Pool where Element: ~Copyable {
         _allocationBits[bitIndex] = false
 
         // Push current head into this slot, make slot new head (LIFO).
-        let raw = unsafe UnsafeMutableRawPointer(_storage + Index<Element>.Offset(fromZero: slot))
-        unsafe raw.storeBytes(of: _freeHead, as: Index<Element>.self)
+        unsafe UnsafeMutableRawPointer(pointer(at: slot))
+            .storeBytes(of: _freeHead, as: Index<Element>.self)
         _freeHead = slot
         _allocated = _allocated.subtract.saturating(.one)
     }
 
+}
+
+// MARK: - Deinitialize Accessor
+
+extension Storage.Pool where Element: ~Copyable {
+    /// Accessor for tracked deinitialize operations.
+    ///
+    /// Provides `.deinitialize.all()` for safe cleanup.
+    ///
+    /// ```swift
+    /// pool.deinitialize.all()  // Deinitializes all elements, resets pool
+    /// ```
+    @inlinable
+    public var `deinitialize`: Property<Storage.Deinitialize, Storage.Pool> {
+        Property(self)
+    }
+}
+
+// MARK: - Deinitialize Methods
+
+extension Property {
     /// Deinitializes all allocated elements and resets the pool.
     ///
     /// After this call, all slots are uninitialized and available.
@@ -152,24 +173,15 @@ extension Storage.Pool where Element: ~Copyable {
     ///
     /// - Complexity: O(k) where k is the number of allocated slots.
     @inlinable
-    public func deinitializeAll() {
-        for bitIndex in _allocationBits.ones {
-            let slot = bitIndex.retag(Element.self)
-            unsafe (_storage + Index<Element>.Offset(fromZero: slot))
-                .deinitialize(count: 1)
+    public func all<Element: ~Copyable>()
+    where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool {
+        base._allocationBits.ones.forEach { bitIndex in
+            unsafe base.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
-        _allocationBits.clear.all()
-        _freeHead = _capacity.map(Ordinal.init) // sentinel
-        _nextUnused = .zero
-        _allocated = .zero
-    }
-
-    /// Resets the pool, deinitializing all allocated elements.
-    ///
-    /// Equivalent to ``deinitializeAll()``.
-    @inlinable
-    public func reset() {
-        deinitializeAll()
+        base._allocationBits.clear.all()
+        base._freeHead = base._sentinel
+        base._nextUnused = .zero
+        base._allocated = .zero
     }
 }
 

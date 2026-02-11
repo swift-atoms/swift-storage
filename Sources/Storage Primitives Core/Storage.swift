@@ -283,10 +283,9 @@ public enum Storage<Element: ~Copyable> {
         // MARK: - Deinit
 
         deinit {
-            for bitIndex in _allocationBits.ones {
-                let slot = bitIndex.retag(Element.self)
-                unsafe (_storage + Index<Element>.Offset(fromZero: slot))
-                    .deinitialize(count: 1)
+            _allocationBits.ones.forEach { bitIndex in
+                unsafe (_storage + Index<Element>.Offset(fromZero: bitIndex.retag(Element.self)))
+                    .deinitialize(count: .one)
             }
             unsafe _storage.deallocate()
         }
@@ -331,6 +330,12 @@ public enum Storage<Element: ~Copyable> {
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
         
+        // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
+        // WHY: Swift compiler fails to generate deinit forwarding for ~Copyable structs
+        //      containing only value-type properties when Element is from another module.
+        //      Adding a reference-type property forces correct codegen.
+        // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
+        // TRACKING: https://github.com/swiftlang/swift/issues/86652
         var _deinitWorkaround: AnyObject? = nil
 
         /// Creates uninitialized inline storage.
@@ -370,8 +375,7 @@ extension Storage.Heap where Element: ~Copyable {
     @inlinable
     public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
-            let offset = Index<Element>.Offset(fromZero: slot)
-            return unsafe $0 + offset
+            unsafe $0 + Index<Element>.Offset(fromZero: slot)
         }
     }
 
