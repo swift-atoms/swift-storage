@@ -29,6 +29,10 @@ let package = Package(
             targets: ["Storage Inline Primitives"]
         ),
         .library(
+            name: "Storage Pool Primitives",
+            targets: ["Storage Pool Primitives"]
+        ),
+        .library(
             name: "Storage Split Primitives",
             targets: ["Storage Split Primitives"]
         ),
@@ -73,6 +77,14 @@ let package = Package(
                 .product(name: "Vector Primitives", package: "swift-vector-primitives"),
             ]
         ),
+        // Pool: Fixed-capacity pool allocation with per-slot reuse
+        .target(
+            name: "Storage Pool Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+            ]
+        ),
         // Split: Metadata-driven dual-lane storage
         .target(
             name: "Storage Split Primitives",
@@ -89,6 +101,7 @@ let package = Package(
                 "Storage Primitives Core",
                 "Storage Heap Primitives",
                 "Storage Inline Primitives",
+                "Storage Pool Primitives",
                 "Storage Split Primitives",
             ]
         ),

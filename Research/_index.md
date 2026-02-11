@@ -19,6 +19,7 @@ Research documents backing the storage-primitives implementation.
 | [Collection Primitives Architecture](Collection%20Primitives%20Architecture.md) | Nested Storage classes, ~Copyable patterns | DECISION |
 | [split-storage-design](split-storage-design.md) | Tier 2: Field-handle-based dual-lane metadata-driven storage | RECOMMENDATION |
 | [split-storage-naming](split-storage-naming.md) | Tier 2: Literature study on naming for dual-lane storage type | RECOMMENDATION |
+| [storage-pool-architecture](storage-pool-architecture.md) | Tier 3: Composition vs independence for Storage.Pool | DECISION |
 
 ## Key Architectural Decisions
 
@@ -37,6 +38,7 @@ This enables Span access for Copyable elements and eliminates the slot/element d
 | `Storage.Heap` | Heap | ARC | Dense (element stride) | `Storage.Initialization` |
 | `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) | `Bit.Vector.Static` |
 | `Storage.Split<Lane>` (proposed) | Heap | ARC | Dual-lane `[Lane...][Element...]` | None (metadata-driven) |
+| `Storage.Pool` | Heap | ARC | Dense (element stride) | `Bit.Vector` (per-slot) |
 
 `Heap` and `Inline` support `~Copyable` elements and conform to `Memory.Contiguous.Protocol` for Copyable elements. `Split` (see `split-storage-design.md` v3.0.0) is proposed for metadata-driven dual-array structures like hash table metadata+payload. Access is via field handles (`Storage.Field<Value>`); design converged via Claude-ChatGPT collaborative review.
 

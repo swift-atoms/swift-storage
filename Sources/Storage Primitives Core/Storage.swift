@@ -14,13 +14,14 @@ public import Bit_Vector_Primitives
 
 /// Namespace for storage primitives.
 ///
-/// `Storage` provides three storage disciplines with different lifecycle contracts:
+/// `Storage` provides four storage disciplines with different lifecycle contracts:
 ///
 /// | Need | Choose | Lifecycle |
 /// |------|--------|-----------|
 /// | Automatic cleanup, contiguous elements | ``Storage/Heap`` | **Tracked** — range-based initialization tracking with automatic cleanup in `deinit` |
 /// | Stack-allocated, fixed capacity ≤256 | ``Storage/Inline`` | **Auto-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
 /// | Dual-array with consumer-defined metadata | ``Storage/Split`` | **Metadata-driven** — no tracking; consumer interprets lane metadata to determine element validity |
+/// | Pool allocation with per-slot reuse | ``Storage/Pool`` | **Bitmap-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
 ///
 /// And physical coordinate types for slot-based access:
 /// - `Index<Element>`: Physical slot position (typed by element)
@@ -163,6 +164,148 @@ public enum Storage<Element: ~Copyable> {
     /// let value = storage.move(at: .zero)
     /// // No manual state management needed — deinit handles cleanup automatically
     /// ```
+    /// Fixed-capacity pool storage with O(1) allocate and deallocate.
+    ///
+    /// `Storage<Element>.Pool` is a reference-semantic pool allocator for typed elements.
+    /// It provides:
+    /// - O(1) allocation via virgin cursor + free list
+    /// - O(1) deallocation via free list push
+    /// - Per-slot reuse (LIFO free list)
+    /// - Automatic element deinit in `deinit` (via bitmap iteration)
+    /// - Reference semantics for conditional Copyability in buffer compositions
+    /// - CoW support via `isKnownUniquelyReferenced` + `copy()`
+    ///
+    /// ## Design Pattern
+    ///
+    /// Implements the same typed sentinel + Bit.Vector + in-band free list pattern
+    /// as `Memory.Pool`, but at the storage tier with typed pointers and reference
+    /// semantics. See `Research/storage-pool-architecture.md` (DECISION).
+    ///
+    /// ## Free List Design
+    ///
+    /// Free slots store `Index<Element>` in-band via `storeBytes`/`load` on the
+    /// deinitialized slot memory. The sentinel (`_capacity.map(Ordinal.init)`,
+    /// one-past-last) marks end-of-list.
+    ///
+    /// Virgin slots (never allocated) are tracked by `_nextUnused` cursor,
+    /// providing O(1) initialization (no free list pre-build).
+    ///
+    /// ## Invariants
+    ///
+    /// - `MemoryLayout<Element>.stride >= MemoryLayout<Index<Element>>.size` (in-band free list)
+    /// - Capacity is fixed at construction, immutable
+    /// - `0 <= allocated <= capacity`
+    /// - Free list is acyclic and contained within `[0, _nextUnused)`
+    /// - Bitmap bit `i` is set iff slot `i` contains an initialized element
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let pool = try Storage<Node>.Pool(capacity: Index<Node>.Count(64))
+    /// let slot = try pool.allocate()
+    /// pool.pointer(at: slot).initialize(to: node)
+    /// // ... use ...
+    /// _ = pool.pointer(at: slot).move()
+    /// try pool.deallocate(at: slot)
+    /// ```
+    public final class Pool {
+
+        // MARK: - Stored Properties
+
+        /// Backing storage for all slots.
+        @usableFromInline
+        package var _storage: UnsafeMutablePointer<Element>
+
+        /// Total number of element slots.
+        @usableFromInline
+        package let _capacity: Index<Element>.Count
+
+        /// Number of currently allocated (in-use) slots.
+        @usableFromInline
+        package var _allocated: Index<Element>.Count
+
+        /// Head of the free list (previously used then freed slots).
+        /// Equal to sentinel when no freed slots are available.
+        @usableFromInline
+        package var _freeHead: Index<Element>
+
+        /// Next virgin (never-used) slot. Advances monotonically from `.zero` to sentinel.
+        /// Provides O(1) init by deferring free list construction.
+        @usableFromInline
+        package var _nextUnused: Index<Element>
+
+        /// Tracks which slots are currently allocated for deinit iteration and double-free detection.
+        @usableFromInline
+        package var _allocationBits: Bit.Vector
+
+        // MARK: - Initializers
+
+        /// Creates a pool with the specified capacity.
+        ///
+        /// All slots start uninitialized. Uses O(1) virgin cursor initialization.
+        ///
+        /// - Parameter capacity: Number of element slots. Must be > 0.
+        /// - Throws: `Pool.Error.invalidCapacity` if capacity is zero.
+        /// - Precondition: `MemoryLayout<Element>.stride >= MemoryLayout<Index<Element>>.size`
+        @inlinable
+        public init(capacity: Index<Element>.Count) throws(Pool.Error) {
+            guard capacity > .zero else { throw .invalidCapacity }
+            precondition(
+                MemoryLayout<Element>.stride >= MemoryLayout<Index<Element>>.size,
+                "Element stride must be >= MemoryLayout<Index<Element>>.size for in-band free list"
+            )
+            self._capacity = capacity
+            self._allocated = .zero
+            self._freeHead = capacity.map(Ordinal.init) // sentinel
+            self._nextUnused = .zero
+            self._allocationBits = Bit.Vector(capacity: capacity.retag(Bit.self))
+            unsafe self._storage = .allocate(capacity: Int(bitPattern: capacity))
+        }
+
+        /// Internal initializer for copy construction.
+        @usableFromInline
+        package init(
+            _copying storage: UnsafeMutablePointer<Element>,
+            capacity: Index<Element>.Count,
+            allocated: Index<Element>.Count,
+            freeHead: Index<Element>,
+            nextUnused: Index<Element>,
+            allocationBits: consuming Bit.Vector
+        ) {
+            unsafe self._storage = storage
+            self._capacity = capacity
+            self._allocated = allocated
+            self._freeHead = freeHead
+            self._nextUnused = nextUnused
+            self._allocationBits = allocationBits
+        }
+
+        // MARK: - Deinit
+
+        deinit {
+            for bitIndex in _allocationBits.ones {
+                let slot = bitIndex.retag(Element.self)
+                unsafe (_storage + Index<Element>.Offset(fromZero: slot))
+                    .deinitialize(count: 1)
+            }
+            unsafe _storage.deallocate()
+        }
+
+        // MARK: - Error
+
+        /// Errors that can occur during pool operations.
+        public enum Error: Swift.Error, Hashable, Sendable {
+            /// No free slots remain.
+            case exhausted(capacity: Index<Element>.Count)
+
+            /// The requested capacity is invalid (must be > 0).
+            case invalidCapacity
+
+            /// The slot has already been deallocated (double free).
+            case doubleFree
+        }
+    }
+
     public struct Inline<let capacity: Int>: ~Copyable {
         /// Internal raw storage with automatic layout computation.
         ///
