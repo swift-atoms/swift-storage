@@ -77,6 +77,13 @@ extension Storage.Pool where Element: ~Copyable {
     /// The returned slot contains uninitialized memory — the caller must
     /// initialize it before use.
     ///
+    /// The allocation is recorded for teardown purposes: if the pool is
+    /// deinitialized before the caller initializes this slot, `deinit` will
+    /// attempt to deinitialize uninitialized memory (undefined behavior).
+    ///
+    /// If initialization can fail, call ``deallocate(at:)`` on the failure
+    /// path to return the uninitialized slot to the free list.
+    ///
     /// - Returns: Index of the allocated slot.
     /// - Throws: `.exhausted` if no free or virgin slots remain.
     /// - Complexity: O(1)
@@ -97,7 +104,10 @@ extension Storage.Pool where Element: ~Copyable {
     /// Returns a slot to the free list.
     ///
     /// The caller MUST deinitialize any element stored in the slot
-    /// before calling this method.
+    /// before calling this method. If the slot was never initialized
+    /// (e.g., allocation succeeded but initialization failed), calling
+    /// this method is safe — there is nothing to deinitialize, and the
+    /// slot is returned to the free list.
     ///
     /// - Parameter slot: A slot index previously returned by `allocate()`.
     /// - Throws: `.doubleFree` if the slot is already free.

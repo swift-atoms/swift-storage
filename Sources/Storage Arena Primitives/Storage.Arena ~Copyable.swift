@@ -41,7 +41,13 @@ extension Storage.Arena where Element: ~Copyable {
     /// Allocates the next slot and returns its index.
     ///
     /// The returned slot contains uninitialized memory — the caller must
-    /// initialize it before use.
+    /// initialize it before use. The allocation is recorded as initialized
+    /// for teardown purposes: if the arena is deinitialized before the caller
+    /// initializes this slot, `deinit` will attempt to deinitialize
+    /// uninitialized memory (undefined behavior).
+    ///
+    /// If initialization can fail, use ``unallocate(_:)`` to roll back the
+    /// most recent allocation on the failure path.
     ///
     /// - Returns: Index of the allocated slot, or `nil` if the arena is full.
     /// - Complexity: O(1)
@@ -58,6 +64,27 @@ extension Storage.Arena where Element: ~Copyable {
         _initializationBits[slot.retag(Bit.self)] = true
         _allocated += .one
         return slot
+    }
+
+
+    /// Rolls back the most recent allocation.
+    ///
+    /// Only valid for the slot returned by the immediately preceding
+    /// ``allocate()`` call. The slot must not have been initialized.
+    ///
+    /// The underlying arena bytes are not reclaimed (bump pointer is not
+    /// rolled back). They remain wasted until the next ``deinitialize``
+    /// `.all()` or `deinit`.
+    ///
+    /// - Parameter slot: The slot returned by the last `allocate()` call.
+    /// - Precondition: `slot` is the most recently allocated slot.
+    /// - Precondition: The slot has not been initialized.
+    @inlinable
+    public func unallocate(_ slot: Index<Element>) {
+        let expected = _allocated.subtract.saturating(.one).map(Ordinal.init)
+        precondition(slot == expected, "unallocate requires the most recently allocated slot")
+        _initializationBits[slot.retag(Bit.self)] = false
+        _allocated = _allocated.subtract.saturating(.one)
     }
 }
 

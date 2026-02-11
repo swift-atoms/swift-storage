@@ -48,6 +48,13 @@ extension Storage.Arena.Inline where Element: ~Copyable {
     /// The returned slot contains uninitialized memory — the caller must
     /// initialize it before use. Allocation is sequential: slot 0, then 1, etc.
     ///
+    /// The allocation is recorded as initialized for teardown purposes: if the
+    /// arena is deinitialized before the caller initializes this slot, `deinit`
+    /// will attempt to deinitialize uninitialized memory (undefined behavior).
+    ///
+    /// If initialization can fail, use ``unallocate(_:)`` to roll back the
+    /// most recent allocation on the failure path.
+    ///
     /// - Returns: Bounded index of the allocated slot, or `nil` if the arena is full.
     /// - Complexity: O(1)
     @inlinable
@@ -60,6 +67,22 @@ extension Storage.Arena.Inline where Element: ~Copyable {
         _slots[bitIndex] = true
         _allocated += .one
         return Index<Element>.Bounded<capacity>(slot)
+    }
+
+    /// Rolls back the most recent allocation.
+    ///
+    /// Only valid for the slot returned by the immediately preceding
+    /// ``allocate()`` call. The slot must not have been initialized.
+    ///
+    /// - Parameter slot: The bounded slot returned by the last `allocate()` call.
+    /// - Precondition: `slot` is the most recently allocated slot.
+    /// - Precondition: The slot has not been initialized.
+    @inlinable
+    public mutating func unallocate(_ slot: Index<Element>.Bounded<capacity>) {
+        let expected = _allocated.subtract.saturating(.one).map(Ordinal.init)
+        precondition(Index<Element>(slot) == expected, "unallocate requires the most recently allocated slot")
+        _slots[Index<Element>(slot).retag(Bit.self)] = false
+        _allocated = _allocated.subtract.saturating(.one)
     }
 }
 

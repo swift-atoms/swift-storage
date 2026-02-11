@@ -121,6 +121,52 @@ struct StorageArenaInlineTests {
         #expect(arena.remaining == 4)
     }
 
+    // MARK: - Unallocate
+
+    @Test("Unallocate rolls back most recent allocation")
+    func unallocate() {
+        var arena = Storage<InlinePayload>.Arena.Inline<4>()
+
+        let slot0 = arena.allocate()!
+        unsafe arena.pointer(at: slot0).initialize(to: InlinePayload(x: 1, y: 2))
+
+        let slot1 = arena.allocate()!
+        // Simulate failed initialization — roll back
+        arena.unallocate(slot1)
+
+        #expect(arena.allocated == 1)
+        #expect(arena.remaining == 3)
+    }
+
+    @Test("Unallocate then reallocate reuses index")
+    func unallocateThenReallocate() {
+        var arena = Storage<InlinePayload>.Arena.Inline<4>()
+
+        let slot0 = arena.allocate()!
+        unsafe arena.pointer(at: slot0).initialize(to: InlinePayload(x: 1, y: 2))
+
+        let slot1 = arena.allocate()!
+        arena.unallocate(slot1)
+
+        let slot1Again = arena.allocate()!
+        #expect(Index<InlinePayload>(slot1) == Index<InlinePayload>(slot1Again))
+    }
+
+    @Test("Unallocate after deinitialize all cycle")
+    func unallocateAfterDeinitializeAll() {
+        var arena = Storage<InlinePayload>.Arena.Inline<4>()
+
+        let slot0 = arena.allocate()!
+        unsafe arena.pointer(at: slot0).initialize(to: InlinePayload(x: 1, y: 2))
+        arena.deinitialize.all()
+
+        let newSlot = arena.allocate()!
+        arena.unallocate(newSlot)
+
+        #expect(arena.allocated == .zero)
+        #expect(arena.isEmpty == true)
+    }
+
     // MARK: - Full Cycle
 
     @Test("Full cycle: allocate all, deinitialize, reallocate")

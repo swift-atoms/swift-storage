@@ -19,18 +19,11 @@ struct Payload: Equatable {
     var y: UInt8
 }
 
-extension Storage<Payload>.Arena {
-    @Suite
-    struct Test {
-        @Suite struct Unit {}
-        @Suite struct EdgeCase {}
-        @Suite struct Integration {}
-    }
-}
+@Suite("Storage.Arena Tests")
+struct StorageArenaTests {
 
-// MARK: - Unit Tests
+    // MARK: - Init
 
-extension Storage<Payload>.Arena.Test.Unit {
     @Test("Init creates arena with correct capacity")
     func initCapacity() {
         let arena = Storage<Payload>.Arena(capacity: 8)
@@ -39,6 +32,8 @@ extension Storage<Payload>.Arena.Test.Unit {
         #expect(arena.remaining == 8)
         #expect(arena.isEmpty)
     }
+
+    // MARK: - Allocate
 
     @Test("Allocate returns sequential indices")
     func allocateSequential() {
@@ -58,6 +53,8 @@ extension Storage<Payload>.Arena.Test.Unit {
         #expect(arena.isEmpty == false)
     }
 
+    // MARK: - Pointer
+
     @Test("Pointer access for read and write")
     func pointerAccess() {
         let arena = Storage<Payload>.Arena(capacity: 4)
@@ -68,6 +65,8 @@ extension Storage<Payload>.Arena.Test.Unit {
         let value = unsafe arena.pointer(at: slot).pointee
         #expect(value == Payload(x: 42, y: 7))
     }
+
+    // MARK: - Properties
 
     @Test("Properties track allocation state")
     func properties() {
@@ -91,6 +90,8 @@ extension Storage<Payload>.Arena.Test.Unit {
         #expect(arena.remaining == .zero)
     }
 
+    // MARK: - Deinitialize
+
     @Test("Deinitialize all resets arena")
     func deinitializeAll() {
         let arena = Storage<Payload>.Arena(capacity: 4)
@@ -106,11 +107,53 @@ extension Storage<Payload>.Arena.Test.Unit {
         #expect(arena.isEmpty)
         #expect(arena.remaining == 4)
     }
-}
 
-// MARK: - Edge Case Tests
+    // MARK: - Unallocate
 
-extension Storage<Payload>.Arena.Test.EdgeCase {
+    @Test("Unallocate rolls back most recent allocation")
+    func unallocate() {
+        let arena = Storage<Payload>.Arena(capacity: 4)
+
+        let slot0 = arena.allocate()!
+        unsafe arena.pointer(at: slot0).initialize(to: Payload(x: 1, y: 2))
+
+        let slot1 = arena.allocate()!
+        // Simulate failed initialization — roll back
+        arena.unallocate(slot1)
+
+        #expect(arena.allocated == 1)
+        #expect(arena.remaining == 3)
+    }
+
+    @Test("Unallocate then reallocate reuses index")
+    func unallocateThenReallocate() {
+        let arena = Storage<Payload>.Arena(capacity: 4)
+
+        _ = arena.allocate()!
+        let slot1 = arena.allocate()!
+        arena.unallocate(slot1)
+
+        let slot1Again = arena.allocate()!
+        #expect(slot1 == slot1Again)
+    }
+
+    @Test("Unallocate on empty arena after deinitialize all")
+    func unallocateAfterDeinitializeAll() {
+        let arena = Storage<Payload>.Arena(capacity: 4)
+
+        let slot0 = arena.allocate()!
+        unsafe arena.pointer(at: slot0).initialize(to: Payload(x: 1, y: 2))
+        arena.deinitialize.all()
+
+        let newSlot = arena.allocate()!
+        arena.unallocate(newSlot)
+
+        #expect(arena.allocated == .zero)
+        #expect(arena.isEmpty)
+    }
+
+    // MARK: - Edge Cases
+
     @Test("Exhaustion returns nil")
     func exhaustion() {
         let arena = Storage<Payload>.Arena(capacity: 2)
@@ -144,11 +187,9 @@ extension Storage<Payload>.Arena.Test.EdgeCase {
         #expect(newSlot1 != nil)
         #expect(newSlot2 == nil)
     }
-}
 
-// MARK: - Integration Tests
+    // MARK: - Integration
 
-extension Storage<Payload>.Arena.Test.Integration {
     @Test("Typed element roundtrip")
     func typedRoundtrip() {
         let arena = Storage<Payload>.Arena(capacity: 8)

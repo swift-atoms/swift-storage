@@ -52,6 +52,13 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     /// Scans the bitmap for the first unallocated slot. The returned slot
     /// contains uninitialized memory — the caller must initialize it before use.
     ///
+    /// The allocation is recorded for teardown purposes: if the pool is
+    /// deinitialized before the caller initializes this slot, `deinit` will
+    /// attempt to deinitialize uninitialized memory (undefined behavior).
+    ///
+    /// If initialization can fail, call ``deallocate(at:)`` on the failure
+    /// path to return the uninitialized slot to the pool.
+    ///
     /// - Returns: Bounded index of the allocated slot.
     /// - Throws: `.exhausted` if no free slots remain.
     /// - Complexity: O(capacity) worst case (bitmap scan).
@@ -77,7 +84,10 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     /// Returns a slot to the pool.
     ///
     /// The caller MUST move or deinitialize any element stored in the slot
-    /// before calling this method.
+    /// before calling this method. If the slot was never initialized
+    /// (e.g., allocation succeeded but initialization failed), calling
+    /// this method is safe — there is nothing to deinitialize, and the
+    /// slot is returned to the pool.
     ///
     /// - Parameter slot: A bounded slot index previously returned by `allocate()`.
     /// - Throws: `.doubleFree` if the slot is already free.
