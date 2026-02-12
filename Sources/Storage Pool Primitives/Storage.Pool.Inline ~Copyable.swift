@@ -22,7 +22,7 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     /// Runtime-accessible view of the compile-time `capacity` parameter.
     @inlinable
     public var slotCapacity: Index<Element>.Count {
-        Index<Element>.Count(Cardinal(UInt(capacity)))
+        try! Index<Element>.Count(capacity)
     }
 
     /// Number of currently allocated (in-use) slots.
@@ -70,7 +70,7 @@ extension Storage.Pool.Inline where Element: ~Copyable {
         }
 
         for i in 0..<capacity {
-            let elementIndex = Index<Element>.Count(Cardinal(UInt(i))).map(Ordinal.init)
+            let elementIndex = (try! Index<Element>.Count(i)).map(Ordinal.init)
             let bitIndex = elementIndex.retag(Bit.self)
             if !_slots[bitIndex] {
                 _slots[bitIndex] = true

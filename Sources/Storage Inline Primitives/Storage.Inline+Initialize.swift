@@ -82,8 +82,7 @@ extension Property.View where Base: ~Copyable {
     ) throws(Storage<Element>.Error) -> Index<Element>
     where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Inline<capacity> {
         let slot = unsafe base.pointee.initialization.count.map(Ordinal.init)
-        let slotCapacity = unsafe base.pointee.slotCapacity
-        guard slot < slotCapacity else { throw .capacityExceeded }
+        guard unsafe slot < base.pointee.slotCapacity else { throw .capacityExceeded }
         unsafe base.pointee.initialize(to: element, at: slot)
         return slot
     }

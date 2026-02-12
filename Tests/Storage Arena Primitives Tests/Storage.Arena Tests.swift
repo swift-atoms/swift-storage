@@ -34,7 +34,7 @@ struct StorageArenaTests {
     @Test("Meta is initialized to virgin state")
     func metaVirgin() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
-        let meta = unsafe arena.metaBase
+        let meta = unsafe arena.meta
         let cap = Int(bitPattern: arena.slotCapacity)
         for i in 0..<cap {
             #expect(meta[i].token == 0)
@@ -45,14 +45,14 @@ struct StorageArenaTests {
 
     // MARK: - Element Operations
 
-    @Test("Initialize and read element via elementPointer")
+    @Test("Initialize and read element via pointer")
     func initializeAndRead() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         let slot = Index<Payload>(Ordinal(UInt(0)))
 
         arena.initialize(to: Payload(x: 42, y: 7), at: slot)
 
-        let value = unsafe arena.elementPointer(at: slot).pointee
+        let value = unsafe arena.pointer(at: slot).pointee
         #expect(value == Payload(x: 42, y: 7))
 
         arena.deinitialize(at: slot)
@@ -80,7 +80,7 @@ struct StorageArenaTests {
 
         for i in 0..<5 {
             let slot = Index<Payload>(Ordinal(UInt(i)))
-            let value = unsafe arena.elementPointer(at: slot).pointee
+            let value = unsafe arena.pointer(at: slot).pointee
             #expect(value == Payload(x: i * 10, y: UInt8(i)))
         }
 
@@ -95,7 +95,7 @@ struct StorageArenaTests {
     @Test("Meta read and write")
     func metaReadWrite() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
-        let meta = unsafe arena.metaBase
+        let meta = unsafe arena.meta
 
         // Initially virgin
         #expect(meta[0].token == 0)
@@ -137,7 +137,7 @@ struct StorageArenaTests {
 
         do {
             let arena = Storage<Tracker>.Arena(minimumCapacity: 4)
-            let meta = unsafe arena.metaBase
+            let meta = unsafe arena.meta
 
             // Initialize two elements and mark them as occupied
             let slot0 = Index<Tracker>(Ordinal(UInt(0)))
@@ -171,7 +171,7 @@ struct StorageArenaTests {
 
         do {
             let arena = Storage<Tracker>.Arena(minimumCapacity: 4)
-            let meta = unsafe arena.metaBase
+            let meta = unsafe arena.meta
 
             // Initialize one occupied and one free
             let slot0 = Index<Tracker>(Ordinal(UInt(0)))
@@ -188,8 +188,8 @@ struct StorageArenaTests {
             arena.highWater = Index<Tracker>.Count(Cardinal(UInt(2)))
         }
 
-        // Only slot0 should be deinitialized by deinit
-        #expect(deinitCount == 1)
+        // slot1 deinitialized by move+discard, slot0 by arena deinit
+        #expect(deinitCount == 2)
     }
 
     // MARK: - Layout
@@ -198,9 +198,10 @@ struct StorageArenaTests {
     func layoutAlignment() {
         let cap = Index<Payload>.Count(Cardinal(UInt(10)))
         let offset = Storage<Payload>.Arena._elementRegionOffset(capacity: cap)
-        let alignment = MemoryLayout<Payload>.alignment
-        #expect(offset % alignment == 0)
-        #expect(offset >= 10 * MemoryLayout<Storage<Payload>.Arena.Meta>.stride)
+        let elementAlignment = try! Memory.Alignment(max(MemoryLayout<Payload>.alignment, 1))
+        #expect(elementAlignment.align.up(offset) == offset)
+        let metaBytes: Memory.Address.Count = cap.retag(Storage<Payload>.Arena.Meta.self) * .stride
+        #expect(offset >= metaBytes)
     }
 
     @Test("Total bytes covers meta and elements")
@@ -208,7 +209,7 @@ struct StorageArenaTests {
         let cap = Index<Payload>.Count(Cardinal(UInt(10)))
         let total = Storage<Payload>.Arena._totalBytes(capacity: cap)
         let offset = Storage<Payload>.Arena._elementRegionOffset(capacity: cap)
-        let elementBytes = 10 * MemoryLayout<Payload>.stride
+        let elementBytes: Memory.Address.Count = cap * .stride
         #expect(total == offset + elementBytes)
     }
 }

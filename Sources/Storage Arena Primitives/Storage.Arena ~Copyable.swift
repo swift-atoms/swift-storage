@@ -25,12 +25,9 @@ extension Storage.Arena where Element: ~Copyable {
     @inlinable
     public convenience init(minimumCapacity: Index<Element>.Count) {
         precondition(minimumCapacity > .zero, "Arena capacity must be > 0")
-        let totalBytes = Memory.Address.Count(
-            UInt(Self._totalBytes(capacity: minimumCapacity))
-        )
-        let arena = Memory.Arena(capacity: totalBytes)
+        let arena = Memory.Arena(capacity: Self._totalBytes(capacity: minimumCapacity))
         // Initialize meta region to virgin state
-        unsafe arena.baseAddress.initializeMemory(
+        unsafe arena.start.initializeMemory(
             as: Meta.self, repeating: .virgin, count: Int(bitPattern: minimumCapacity)
         )
         self.init(
@@ -67,7 +64,7 @@ extension Storage.Arena where Element: ~Copyable {
     /// - Precondition: The slot is not already initialized.
     @inlinable
     public func initialize(to element: consuming Element, at slot: Index<Element>) {
-        unsafe elementPointer(at: slot).initialize(to: element)
+        unsafe pointer(at: slot).initialize(to: element)
     }
 
     /// Moves the element out of the given slot, leaving the slot deinitialized.
@@ -77,7 +74,7 @@ extension Storage.Arena where Element: ~Copyable {
     /// - Returns: The moved-out element.
     @inlinable
     public func move(at slot: Index<Element>) -> Element {
-        unsafe elementPointer(at: slot).move()
+        unsafe pointer(at: slot).move()
     }
 
     /// Deinitializes the element at the given slot.
@@ -86,7 +83,7 @@ extension Storage.Arena where Element: ~Copyable {
     /// - Precondition: The slot is initialized.
     @inlinable
     public func deinitialize(at slot: Index<Element>) {
-        unsafe elementPointer(at: slot).deinitialize(count: .one)
+        unsafe pointer(at: slot).deinitialize(count: .one)
     }
 }
 

@@ -22,7 +22,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// Matches `Storage.Heap.slotCapacity` for API parity.
     @inlinable
     public var slotCapacity: Index<Element>.Count {
-        Index<Element>.Count(Cardinal(UInt(capacity)))
+        try! Index<Element>.Count(capacity)
     }
 
     /// Initialization state derived from the bit vector.
@@ -47,8 +47,7 @@ extension Storage.Inline where Element: ~Copyable {
                 return .empty
             }
             // For linear patterns, compute the range from 0 to count
-            let count = _slots.popcount.retag(Element.self)
-            return .linear(count: count)
+            return .linear(count: _slots.popcount.retag(Element.self))
         }
         set {
             _slots.clear.all()

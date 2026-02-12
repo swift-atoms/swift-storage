@@ -156,7 +156,7 @@ extension Property {
     @inlinable
     public func all<Element: ~Copyable>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool {
-        base._pool.allocatedSlotIndices.forEach { bitIndex in
+        base._pool.allocation.indices.forEach { bitIndex in
             unsafe base.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
         base._pool.reset()

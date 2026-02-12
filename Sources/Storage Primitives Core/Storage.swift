@@ -257,13 +257,24 @@ public enum Storage<Element: ~Copyable> {
             self._pool = pool
         }
 
+        // MARK: - Internal Pointer
+
+        /// Internal pointer for deinit iteration.
+        ///
+        /// Mirrors `Storage.Pool.pointer(at:)` from `Storage_Pool_Primitives`
+        /// but is available within the core module for deinit use.
+        @unsafe
+        @inlinable
+        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+            unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
+                .assumingMemoryBound(to: Element.self)
+        }
+
         // MARK: - Deinit
 
         deinit {
-            _pool.allocatedSlotIndices.forEach { bitIndex in
-                unsafe UnsafeMutableRawPointer(_pool.pointer(at: bitIndex.retag(Memory.Pool.Slot.self)))
-                    .assumingMemoryBound(to: Element.self)
-                    .deinitialize(count: .one)
+            _pool.allocation.indices.forEach { bitIndex in
+                unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
             }
         }
 
@@ -451,20 +462,18 @@ public enum Storage<Element: ~Copyable> {
         @inlinable
         public static func _elementRegionOffset(
             capacity: Index<Element>.Count
-        ) -> Int {
-            let metaBytes = Int(bitPattern: capacity) * MemoryLayout<Meta>.stride
-            let elementAlignment = max(MemoryLayout<Element>.alignment, 1)
-            return (metaBytes + elementAlignment - 1) & ~(elementAlignment - 1)
+        ) -> Memory.Address.Count {
+            let metaBytes: Memory.Address.Count = capacity.retag(Meta.self) * .stride
+            let elementAlignment = try! Memory.Alignment(max(MemoryLayout<Element>.alignment, 1))
+            return elementAlignment.align.up(metaBytes)
         }
 
         /// Total bytes required for the SoA layout.
         @inlinable
         public static func _totalBytes(
             capacity: Index<Element>.Count
-        ) -> Int {
-            let elementOffset = _elementRegionOffset(capacity: capacity)
-            let elementBytes = Int(bitPattern: capacity) * MemoryLayout<Element>.stride
-            return elementOffset + elementBytes
+        ) -> Memory.Address.Count {
+            _elementRegionOffset(capacity: capacity) + capacity * .stride
         }
 
         // MARK: - Pointer Access
@@ -472,18 +481,18 @@ public enum Storage<Element: ~Copyable> {
         /// Pointer to the meta array base.
         @unsafe
         @inlinable
-        public var metaBase: UnsafeMutablePointer<Meta> {
-            unsafe _arena.baseAddress.assumingMemoryBound(to: Meta.self)
+        public var meta: UnsafeMutablePointer<Meta> {
+            unsafe _arena.start.assumingMemoryBound(to: Meta.self)
         }
 
         /// Pointer to the element at the given slot index.
         @unsafe
         @inlinable
-        public func elementPointer(
+        public func pointer(
             at slot: Index<Element>
         ) -> UnsafeMutablePointer<Element> {
-            let offset = Self._elementRegionOffset(capacity: _slotCapacity)
-            return unsafe _arena.baseAddress
+            let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
+            return unsafe _arena.start
                 .advanced(by: offset + Int(bitPattern: slot) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
         }
@@ -496,9 +505,9 @@ public enum Storage<Element: ~Copyable> {
             //      CopiedLoadBorrowEliminationVisitor segfault (swift-frontend signal 11)
             // WHEN TO REMOVE: When MoveOnlyChecker deinit closure crash is fixed
             let hw = Int(bitPattern: _highWater)
-            let meta = unsafe _arena.baseAddress.assumingMemoryBound(to: Meta.self)
-            let offset = Self._elementRegionOffset(capacity: _slotCapacity)
-            let elemBase = unsafe _arena.baseAddress.advanced(by: offset)
+            let meta = unsafe _arena.start.assumingMemoryBound(to: Meta.self)
+            let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
+            let elemBase = unsafe _arena.start.advanced(by: offset)
             let stride = MemoryLayout<Element>.stride
             for i in 0..<hw {
                 if meta[i].isOccupied {

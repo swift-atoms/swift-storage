@@ -22,7 +22,7 @@ extension Storage.Arena.Inline where Element: ~Copyable {
     /// Runtime-accessible view of the compile-time `capacity` parameter.
     @inlinable
     public var slotCapacity: Index<Element>.Count {
-        Index<Element>.Count(Cardinal(UInt(capacity)))
+        try! Index<Element>.Count(capacity)
     }
 
     /// Number of currently allocated (initialized) slots.
@@ -79,10 +79,11 @@ extension Storage.Arena.Inline where Element: ~Copyable {
     /// - Precondition: The slot has not been initialized.
     @inlinable
     public mutating func unallocate(_ slot: Index<Element>.Bounded<capacity>) {
-        let expected = _allocated.subtract.saturating(.one).map(Ordinal.init)
-        precondition(Index<Element>(slot) == expected, "unallocate requires the most recently allocated slot")
-        _slots[Index<Element>(slot).retag(Bit.self)] = false
-        _allocated = _allocated.subtract.saturating(.one)
+        let decremented = _allocated.subtract.saturating(.one)
+        let index = Index<Element>(slot)
+        precondition(index == decremented.map(Ordinal.init), "unallocate requires the most recently allocated slot")
+        _slots[index.retag(Bit.self)] = false
+        _allocated = decremented
     }
 }
 
