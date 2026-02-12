@@ -10,118 +10,84 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-public import Bit_Vector_Primitives
-internal import Property_Primitives
+
+// MARK: - Factory
+
+extension Storage.Arena where Element: ~Copyable {
+    /// Creates an arena with at least the specified element capacity.
+    ///
+    /// Allocates a contiguous raw buffer via `Memory.Arena` sized for
+    /// the SoA layout (meta array + element array). Initializes all
+    /// meta slots to virgin state.
+    ///
+    /// - Parameter minimumCapacity: Number of element slots. Must be > 0.
+    /// - Precondition: `minimumCapacity > .zero`
+    @inlinable
+    public convenience init(minimumCapacity: Index<Element>.Count) {
+        precondition(minimumCapacity > .zero, "Arena capacity must be > 0")
+        let totalBytes = Memory.Address.Count(
+            UInt(Self._totalBytes(capacity: minimumCapacity))
+        )
+        let arena = Memory.Arena(capacity: totalBytes)
+        // Initialize meta region to virgin state
+        let cap = Int(bitPattern: minimumCapacity)
+        unsafe arena.baseAddress.initializeMemory(
+            as: Meta.self, repeating: .virgin, count: cap
+        )
+        self.init(
+            _arena: arena,
+            slotCapacity: minimumCapacity,
+            highWater: .zero
+        )
+    }
+}
 
 // MARK: - Properties
 
 extension Storage.Arena where Element: ~Copyable {
     /// Total number of element slots.
     @inlinable
-    public var capacity: Index<Element>.Count { _capacity }
+    public var slotCapacity: Index<Element>.Count { _slotCapacity }
 
-    /// Number of currently allocated (initialized) slots.
+    /// Highest slot index ever allocated.
+    ///
+    /// Write-through synced from the owning Buffer.Arena's header.
     @inlinable
-    public var allocated: Index<Element>.Count { _allocated }
-
-    /// Number of remaining (unallocated) slots.
-    @inlinable
-    public var remaining: Index<Element>.Count {
-        _capacity.subtract.saturating(_allocated)
+    public var highWater: Index<Element>.Count {
+        get { _highWater }
+        set { _highWater = newValue }
     }
-
-    /// Whether no slots are allocated.
-    @inlinable
-    public var isEmpty: Bool { _allocated == .zero }
 }
 
-// MARK: - Operations
+// MARK: - Element Operations
 
 extension Storage.Arena where Element: ~Copyable {
-    /// Allocates the next slot and returns its index.
+    /// Initializes the element at the given slot.
     ///
-    /// The returned slot contains uninitialized memory — the caller must
-    /// initialize it before use. The allocation is recorded as initialized
-    /// for teardown purposes: if the arena is deinitialized before the caller
-    /// initializes this slot, `deinit` will attempt to deinitialize
-    /// uninitialized memory (undefined behavior).
-    ///
-    /// If initialization can fail, use ``unallocate(_:)`` to roll back the
-    /// most recent allocation on the failure path.
-    ///
-    /// - Returns: Index of the allocated slot, or `nil` if the arena is full.
-    /// - Complexity: O(1)
+    /// - Parameter slot: A slot index. Must be < `slotCapacity`.
+    /// - Precondition: The slot is not already initialized.
     @inlinable
-    public func allocate() -> Index<Element>? {
-        let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)
-        let byteCount = Memory.Address.Count(UInt(_stride))
-
-        guard _arena.allocate(count: byteCount, alignment: alignment) != nil else {
-            return nil
-        }
-
-        let slot = _allocated.map(Ordinal.init)
-        _initializationBits[slot.retag(Bit.self)] = true
-        _allocated += .one
-        return slot
+    public func initialize(to element: consuming Element, at slot: Index<Element>) {
+        unsafe elementPointer(at: slot).initialize(to: element)
     }
 
-
-    /// Rolls back the most recent allocation.
+    /// Moves the element out of the given slot, leaving the slot deinitialized.
     ///
-    /// Only valid for the slot returned by the immediately preceding
-    /// ``allocate()`` call. The slot must not have been initialized.
-    ///
-    /// The underlying arena bytes are not reclaimed (bump pointer is not
-    /// rolled back). They remain wasted until the next ``deinitialize``
-    /// `.all()` or `deinit`.
-    ///
-    /// - Parameter slot: The slot returned by the last `allocate()` call.
-    /// - Precondition: `slot` is the most recently allocated slot.
-    /// - Precondition: The slot has not been initialized.
+    /// - Parameter slot: A slot index. Must be < `slotCapacity`.
+    /// - Precondition: The slot is initialized.
+    /// - Returns: The moved-out element.
     @inlinable
-    public func unallocate(_ slot: Index<Element>) {
-        let expected = _allocated.subtract.saturating(.one).map(Ordinal.init)
-        precondition(slot == expected, "unallocate requires the most recently allocated slot")
-        _initializationBits[slot.retag(Bit.self)] = false
-        _allocated = _allocated.subtract.saturating(.one)
+    public func move(at slot: Index<Element>) -> Element {
+        unsafe elementPointer(at: slot).move()
     }
-}
 
-// MARK: - Deinitialize Accessor
-
-extension Storage.Arena where Element: ~Copyable {
-    /// Accessor for tracked deinitialize operations.
+    /// Deinitializes the element at the given slot.
     ///
-    /// Provides `.deinitialize.all()` for safe cleanup.
-    ///
-    /// ```swift
-    /// arena.deinitialize.all()  // Deinitializes all elements, resets arena
-    /// ```
+    /// - Parameter slot: A slot index. Must be < `slotCapacity`.
+    /// - Precondition: The slot is initialized.
     @inlinable
-    public var `deinitialize`: Property<Storage.Deinitialize, Storage.Arena> {
-        Property(self)
-    }
-}
-
-// MARK: - Deinitialize Methods
-
-extension Property {
-    /// Deinitializes all allocated elements and resets the arena.
-    ///
-    /// After this call, all slots are uninitialized and the arena is empty.
-    /// The arena reuses the same backing storage.
-    ///
-    /// - Complexity: O(k) where k is the number of allocated slots.
-    @inlinable
-    public func all<Element: ~Copyable>()
-    where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Arena {
-        base._initializationBits.ones.forEach { bitIndex in
-            unsafe base.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
-        }
-        base._initializationBits.clear.all()
-        base._arena.reset()
-        base._allocated = .zero
+    public func deinitialize(at slot: Index<Element>) {
+        unsafe elementPointer(at: slot).deinitialize(count: 1)
     }
 }
 

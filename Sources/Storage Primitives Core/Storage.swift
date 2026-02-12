@@ -347,114 +347,168 @@ public enum Storage<Element: ~Copyable> {
         }
     }
 
-    /// Bump-allocated typed storage with bulk reset.
+    /// Slot-based typed storage with generation tokens and SoA layout.
     ///
-    /// `Storage<Element>.Arena` is a reference-semantic bump allocator for typed elements.
-    /// It provides:
-    /// - O(1) allocation (bump pointer)
-    /// - No individual deallocation
-    /// - Bulk reset via `deinitialize.all()`
-    /// - Automatic element deinit in `deinit` (via bitmap iteration)
+    /// `Storage<Element>.Arena` is a reference-semantic storage class for arena-style
+    /// data structures. It provides:
+    /// - SoA layout: per-slot metadata (generation tokens) + element array
+    /// - Automatic element cleanup in `deinit` (via generation-token iteration)
     /// - Reference semantics for conditional Copyability in buffer compositions
     ///
     /// ## Design Pattern
     ///
-    /// Composes `Memory.Arena` for raw byte management. Storage.Arena adds typed
-    /// element lifecycle tracking via `Bit.Vector`. Memory.Arena manages the bump
-    /// pointer and raw storage; Storage.Arena adds initialization tracking and
-    /// typed pointer access.
+    /// Composes `Memory.Arena` for raw byte management. Storage.Arena lays out
+    /// a meta array and an element array contiguously within Memory.Arena's raw
+    /// allocation. Memory.Arena manages allocation lifecycle (RAII); Storage.Arena
+    /// adds typed layout, element lifecycle, and reference semantics.
     ///
-    /// ## Usage
+    /// ## Layout
     ///
-    /// ```swift
-    /// let arena = try Storage<Node>.Arena(capacity: 64)
-    /// if let slot = arena.allocate() {
-    ///     arena.pointer(at: slot).initialize(to: node)
-    ///     // ... use ...
-    /// }
-    /// arena.deinitialize.all()  // Deinitializes all elements, resets arena
     /// ```
+    /// baseAddress
+    /// │
+    /// ▼
+    /// ┌─────────────────────────────────────────────────────────────────────┐
+    /// │ Meta₀ │ Meta₁ │ ... │ Meta_{n-1} │ [align pad] │ E₀ │ ... │ E_{n-1} │
+    /// └─────────────────────────────────────────────────────────────────────┘
+    /// ```
+    ///
+    /// ## Ownership
+    ///
+    /// Intended to be stored by a `Buffer.Arena` (or `Buffer.Arena.Bounded`) struct.
+    /// The struct manages the header (occupied count, free-list head); Storage.Arena
+    /// manages the backing storage and element deinit.
     public final class Arena {
 
         // MARK: - Stored Properties
 
-        /// Composed memory arena that manages raw bump allocation.
+        /// Composed memory arena — owns the raw allocation lifecycle.
         @usableFromInline
         package var _arena: Memory.Arena
 
-        /// Tracks which slots are currently initialized for deinit iteration.
-        @usableFromInline
-        package var _initializationBits: Bit.Vector
-
-        /// Number of currently allocated (initialized) slots.
-        @usableFromInline
-        package var _allocated: Index<Element>.Count
-
         /// Total number of element slots.
         @usableFromInline
-        package let _capacity: Index<Element>.Count
+        package let _slotCapacity: Index<Element>.Count
 
-        /// Element stride in bytes, for pointer arithmetic.
+        /// Highest slot index ever allocated. Used by deinit to bound iteration.
+        /// Must be synced (write-through) from the owning Buffer.Arena's header.
         @usableFromInline
-        package let _stride: Int
+        package var _highWater: Index<Element>.Count
 
-        // MARK: - Initializers
+        // MARK: - Package Init
 
-        /// Creates an arena with the specified element capacity.
-        ///
-        /// - Parameter capacity: Number of element slots. Must be > 0.
-        /// - Precondition: `capacity > .zero`
+        /// Creates a storage arena from pre-allocated parts.
         @inlinable
-        public init(capacity: Index<Element>.Count) {
-            precondition(capacity > .zero, "Arena capacity must be > 0")
-            let stride = MemoryLayout<Element>.stride
-            let totalBytes = Memory.Address.Count(UInt(Int(bitPattern: capacity) * stride))
-            self._arena = Memory.Arena(capacity: totalBytes)
-            self._initializationBits = Bit.Vector(capacity: capacity.retag(Bit.self))
-            self._allocated = .zero
-            self._capacity = capacity
-            self._stride = stride
+        package init(
+            _arena: consuming Memory.Arena,
+            slotCapacity: Index<Element>.Count,
+            highWater: Index<Element>.Count
+        ) {
+            self._arena = _arena
+            self._slotCapacity = slotCapacity
+            self._highWater = highWater
         }
 
-        // MARK: - Pointer Primitive
+        // MARK: - Meta
 
-        /// Returns a mutable pointer to the element at the given slot index.
+        /// Per-slot metadata: generation token + free-list link.
         ///
-        /// - Parameter slot: A slot index. Must be < capacity.
-        /// - Returns: Mutable pointer to the element's memory.
-        /// - Precondition: `slot` is within bounds.
+        /// Token parity is the sole occupancy oracle:
+        /// - Even token (including 0) → free or virgin
+        /// - Odd token → occupied
+        ///
+        /// `link` chains freed slots into a LIFO free-list.
+        /// `UInt32.max` = end of list (no next).
+        ///
+        /// 8 bytes per slot.
+        @frozen
+        public struct Meta: BitwiseCopyable {
+            /// Parity-tagged generation counter. Even = free, odd = occupied.
+            public var token: UInt32
+
+            /// Free-list link: index of the next free slot, or `UInt32.max` if none.
+            public var link: UInt32
+
+            /// Creates metadata with the given token and free-list link.
+            @inlinable
+            public init(token: UInt32, link: UInt32) {
+                self.token = token
+                self.link = link
+            }
+
+            /// Whether this slot is currently occupied (odd token = occupied).
+            @inlinable
+            public var isOccupied: Bool { token & 1 == 1 }
+
+            /// Virgin slot metadata: token 0 (free, never allocated), no next.
+            @inlinable
+            public static var virgin: Meta { Meta(token: 0, link: .max) }
+        }
+
+        // MARK: - Layout
+
+        /// Byte offset from `baseAddress` to the element region.
+        @inlinable
+        public static func _elementRegionOffset(
+            capacity: Index<Element>.Count
+        ) -> Int {
+            let metaBytes = Int(bitPattern: capacity) * MemoryLayout<Meta>.stride
+            let elementAlignment = max(MemoryLayout<Element>.alignment, 1)
+            return (metaBytes + elementAlignment - 1) & ~(elementAlignment - 1)
+        }
+
+        /// Total bytes required for the SoA layout.
+        @inlinable
+        public static func _totalBytes(
+            capacity: Index<Element>.Count
+        ) -> Int {
+            let elementOffset = _elementRegionOffset(capacity: capacity)
+            let elementBytes = Int(bitPattern: capacity) * MemoryLayout<Element>.stride
+            return elementOffset + elementBytes
+        }
+
+        // MARK: - Pointer Access
+
+        /// Pointer to the meta array base.
         @unsafe
         @inlinable
-        public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-            precondition(slot < _capacity, "Slot index out of bounds")
+        public var metaBase: UnsafeMutablePointer<Meta> {
+            unsafe _arena.baseAddress.assumingMemoryBound(to: Meta.self)
+        }
+
+        /// Pointer to the element at the given slot index.
+        @unsafe
+        @inlinable
+        public func elementPointer(
+            at slot: Index<Element>
+        ) -> UnsafeMutablePointer<Element> {
+            let offset = Self._elementRegionOffset(capacity: _slotCapacity)
             return unsafe _arena.baseAddress
-                .advanced(by: Int(bitPattern: slot) * _stride)
+                .advanced(by: offset + Int(bitPattern: slot) * MemoryLayout<Element>.stride)
                 .assumingMemoryBound(to: Element.self)
-        }
-
-        /// Returns an immutable pointer to the element at the given slot index.
-        ///
-        /// - Parameter slot: A slot index. Must be < capacity.
-        /// - Returns: Immutable pointer to the element's memory.
-        /// - Precondition: `slot` is within bounds.
-        @unsafe
-        @inlinable
-        @_disfavoredOverload
-        public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
-            precondition(slot < _capacity, "Slot index out of bounds")
-            return unsafe UnsafePointer(
-                _arena.baseAddress
-                    .advanced(by: Int(bitPattern: slot) * _stride)
-                    .assumingMemoryBound(to: Element.self)
-            )
         }
 
         // MARK: - Deinit
 
         deinit {
-            _initializationBits.ones.forEach { bitIndex in
-                unsafe pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+            // WORKAROUND: Uses `for i in` instead of `.forEach` closure
+            // WHY: Closures capturing ~Copyable fields of `self` inside deinit trigger
+            //      CopiedLoadBorrowEliminationVisitor segfault (swift-frontend signal 11)
+            // WHEN TO REMOVE: When MoveOnlyChecker deinit closure crash is fixed
+            let hw = Int(bitPattern: _highWater)
+            let meta = unsafe _arena.baseAddress.assumingMemoryBound(to: Meta.self)
+            let offset = Self._elementRegionOffset(capacity: _slotCapacity)
+            let elemBase = unsafe _arena.baseAddress.advanced(by: offset)
+            let stride = MemoryLayout<Element>.stride
+            for i in 0..<hw {
+                if meta[i].isOccupied {
+                    unsafe elemBase
+                        .advanced(by: i * stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
             }
+            // Memory.Arena deinit fires automatically → frees raw storage
         }
 
         // MARK: - Inline Arena

@@ -20,6 +20,7 @@ Research documents backing the storage-primitives implementation.
 | [split-storage-design](split-storage-design.md) | Tier 2: Field-handle-based dual-lane metadata-driven storage | RECOMMENDATION |
 | [split-storage-naming](split-storage-naming.md) | Tier 2: Literature study on naming for dual-lane storage type | RECOMMENDATION |
 | [storage-pool-architecture](storage-pool-architecture.md) | Tier 3: Composition vs independence for Storage.Pool | DECISION |
+| [noncopyable-copyable-conditional-audit](noncopyable-copyable-conditional-audit.md) | ~Copyable/Copyable conditional support audit across all disciplines | RECOMMENDATION |
 
 ## Key Architectural Decisions
 

@@ -16,4 +16,5 @@
 @_exported public import Storage_Heap_Primitives
 @_exported public import Storage_Inline_Primitives
 @_exported public import Storage_Pool_Primitives
+@_exported public import Storage_Arena_Primitives
 @_exported public import Storage_Split_Primitives
