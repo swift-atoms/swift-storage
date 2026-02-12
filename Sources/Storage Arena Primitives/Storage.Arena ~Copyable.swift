@@ -30,9 +30,8 @@ extension Storage.Arena where Element: ~Copyable {
         )
         let arena = Memory.Arena(capacity: totalBytes)
         // Initialize meta region to virgin state
-        let cap = Int(bitPattern: minimumCapacity)
         unsafe arena.baseAddress.initializeMemory(
-            as: Meta.self, repeating: .virgin, count: cap
+            as: Meta.self, repeating: .virgin, count: Int(bitPattern: minimumCapacity)
         )
         self.init(
             _arena: arena,
@@ -87,7 +86,7 @@ extension Storage.Arena where Element: ~Copyable {
     /// - Precondition: The slot is initialized.
     @inlinable
     public func deinitialize(at slot: Index<Element>) {
-        unsafe elementPointer(at: slot).deinitialize(count: 1)
+        unsafe elementPointer(at: slot).deinitialize(count: .one)
     }
 }
 

@@ -2,11 +2,12 @@
 
 <!--
 ---
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-02-12
-status: RECOMMENDATION
+status: IN_PROGRESS
 tier: 2
 changelog:
+  - "1.2.0: Mark analysis phases complete. Experiment and implementation pending."
   - "1.1.0: Incorporate access hierarchy (property > closure > pointer). Reclassify gaps."
   - "1.0.0: Initial audit."
 ---
@@ -270,9 +271,23 @@ How does swift-storage-primitives compare to the Swift standard library's ~Copya
 
 3. **Closure + ~Copyable** — While `Span<~Copyable>` is sound in principle, there may be compiler bugs when passing `Span<~Copyable>` through closures. Each relaxation should be validated with an experiment.
 
+## Status
+
+| Phase | Status |
+|-------|--------|
+| CA1: Type declarations | DONE — no gaps |
+| CA2: Extension constraints (core ops) | DONE — no gaps in core ops |
+| CA3: Access hierarchy gap classification | DONE — 5 gaps identified, hierarchy confirmed |
+| CA4: Missing Copyable convenience APIs | DONE — no action needed |
+| CA5: Sendable conformances | DONE — no gaps |
+| CA6: Stdlib comparison | DONE |
+| EXP: Validate `Span<~Copyable>` in closures | TODO |
+| IMPL: Relax `Heap.withMutableSpan(body:)` | TODO (blocked on EXP) |
+| IMPL: Relax range-based closure methods | TODO (blocked on EXP) |
+
 ## Outcome
 
-**Status**: RECOMMENDATION
+**Status**: IN_PROGRESS — analysis complete, experiment and implementation pending
 
 ### Access Hierarchy
 

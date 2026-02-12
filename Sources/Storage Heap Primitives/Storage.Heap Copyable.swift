@@ -34,7 +34,7 @@ extension Storage.Heap where Element: Copyable {
     ) throws(E) -> R {
         return try body(unsafe Span(
             _unsafeStart: pointer(at: range.lowerBound),
-            count: Int(bitPattern: range.count)
+            count: range.count
         ))
     }
 
@@ -58,7 +58,7 @@ extension Storage.Heap where Element: Copyable {
     ) throws(E) -> R {
         var span = unsafe MutableSpan(
             _unsafeStart: pointer(at: range.lowerBound),
-            count: Int(bitPattern: range.count)
+            count: range.count
         )
         return try body(&span)
     }

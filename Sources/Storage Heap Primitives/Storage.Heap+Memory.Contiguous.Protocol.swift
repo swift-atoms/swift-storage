@@ -28,7 +28,7 @@ extension Storage.Heap where Element: ~Copyable {
         get {
             let span = unsafe Swift.Span(
                 _unsafeStart: pointer(at: .zero),
-                count: Int(bitPattern: header.count)
+                count: header.count
             )
             return unsafe _overrideLifetime(span, borrowing: self)
         }
@@ -54,7 +54,7 @@ extension Storage.Heap: Memory.Contiguous.`Protocol` {
     ) throws(E) -> R {
         return try unsafe body(UnsafeBufferPointer(
             start: pointer(at: .zero),
-            count: Int(bitPattern: header.initialization.count)
+            count: header.initialization.count
         ))
     }
 }
@@ -77,7 +77,7 @@ extension Storage.Heap where Element: Copyable {
     ) throws(E) -> R {
         var span = unsafe MutableSpan(
             _unsafeStart: pointer(at: .zero),
-            count: Int(bitPattern: header.initialization.count)
+            count: header.initialization.count
         )
         return try body(&span)
     }
@@ -98,7 +98,7 @@ extension Storage.Heap where Element: Copyable {
     ) throws(E) -> R {
         return try unsafe body(UnsafeMutableBufferPointer(
             start: pointer(at: .zero),
-            count: Int(bitPattern: header.initialization.count)
+            count: header.initialization.count
         ))
     }
 }

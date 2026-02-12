@@ -505,7 +505,7 @@ public enum Storage<Element: ~Copyable> {
                     unsafe elemBase
                         .advanced(by: i * stride)
                         .assumingMemoryBound(to: Element.self)
-                        .deinitialize(count: 1)
+                        .deinitialize(count: .one)
                 }
             }
             // Memory.Arena deinit fires automatically → frees raw storage
