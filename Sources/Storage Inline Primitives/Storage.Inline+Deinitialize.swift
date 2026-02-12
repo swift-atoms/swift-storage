@@ -39,9 +39,11 @@ extension Storage.Inline where Element: ~Copyable {
 // MARK: - Deinitialize Methods
 
 extension Property.View where Base: ~Copyable {
-    /// Deinitializes the element at the given slot.
+    /// Deinitializes the element at the given bounded slot.
     ///
-    /// - Parameter slot: The slot to deinitialize.
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot to deinitialize.
     /// - Precondition: The slot must be initialized.
     /// - Note: Automatically clears the slot's tracking bit.
     @inlinable
@@ -49,9 +51,9 @@ extension Property.View where Base: ~Copyable {
     public mutating func callAsFunction<
         Element: ~Copyable,
         let capacity: Int
-    >(at slot: Index<Element>) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe UnsafeMutablePointer(mutating: base.pointee.pointer(at: slot)).deinitialize(count: .one)
-        unsafe base.pointee._slots[slot.retag()] = false
+    >(at slot: Index<Element>.Bounded<capacity>) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
+        unsafe base.pointee.pointer(at: slot).deinitialize(count: .one)
+        unsafe base.pointee._slots[Index<Element>(slot).retag()] = false
     }
     
     /// Deinitializes all elements in the given range.

@@ -29,8 +29,8 @@ extension Storage where Element: ~Copyable {
     /// for all access operations:
     ///
     /// ```swift
-    /// let lane = storage.laneField       // Storage<Payload>.Field<Metadata>
-    /// let element = storage.elementField // Storage<Payload>.Field<Payload>
+    /// let lane = storage.field.lane       // Storage<Payload>.Field<Metadata>
+    /// let element = storage.field.element // Storage<Payload>.Field<Payload>
     ///
     /// storage[lane, at: slot] = 0x80
     /// unsafe storage.pointer(element, at: slot).initialize(to: value)

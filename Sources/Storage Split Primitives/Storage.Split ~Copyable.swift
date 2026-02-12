@@ -67,28 +67,30 @@ extension Storage.Split where Element: ~Copyable {
 // MARK: - Field Handles
 
 extension Storage.Split where Element: ~Copyable {
-    /// The field handle for the lane (secondary/metadata) array.
+    /// Field handles for the lane (metadata) and element (payload) arrays.
     ///
-    /// The lane array starts at byte 0 of the elements region.
-    @inlinable
-    public var laneField: Storage.Field<Lane> {
-        Storage.Field<Lane>(
-            _offset: .zero,
-            _stride: .stride
-        )
-    }
-
-    /// The field handle for the element (primary/payload) array.
+    /// Captures both handles in a single access. The lane handle is trivial
+    /// (zero offset); the element handle requires alignment computation from
+    /// `header.capacity` — capture once and reuse.
     ///
-    /// The element array starts after the lane array, aligned to
-    /// `MemoryLayout<Element>.alignment`. The offset is derived from
-    /// `header.capacity` on each access — capture the handle once
-    /// and reuse it to avoid recomputation.
+    /// ```swift
+    /// let lane = storage.field.lane
+    /// let element = storage.field.element
+    ///
+    /// storage[lane, at: slot] = h2
+    /// unsafe storage.pointer(element, at: slot).initialize(to: value)
+    /// ```
     @inlinable
-    public var elementField: Storage.Field<Element> {
-        Storage.Field<Element>(
-            _offset: Memory.Address.Offset(Storage.Split<Lane>._elementRegionOffset(capacity: header.capacity)),
-            _stride: .stride
+    public var field: (lane: Storage.Field<Lane>, element: Storage.Field<Element>) {
+        (
+            lane: Storage.Field<Lane>(
+                _offset: .zero,
+                _stride: .stride
+            ),
+            element: Storage.Field<Element>(
+                _offset: Memory.Address.Offset(Storage.Split<Lane>._elementRegionOffset(capacity: header.capacity)),
+                _stride: .stride
+            )
         )
     }
 }

@@ -37,7 +37,7 @@ extension Storage.Split where Element: ~Copyable, Lane: Copyable {
         laneInitial: Lane
     ) -> Storage.Split<Lane> {
         let split: Storage.Split<Lane> = .create(capacity: capacity)
-        unsafe split.pointer(split.laneField, at: .zero).initialize(
+        unsafe split.pointer(split.field.lane, at: .zero).initialize(
             repeating: laneInitial,
             count: capacity.retag(Lane.self)
         )

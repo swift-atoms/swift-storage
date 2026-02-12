@@ -35,7 +35,7 @@ struct StorageSplitTests {
         #expect(storage.slotCapacity == capacity)
 
         // Verify all lane slots are initialized to 0x80
-        let lane = storage.laneField
+        let lane = storage.field.lane
         for i in 0..<16 {
             let slot = Index<Int>(Ordinal(UInt(i)))
             #expect(storage[lane, at: slot] == 0x80)
@@ -50,7 +50,7 @@ struct StorageSplitTests {
             capacity: 8,
             laneInitial: 0
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
         #expect(lane._offset == .zero)
         #expect(lane._stride == Affine.Discrete.Ratio<UInt8, Memory>(MemoryLayout<UInt8>.stride))
     }
@@ -61,7 +61,7 @@ struct StorageSplitTests {
             capacity: 8,
             laneInitial: 0
         )
-        let element = storage.elementField
+        let element = storage.field.element
         // 8 bytes of UInt8, then aligned to Int alignment (8 bytes on 64-bit)
         let expectedOffset = Memory.Address.Offset(Memory.Address.Count(Cardinal(8)))
         #expect(element._offset == expectedOffset)
@@ -74,7 +74,7 @@ struct StorageSplitTests {
             capacity: 3,
             laneInitial: 0
         )
-        let element = storage.elementField
+        let element = storage.field.element
         // 3 bytes of UInt8, aligned up to 8 for Int alignment
         let expectedOffset = Memory.Address.Offset(Memory.Address.Count(Cardinal(8)))
         #expect(element._offset == expectedOffset)
@@ -84,7 +84,7 @@ struct StorageSplitTests {
     func `element field alignment with large lane`() {
         // UInt8 element, Int lane — lane is larger
         let storage = Storage<UInt8>.Split<Int>.create(capacity: 4)
-        let element = storage.elementField
+        let element = storage.field.element
         // 4 Ints = 32 bytes of lane, UInt8 alignment = 1
         let expectedOffset = Memory.Address.Offset(Memory.Address.Count(Cardinal(UInt(4 * MemoryLayout<Int>.stride))))
         #expect(element._offset == expectedOffset)
@@ -98,7 +98,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0xFF
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
         let slot = Index<Int>(1)
 
         // Read via pointer
@@ -117,7 +117,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0
         )
-        let element = storage.elementField
+        let element = storage.field.element
         let slot = Index<Int>(2)
 
         // Initialize element via pointer
@@ -137,7 +137,7 @@ struct StorageSplitTests {
             capacity: 8,
             laneInitial: 0x80
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
 
         // Read
         #expect(storage[lane, at: .zero] == 0x80)
@@ -153,7 +153,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0
         )
-        let element = storage.elementField
+        let element = storage.field.element
 
         // Initialize first via pointer, then use subscript for read/write
         unsafe storage.pointer(element, at: .zero).initialize(to: 100)
@@ -173,7 +173,7 @@ struct StorageSplitTests {
             capacity: 16,
             laneInitial: 0x00
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
 
         // Fill with sentinel
         storage.fill(lane, with: 0x80)
@@ -190,7 +190,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0x80
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
 
         // Overwrite slot 2
         storage[lane, at: Index<Int>(2)] = 0x42
@@ -212,7 +212,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0x80
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
 
         // Mark slot 1 as occupied
         storage[lane, at: Index<Int>(1)] = 0x42
@@ -233,7 +233,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0x80
         )
-        let element = storage.elementField
+        let element = storage.field.element
         let slot = Index<Int>(1)
 
         storage.initialize(element, to: 999, at: slot)
@@ -254,7 +254,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0x80
         )
-        let element = storage.elementField
+        let element = storage.field.element
 
         storage.initialize(element, to: Tracker(), at: .zero)
         storage.initialize(element, to: Tracker(), at: Index<Tracker>(1))
@@ -284,8 +284,8 @@ struct StorageSplitTests {
             laneInitial: 0
         )
 
-        let element = storage.elementField
-        let lane = storage.laneField
+        let element = storage.field.element
+        let lane = storage.field.lane
 
         // Verify alignment — offset is divisible by alignment
         let offsetRaw = element._offset.vector.rawValue
@@ -310,8 +310,8 @@ struct StorageSplitTests {
     func `Int lane with UInt8 element`() {
         // Reversed: larger lane, smaller element
         let storage = Storage<UInt8>.Split<Int>.create(capacity: 4)
-        let lane = storage.laneField
-        let element = storage.elementField
+        let lane = storage.field.lane
+        let element = storage.field.element
 
         // Lane offset is 0, stride is 8
         #expect(lane._offset == .zero)
@@ -339,7 +339,7 @@ struct StorageSplitTests {
             capacity: 4,
             laneInitial: 0x42
         )
-        let lane = storage.laneField
+        let lane = storage.field.lane
 
         let ptr: UnsafePointer<UInt8> = unsafe storage.pointer(lane, at: .zero)
         let value = unsafe ptr.pointee

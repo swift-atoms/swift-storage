@@ -77,10 +77,10 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 400, at: 3)
 
             // Get pointers and verify stride-based layout
-            let ptr0 = unsafe storage.pointer(at: 0)
-            let ptr1 = unsafe storage.pointer(at: 1)
-            let ptr2 = unsafe storage.pointer(at: 2)
-            let ptr3 = unsafe storage.pointer(at: 3)
+            let ptr0: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 0)
+            let ptr1: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 1)
+            let ptr2: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 2)
+            let ptr3: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 3)
 
             let stride = MemoryLayout<Int>.stride
 
@@ -109,16 +109,16 @@ struct StorageInlineInvariantTests {
             storage.initialize(to: 3.0, at: 2)
             storage.initialize(to: 4.0, at: 3)
 
-            let ptr0 = unsafe storage.pointer(at: 0)
-            let ptr1 = unsafe storage.pointer(at: 1)
-            let ptr2 = unsafe storage.pointer(at: 2)
-            let ptr3 = unsafe storage.pointer(at: 3)
+            let ptr0: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 0)
+            let ptr1: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 1)
+            let ptr2: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 2)
+            let ptr3: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 3)
 
             let base = unsafe UnsafeRawPointer(ptr0)
-            unsafe #expect(UnsafeRawPointer(ptr0) == base + 0 * stride)
-            unsafe #expect(UnsafeRawPointer(ptr1) == base + 1 * stride)
-            unsafe #expect(UnsafeRawPointer(ptr2) == base + 2 * stride)
-            unsafe #expect(UnsafeRawPointer(ptr3) == base + 3 * stride)
+            #expect(unsafe UnsafeRawPointer(ptr0) == base + 0 * stride)
+            #expect(unsafe UnsafeRawPointer(ptr1) == base + 1 * stride)
+            #expect(unsafe UnsafeRawPointer(ptr2) == base + 2 * stride)
+            #expect(unsafe UnsafeRawPointer(ptr3) == base + 3 * stride)
 
             // Cleanup
             _ = storage.move(at: 0)

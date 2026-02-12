@@ -38,14 +38,14 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage<Empty>.Inline<8>()
 
             // Should be able to initialize all slots
-            for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Empty>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 storage.initialize(to: Empty(), at: i)
             }
 
             #expect(storage.initialization.count == 8)
 
             // Should be able to move all slots
-            for i: Index<Empty> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Empty>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 _ = storage.move(at: i)
             }
 
@@ -80,20 +80,16 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage<UInt8>.Inline<255>()
 
             // Fill all slots
-            var slot: Index<UInt8> = 0
             for i in 0..<255 {
-                storage.initialize(to: UInt8(i), at: slot)
-                slot = slot.successor.saturating()
+                storage.initialize(to: UInt8(i), at: .init(integerLiteral: UInt(i)))
             }
 
             #expect(storage.initialization.count == 255)
 
             // Verify all values
-            slot = 0
             for i in 0..<255 {
-                let value = storage.move(at: slot)
+                let value = storage.move(at: .init(integerLiteral: UInt(i)))
                 #expect(value == UInt8(i))
-                slot = slot.successor.saturating()
             }
 
             #expect(storage.isEmpty == true)
@@ -133,18 +129,18 @@ struct StorageInlineEdgeCaseTests {
 
             var storage = Storage<MixedPadding>.Inline<4>()
 
-            for i: Index<MixedPadding> in [0, 1, 2, 3] {
+            for i: Index<MixedPadding>.Bounded<4> in [0, 1, 2, 3] {
                 storage.initialize(to: MixedPadding(a: 1, b: 2, c: 3), at: i)
             }
 
             // Verify pointer spacing
-            let ptr0 = unsafe storage.pointer(at: 0)
-            let ptr1 = unsafe storage.pointer(at: 1)
+            let ptr0: UnsafeMutablePointer<MixedPadding> = unsafe storage.pointer(at: 0)
+            let ptr1: UnsafeMutablePointer<MixedPadding> = unsafe storage.pointer(at: 1)
             let diff = unsafe UnsafeRawPointer(ptr1) - UnsafeRawPointer(ptr0)
             #expect(diff == stride)
 
             // Cleanup
-            for i: Index<MixedPadding> in [0, 1, 2, 3] {
+            for i: Index<MixedPadding>.Bounded<4> in [0, 1, 2, 3] {
                 _ = storage.move(at: i)
             }
         }
@@ -254,15 +250,15 @@ struct StorageInlineEdgeCaseTests {
 
             for round in 0..<100 {
                 // Initialize all
-                for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
-                    storage.initialize(to: round * 8 + Int(i.rawValue.rawValue), at: i)
+                for i: Index<Int>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
+                    storage.initialize(to: round * 8 + Int(Index<Int>(i).rawValue.rawValue), at: i)
                 }
 
                 #expect(storage.initialization.count == 8)
 
                 // Move all
-                for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
-                    let expected = round * 8 + Int(i.rawValue.rawValue)
+                for i: Index<Int>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
+                    let expected = round * 8 + Int(Index<Int>(i).rawValue.rawValue)
                     #expect(storage.move(at: i) == expected)
                 }
 
@@ -290,7 +286,7 @@ struct StorageInlineEdgeCaseTests {
                     var storage = Storage<Tracker>.Inline<4>()
 
                     // Initialize all slots
-                    for i: Index<Tracker> in [0, 1, 2, 3] {
+                    for i: Index<Tracker>.Bounded<4> in [0, 1, 2, 3] {
                         storage.initialize(to: Tracker(), at: i)
                     }
 
@@ -401,8 +397,8 @@ struct StorageInlineEdgeCaseTests {
             let heap = Storage<Int>.Heap.create(minimumCapacity: 8)
 
             // Fill completely
-            for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
-                inline.initialize(to: Int(i.rawValue.rawValue) * 11, at: i)
+            for i: Index<Int>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
+                inline.initialize(to: Int(Index<Int>(i).rawValue.rawValue) * 11, at: i)
             }
 
             #expect(inline.initialization.count == 8)
@@ -503,19 +499,15 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage<Int64>.Inline<16>()
 
             // Initialize all
-            var slot: Index<Int64> = 0
             for i in 0..<16 {
-                storage.initialize(to: Int64(i), at: slot)
-                slot = slot.successor.saturating()
+                storage.initialize(to: Int64(i), at: .init(integerLiteral: UInt(i)))
             }
 
             // Get all pointers and verify ordering
             var pointers: [UnsafeRawPointer] = unsafe []
-            slot = 0
-            for _ in 0..<16 {
-                let ptr = unsafe storage.pointer(at: slot)
+            for i in 0..<16 {
+                let ptr: UnsafeMutablePointer<Int64> = unsafe storage.pointer(at: .init(integerLiteral: UInt(i)))
                 unsafe pointers.append(UnsafeRawPointer(ptr))
-                slot = slot.successor.saturating()
             }
 
             // Verify strictly increasing
@@ -531,10 +523,8 @@ struct StorageInlineEdgeCaseTests {
             }
 
             // Cleanup
-            slot = 0
-            for _ in 0..<16 {
-                _ = storage.move(at: slot)
-                slot = slot.successor.saturating()
+            for i in 0..<16 {
+                _ = storage.move(at: .init(integerLiteral: UInt(i)))
             }
         }
 
@@ -543,12 +533,12 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage<Int>.Inline<8>()
 
             // Initialize with sentinel values
-            for i: Index<Int> in [0, 1, 2, 3, 4, 5, 6, 7] {
+            for i: Index<Int>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
                 storage.initialize(to: -1, at: i)
             }
 
             // Modify slot 4 via pointer
-            let ptr = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: 4))
+            let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 4)
             unsafe ptr.pointee = 42
 
             // Verify only slot 4 changed
@@ -784,20 +774,16 @@ struct StorageInlineEdgeCaseTests {
             var storage = Storage<UInt8>.Inline<256>()
 
             // Fill with pattern
-            var slot: Index<UInt8> = 0
             for i in 0..<256 {
-                storage.initialize(to: UInt8(i), at: slot)
-                slot = slot.successor.saturating()
+                storage.initialize(to: UInt8(i), at: .init(integerLiteral: UInt(i)))
             }
 
             #expect(storage.initialization.count == 256)
 
             // Verify pattern
-            slot = 0
             for i in 0..<256 {
-                let value = storage.move(at: slot)
+                let value = storage.move(at: .init(integerLiteral: UInt(i)))
                 #expect(value == UInt8(i))
-                slot = slot.successor.saturating()
             }
 
             #expect(storage.isEmpty == true)
@@ -815,23 +801,19 @@ struct StorageInlineEdgeCaseTests {
             // 32 bytes × 32 = 1024 bytes of element storage
             var storage = Storage<Large>.Inline<32>()
 
-            var slot: Index<Large> = 0
             for i in 0..<32 {
                 storage.initialize(
                     to: Large(a: Int64(i), b: Int64(i*2), c: Int64(i*3), d: Int64(i*4)),
-                    at: slot
+                    at: .init(integerLiteral: UInt(i))
                 )
-                slot = slot.successor.saturating()
             }
 
             #expect(storage.initialization.count == 32)
 
-            slot = 0
             for i in 0..<32 {
-                let v = storage.move(at: slot)
+                let v = storage.move(at: .init(integerLiteral: UInt(i)))
                 #expect(v.a == Int64(i))
                 #expect(v.d == Int64(i*4))
-                slot = slot.successor.saturating()
             }
         }
     }

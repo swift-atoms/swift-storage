@@ -89,19 +89,21 @@ extension Property.View where Base: ~Copyable {
     }
     
     
-    /// Moves the element at the given physical slot, deinitializing that slot.
+    /// Moves the element at the given bounded physical slot, deinitializing that slot.
     ///
-    /// - Parameter slot: The physical slot to move from.
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded physical slot to move from.
     /// - Returns: The moved element.
     /// - Precondition: The element at `slot` must be initialized.
     /// - Note: Automatically marks the slot as uninitialized in the tracking bit vector.
     @inlinable
     @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
-        at slot: Index<Element>
+        at slot: Index<Element>.Bounded<capacity>
     ) -> Element where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
-        let element = unsafe UnsafeMutablePointer(mutating: base.pointee.pointer(at: slot)).move()
-        unsafe base.pointee._slots[slot.retag()] = false
+        let element = unsafe base.pointee.pointer(at: slot).move()
+        unsafe base.pointee._slots[Index<Element>(slot).retag()] = false
         return element
     }
     
@@ -129,6 +131,8 @@ extension Property.View where Base: ~Copyable {
     where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
         let currentCount = unsafe base.pointee.initialization.count
         guard currentCount > .zero else { throw .empty }
-        return unsafe base.pointee.move(at: currentCount.subtract.saturating(.one).map(Ordinal.init))
+        let slot = currentCount.subtract.saturating(.one).map(Ordinal.init)
+        let bounded = Index<Element>.Bounded<capacity>(slot)!
+        return self(at: bounded)
     }
 }

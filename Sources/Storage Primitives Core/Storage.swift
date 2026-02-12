@@ -671,6 +671,33 @@ extension Storage.Heap where Element: ~Copyable {
 // MARK: - Fundamental Slot Access (Inline)
 
 extension Storage.Inline where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given bounded physical slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded physical slot coordinate.
+    /// - Returns: A mutable pointer to the element.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
+        unsafe UnsafeMutablePointer(mutating: pointer(at: Index<Element>(slot)))
+    }
+
+    /// Returns an immutable pointer to the element at the given bounded physical slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded physical slot coordinate.
+    /// - Returns: An immutable pointer to the element.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
+        unsafe pointer(at: Index<Element>(slot))
+    }
+
     /// Returns an immutable pointer to the element at the given physical slot.
     ///
     /// This is the primitive address computation for inline storage.
@@ -682,7 +709,7 @@ extension Storage.Inline where Element: ~Copyable {
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+    package func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
             unsafe UnsafeRawPointer(base)
                 .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)

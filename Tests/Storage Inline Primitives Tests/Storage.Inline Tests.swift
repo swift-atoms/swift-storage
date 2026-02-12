@@ -33,12 +33,11 @@ struct StorageInlineTests {
     @Test
     func `initialize and move element`() {
         var storage = Storage<Int>.Inline<8>()
-        let slot: Index<Int> = .zero
 
-        storage.initialize(to: 42, at: slot)
+        storage.initialize(to: 42, at: 0)
         #expect(storage.initialization.count == 1)
 
-        let value = storage.move(at: slot)
+        let value = storage.move(at: 0)
         #expect(value == 42)
         #expect(storage.isEmpty == true)
     }
@@ -47,20 +46,16 @@ struct StorageInlineTests {
     func `initialize multiple elements`() {
         var storage = Storage<Int>.Inline<8>()
 
-        var slot: Index<Int> = .zero
         for i in 0..<8 {
-            storage.initialize(to: i * 10, at: slot)
-            slot = slot.successor.saturating()
+            storage.initialize(to: i * 10, at: .init(integerLiteral: UInt(i)))
         }
 
         #expect(storage.initialization.count == 8)
 
         // Move in forward order to verify all initialized
-        slot = .zero
         for i in 0..<8 {
-            let value = storage.move(at: slot)
+            let value = storage.move(at: .init(integerLiteral: UInt(i)))
             #expect(value == i * 10)
-            slot = slot.successor.saturating()
         }
 
         #expect(storage.isEmpty == true)
@@ -71,28 +66,26 @@ struct StorageInlineTests {
     @Test
     func `pointer returns correct address`() {
         var storage = Storage<Int>.Inline<8>()
-        let slot = Index<Int>(3)
 
-        storage.initialize(to: 99, at: slot)
+        storage.initialize(to: 99, at: 3)
 
-        let ptr = unsafe storage.pointer(at: slot)
+        let ptr: UnsafePointer<Int> = unsafe storage.pointer(at: 3)
         let pointee = unsafe ptr.pointee
         #expect(pointee == 99)
 
-        _ = storage.move(at: slot)
+        _ = storage.move(at: 3)
     }
 
     @Test
     func `mutable pointer allows modification`() {
         var storage = Storage<Int>.Inline<8>()
-        let slot: Index<Int> = .zero
 
-        storage.initialize(to: 50, at: slot)
+        storage.initialize(to: 50, at: 0)
 
-        let ptr = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: slot))
+        let ptr: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 0)
         unsafe ptr.pointee = 100
 
-        let value = storage.move(at: slot)
+        let value = storage.move(at: 0)
         #expect(value == 100)
     }
 
@@ -102,10 +95,10 @@ struct StorageInlineTests {
     func `deinitialize at single slot`() {
         var storage = Storage<Int>.Inline<8>()
 
-        storage.initialize(to: 42, at: .zero)
+        storage.initialize(to: 42, at: 0)
         #expect(storage.initialization.count == 1)
 
-        storage.deinitialize(at: .zero)
+        storage.deinitialize(at: 0)
         #expect(storage.isEmpty == true)
     }
 
@@ -113,10 +106,8 @@ struct StorageInlineTests {
     func `deinitialize range of elements`() {
         var storage = Storage<Int>.Inline<8>()
 
-        var slot: Index<Int> = .zero
         for i in 0..<4 {
-            storage.initialize(to: i, at: slot)
-            slot = slot.successor.saturating()
+            storage.initialize(to: i, at: .init(integerLiteral: UInt(i)))
         }
 
         #expect(storage.initialization.count == 4)
@@ -139,10 +130,8 @@ struct StorageInlineTests {
         do {
             var storage = Storage<Tracker>.Inline<8>()
 
-            var slot: Index<Tracker> = .zero
-            for _ in 0..<4 {
-                storage.initialize(to: Tracker(), at: slot)
-                slot = slot.successor.saturating()
+            for i in 0..<4 {
+                storage.initialize(to: Tracker(), at: .init(integerLiteral: UInt(i)))
             }
 
             #expect(storage.initialization.count == 4)
@@ -163,10 +152,8 @@ struct StorageInlineTests {
 
         var storage = Storage<Tracker>.Inline<8>()
 
-        var slot: Index<Tracker> = .zero
-        for _ in 0..<5 {
-            storage.initialize(to: Tracker(), at: slot)
-            slot = slot.successor.saturating()
+        for i in 0..<5 {
+            storage.initialize(to: Tracker(), at: .init(integerLiteral: UInt(i)))
         }
 
         #expect(storage.initialization.count == 5)
@@ -192,11 +179,11 @@ struct StorageInlineTests {
         var intStorage = Storage<Int>.Inline<4>()
         var doubleStorage = Storage<Double>.Inline<4>()
 
-        intStorage.initialize(to: 42, at: .zero)
-        doubleStorage.initialize(to: 3.14, at: .zero)
+        intStorage.initialize(to: 42, at: 0)
+        doubleStorage.initialize(to: 3.14, at: 0)
 
-        let intValue = intStorage.move(at: .zero)
-        let doubleValue = doubleStorage.move(at: .zero)
+        let intValue = intStorage.move(at: 0)
+        let doubleValue = doubleStorage.move(at: 0)
 
         #expect(intValue == 42)
         #expect(doubleValue == 3.14)
@@ -213,13 +200,12 @@ struct StorageInlineTests {
         }
 
         var storage = Storage<LargeElement>.Inline<2>()
-        let slot1: Index<LargeElement> = 1
 
-        storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: .zero)
-        storage.initialize(to: LargeElement(a: 4, b: 5, c: 6), at: slot1)
+        storage.initialize(to: LargeElement(a: 1, b: 2, c: 3), at: 0)
+        storage.initialize(to: LargeElement(a: 4, b: 5, c: 6), at: 1)
 
-        let first = storage.move(at: .zero)
-        let second = storage.move(at: slot1)
+        let first = storage.move(at: 0)
+        let second = storage.move(at: 1)
 
         #expect(first.a == 1 && first.b == 2 && first.c == 3)
         #expect(second.a == 4 && second.b == 5 && second.c == 6)
@@ -233,10 +219,8 @@ struct StorageInlineTests {
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
-        var slot: Index<Int> = .zero
         for i in 0..<4 {
-            inline.initialize(to: (i + 1) * 100, at: slot)
-            slot = slot.successor.saturating()
+            inline.initialize(to: (i + 1) * 100, at: .init(integerLiteral: UInt(i)))
         }
 
         #expect(inline.initialization.count == 4)
@@ -249,11 +233,11 @@ struct StorageInlineTests {
         #expect(inline.isEmpty == true)
 
         // Verify heap has the values
-        slot = .zero
+        var heapSlot: Index<Int> = .zero
         for i in 0..<4 {
-            let value = heap.move(at: slot)
+            let value = heap.move(at: heapSlot)
             #expect(value == (i + 1) * 100)
-            slot = slot.successor.saturating()
+            heapSlot = heapSlot.successor.saturating()
         }
         heap.initialization = .empty
     }
@@ -276,10 +260,8 @@ struct StorageInlineTests {
         let capacity: Index<Int>.Count = 8
         let heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
 
-        var slot: Index<Int> = .zero
         for i in 0..<4 {
-            inline.initialize(to: i * 5, at: slot)
-            slot = slot.successor.saturating()
+            inline.initialize(to: i * 5, at: .init(integerLiteral: UInt(i)))
         }
 
         let range: Swift.Range<Index<Int>> = .zero..<4
@@ -290,19 +272,17 @@ struct StorageInlineTests {
         #expect(inline.initialization.count == 4)
 
         // Verify inline still has original values
-        slot = .zero
         for i in 0..<4 {
-            let value = inline.move(at: slot)
+            let value = inline.move(at: .init(integerLiteral: UInt(i)))
             #expect(value == i * 5)
-            slot = slot.successor.saturating()
         }
 
         // Verify heap has copies
-        slot = .zero
+        var heapSlot: Index<Int> = .zero
         for i in 0..<4 {
-            let value = heap.move(at: slot)
+            let value = heap.move(at: heapSlot)
             #expect(value == i * 5)
-            slot = slot.successor.saturating()
+            heapSlot = heapSlot.successor.saturating()
         }
         heap.initialization = .empty
     }
@@ -345,7 +325,7 @@ struct StorageInlineTests {
 
             // Initialize via pointer (like Vector.Inline.init(initializing:))
             // Note: pointer-based init bypasses auto-tracking
-            let ptr: UnsafeMutablePointer<TrackedValue> = unsafe UnsafeMutablePointer(mutating: storage.pointer(at: .zero))
+            let ptr: UnsafeMutablePointer<TrackedValue> = unsafe storage.pointer(at: 0)
             unsafe (ptr + 0).initialize(to: TrackedValue(1, tracker: tracker))
             unsafe (ptr + 1).initialize(to: TrackedValue(2, tracker: tracker))
             unsafe (ptr + 2).initialize(to: TrackedValue(3, tracker: tracker))
@@ -431,7 +411,7 @@ struct StorageInlineTests {
 
         do {
             var storage = Storage<Marker>.Inline<2>()
-            storage.initialize(to: Marker(), at: .zero)
+            storage.initialize(to: Marker(), at: 0)
             storage.initialize(to: Marker(), at: 1)
 
             #expect(storage.initialization.count == 2)

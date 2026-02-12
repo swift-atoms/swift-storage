@@ -40,21 +40,23 @@ extension Storage.Inline where Element: ~Copyable {
 // MARK: - Initialize Methods
 
 extension Property.View where Base: ~Copyable {
-    /// Initializes storage at the given physical slot with the provided value.
+    /// Initializes storage at the given bounded physical slot with the provided value.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
     ///
     /// - Parameters:
     ///   - element: The value to store.
-    ///   - slot: The physical slot to initialize.
+    ///   - slot: A bounded physical slot to initialize.
     /// - Precondition: The element at `slot` must be uninitialized.
     /// - Note: Automatically marks the slot as initialized in the tracking bit vector.
     @inlinable
     @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         to element: consuming Element,
-        at slot: Index<Element>
+        at slot: Index<Element>.Bounded<capacity>
     ) where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe UnsafeMutablePointer(mutating: base.pointee.pointer(at: slot)).initialize(to: element)
-        unsafe base.pointee._slots[slot.retag()] = true
+        unsafe base.pointee.pointer(at: slot).initialize(to: element)
+        unsafe base.pointee._slots[Index<Element>(slot).retag()] = true
     }
     
     /// Initializes the next available slot with the given element.
@@ -70,7 +72,7 @@ extension Property.View where Base: ~Copyable {
     /// ```
     ///
     /// - Parameter element: The value to store.
-    /// - Returns: The slot where the element was stored.
+    /// - Returns: The bounded slot where the element was stored.
     /// - Throws: ``Storage/Error/capacityExceeded`` if storage is full.
     ///   If thrown, the `consuming` element is destroyed (callee owns it).
     ///   For `~Copyable` elements, verify capacity before calling.
@@ -79,11 +81,12 @@ extension Property.View where Base: ~Copyable {
     @_lifetime(&self)
     public mutating func next<Element: ~Copyable, let capacity: Int>(
         to element: consuming Element
-    ) throws(Storage<Element>.Error) -> Index<Element>
+    ) throws(Storage<Element>.Error) -> Index<Element>.Bounded<capacity>
     where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Inline<capacity> {
         let slot = unsafe base.pointee.initialization.count.map(Ordinal.init)
         guard unsafe slot < base.pointee.slotCapacity else { throw .capacityExceeded }
-        unsafe base.pointee.initialize(to: element, at: slot)
-        return slot
+        let bounded = Index<Element>.Bounded<capacity>(slot)!
+        self(to: element, at: bounded)
+        return bounded
     }
 }

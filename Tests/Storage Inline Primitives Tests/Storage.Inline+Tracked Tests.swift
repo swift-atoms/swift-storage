@@ -25,11 +25,11 @@ struct StorageInlineTrackedTests {
         var storage = Storage<Int>.Inline<8>()
 
         let slot0 = try storage.initialize.next(to: 10)
-        #expect(slot0 == .zero)
+        #expect(Index<Int>(slot0) == .zero)
         #expect(storage.initialization.count == Index<Int>.Count(1))
 
         let slot1 = try storage.initialize.next(to: 20)
-        #expect(slot1.rawValue.rawValue == 1)
+        #expect(Index<Int>(slot1).rawValue.rawValue == 1)
         #expect(storage.initialization.count == Index<Int>.Count(2))
 
         storage.deinitialize.all()
@@ -69,7 +69,7 @@ struct StorageInlineTrackedTests {
 
         for i in 0..<4 {
             let slot = try storage.initialize.next(to: i)
-            #expect(slot.rawValue.rawValue == UInt(i))
+            #expect(Index<Int>(slot).rawValue.rawValue == UInt(i))
         }
 
         storage.deinitialize.all()

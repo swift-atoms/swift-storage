@@ -54,8 +54,8 @@ extension Storage where Element: ~Copyable {
     /// offset and stride. All access methods take a field handle plus a slot index:
     ///
     /// ```swift
-    /// let lane = storage.laneField
-    /// let element = storage.elementField
+    /// let lane = storage.field.lane
+    /// let element = storage.field.element
     ///
     /// storage[lane, at: slot] = h2           // Copyable subscript
     /// unsafe storage.pointer(element, at: slot).initialize(to: value)
