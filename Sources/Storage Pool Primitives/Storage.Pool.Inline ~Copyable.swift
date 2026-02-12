@@ -61,7 +61,7 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     ///
     /// - Returns: Bounded index of the allocated slot.
     /// - Throws: `.exhausted` if no free slots remain.
-    /// - Complexity: O(capacity) worst case (bitmap scan).
+    /// - Complexity: O(capacity / 64) worst case (word-level bitmap scan).
     @inlinable
     public mutating func allocate() throws(Storage.Pool.Error) -> Index<Element>.Bounded<capacity> {
         let slotCapacity = slotCapacity
@@ -69,16 +69,10 @@ extension Storage.Pool.Inline where Element: ~Copyable {
             throw .exhausted(capacity: slotCapacity)
         }
 
-        for i in 0..<capacity {
-            let elementIndex = (try! Index<Element>.Count(i)).map(Ordinal.init)
-            let bitIndex = elementIndex.retag(Bit.self)
-            if !_slots[bitIndex] {
-                _slots[bitIndex] = true
-                _allocated += .one
-                return Index<Element>.Bounded<capacity>(elementIndex)!
-            }
-        }
-        fatalError("Unreachable: _allocated < capacity but no unset bit found")
+        let bitIndex = _slots.zeros.first!
+        _slots[bitIndex] = true
+        _allocated += .one
+        return Index<Element>.Bounded<capacity>(bitIndex.retag(Element.self))!
     }
 
     /// Returns a slot to the pool.
