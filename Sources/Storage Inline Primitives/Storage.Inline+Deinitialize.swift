@@ -98,3 +98,24 @@ extension Property.View where Base: ~Copyable {
         unsafe base.pointee._slots.clear.all()
     }
 }
+
+// MARK: - Non-Mutating Cleanup (for deinit)
+
+extension Storage.Inline where Element: ~Copyable {
+    /// Deinitializes all slots tracked as initialized.
+    ///
+    /// This method is non-mutating and does not reset the tracking state —
+    /// intended for use in `deinit` contexts where the storage is being consumed
+    /// and no further state updates are needed.
+    ///
+    /// Uses the per-slot bitvector as the source of truth, correctly handling
+    /// linear, sparse, and disjoint initialization patterns.
+    @unsafe
+    @inlinable
+    public func _deinitializeTrackedSlots() {
+        for bitIndex in _slots.ones {
+            unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
+                .deinitialize(count: .one)
+        }
+    }
+}

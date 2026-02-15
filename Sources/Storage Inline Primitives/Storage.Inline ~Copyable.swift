@@ -40,9 +40,6 @@ extension Storage.Inline where Element: ~Copyable {
     /// by updating the bit vector ranges. This allows buffer-primitives to
     /// sync header state with storage via
     /// `storage.initialization = header.initialization`.
-    // WORKAROUND: @_optimize(none) — CopyPropagation crash (Swift 6.2.3)
-    // WHEN TO REMOVE: When swiftlang/swift CopyPropagation ~Copyable bug is fixed
-    @_optimize(none)
     @inlinable
     public var initialization: Storage.Initialization {
         get {

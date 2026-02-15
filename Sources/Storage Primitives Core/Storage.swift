@@ -20,7 +20,7 @@ public import Finite_Primitives
 /// | Need | Choose | Lifecycle |
 /// |------|--------|-----------|
 /// | Automatic cleanup, contiguous elements | ``Storage/Heap`` | **Tracked** — range-based initialization tracking with automatic cleanup in `deinit` |
-/// | Stack-allocated, fixed capacity ≤256 | ``Storage/Inline`` | **Auto-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
+/// | Stack-allocated, fixed capacity ≤256 | ``Storage/Inline`` | **Auto-tracked** — per-slot bit-vector tracking; consumer responsible for cleanup |
 /// | Dual-array with consumer-defined metadata | ``Storage/Split`` | **Metadata-driven** — no tracking; consumer interprets lane metadata to determine element validity |
 /// | Pool allocation with per-slot reuse | ``Storage/Pool`` | **Bitmap-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
 ///
@@ -93,7 +93,6 @@ public enum Storage<Element: ~Copyable> {
     /// let value = storage.move(at: .zero)
     /// ```
     public final class Heap: ManagedBuffer<Storage.Heap.Header, Element> {
-        @_optimize(none)
         deinit {
             deinitialize()
         }
@@ -148,9 +147,11 @@ public enum Storage<Element: ~Copyable> {
     /// - `initialize(to:at:)` sets the slot's bit
     /// - `move(at:)` clears the slot's bit
     /// - `deinitialize(at:)` clears the slot's bit
-    /// - `deinit` iterates set bits to clean up only initialized slots
     ///
-    /// This eliminates the footgun where callers had to manually manage state.
+    /// The consuming buffer type is responsible for iterating set bits to clean
+    /// up initialized slots in its own `deinit`. This follows the raw-storage
+    /// pattern established by `MaybeUninit` (Rust), `trivial union` (C++26),
+    /// and `ManagedBuffer` (Swift stdlib).
     ///
     /// ## Invariants
     ///
@@ -164,7 +165,7 @@ public enum Storage<Element: ~Copyable> {
     /// var storage = Storage<Int>.Inline<8>()
     /// storage.initialize(to: 42, at: .zero)
     /// let value = storage.move(at: .zero)
-    /// // No manual state management needed — deinit handles cleanup automatically
+    /// // Consumer (buffer type) handles cleanup via _slots.ones iteration
     /// ```
     /// Fixed-capacity pool storage with O(1) allocate and deallocate.
     ///
@@ -173,7 +174,6 @@ public enum Storage<Element: ~Copyable> {
     /// - O(1) allocation via virgin cursor + free list
     /// - O(1) deallocation via free list push
     /// - Per-slot reuse (LIFO free list)
-    /// - Automatic element deinit in `deinit` (via bitmap iteration)
     /// - Reference semantics for conditional Copyability in buffer compositions
     /// - CoW support via `isKnownUniquelyReferenced` + `copy()`
     ///
@@ -273,9 +273,8 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Deinit
 
-        @_optimize(none)
         deinit {
-            _pool.allocation.indices.forEach { bitIndex in
+            for bitIndex in _pool.allocation.indices {
                 unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
             }
         }
@@ -303,8 +302,9 @@ public enum Storage<Element: ~Copyable> {
         /// - O(capacity) allocation via bitmap scanning (no in-band free list)
         /// - O(1) deallocation via bit flip
         /// - Per-slot reuse (bitmap-tracked)
-        /// - Automatic element deinit in `deinit` (via bitmap iteration)
         /// - `Index<Element>.Bounded<N>` for precondition-free pointer access
+        ///
+        /// Element cleanup is the consuming buffer type's responsibility.
         ///
         /// ## Design
         ///
@@ -339,9 +339,6 @@ public enum Storage<Element: ~Copyable> {
             @usableFromInline package var _storage: _Raw
             @usableFromInline package var _slots: Bit.Vector.Static<4>
             @usableFromInline package var _allocated: Index<Element>.Count
-            // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
-            // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
-            var _deinitWorkaround: AnyObject? = nil
 
             /// Creates an empty inline pool with all slots unallocated.
             @inlinable
@@ -350,13 +347,6 @@ public enum Storage<Element: ~Copyable> {
                 _storage = _Raw()
                 _slots = Bit.Vector.Static<4>()
                 _allocated = .zero
-            }
-
-            @_optimize(none)
-            deinit {
-                _slots.ones.forEach { bitIndex in
-                    unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
-                }
             }
         }
     }
@@ -502,7 +492,6 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Deinit
 
-        @_optimize(none)
         deinit {
             // WORKAROUND: Uses `for i in` instead of `.forEach` closure
             // WHY: Closures capturing ~Copyable fields of `self` inside deinit trigger
@@ -533,8 +522,9 @@ public enum Storage<Element: ~Copyable> {
         /// - O(1) allocation (sequential bump)
         /// - No individual deallocation
         /// - Bulk reset via `deinitialize.all()`
-        /// - Automatic element deinit in `deinit` (via bitmap iteration)
         /// - `Index<Element>.Bounded<N>` for precondition-free pointer access
+        ///
+        /// Element cleanup is the consuming buffer type's responsibility.
         ///
         /// ## Invariants
         ///
@@ -563,9 +553,6 @@ public enum Storage<Element: ~Copyable> {
             @usableFromInline package var _storage: _Raw
             @usableFromInline package var _slots: Bit.Vector.Static<4>
             @usableFromInline package var _allocated: Index<Element>.Count
-            // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
-            // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
-            var _deinitWorkaround: AnyObject? = nil
 
             /// Creates an empty inline arena with all slots unallocated.
             @inlinable
@@ -574,13 +561,6 @@ public enum Storage<Element: ~Copyable> {
                 _storage = _Raw()
                 _slots = Bit.Vector.Static<4>()
                 _allocated = .zero
-            }
-
-            @_optimize(none)
-            deinit {
-                _slots.ones.forEach { bitIndex in
-                    unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
-                }
             }
         }
     }
@@ -610,14 +590,6 @@ public enum Storage<Element: ~Copyable> {
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
         
-        // WORKAROUND: Forces correct deinit dispatch for cross-module ~Copyable structs
-        // WHY: Swift compiler fails to generate deinit forwarding for ~Copyable structs
-        //      containing only value-type properties when Element is from another module.
-        //      Adding a reference-type property forces correct codegen.
-        // WHEN TO REMOVE: When swiftlang/swift#86652 is fixed
-        // TRACKING: https://github.com/swiftlang/swift/issues/86652
-        var _deinitWorkaround: AnyObject? = nil
-
         /// Creates uninitialized inline storage.
         ///
         /// All slots start as uninitialized (all bits cleared).
@@ -628,14 +600,6 @@ public enum Storage<Element: ~Copyable> {
             precondition(capacity <= 256, "Storage.Inline capacity must be ≤256; use Storage.Heap for larger capacities")
             _storage = _Raw()
             _slots = Bit.Vector.Static<4>()
-        }
-
-        @_optimize(none)
-        deinit {
-            _slots.ones.forEach { bitIndex in
-                unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
-                    .deinitialize(count: .one)
-            }
         }
     }
 }

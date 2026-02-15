@@ -233,7 +233,7 @@ struct StorageInlineInvariantTests {
         }
 
         @Test
-        func `INV-INLINE-002f: deinit cleans up all tracked slots`() {
+        func `INV-INLINE-002f: explicit cleanup deinitializes all tracked slots`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var count = 0
                 init() { unsafe Tracker.count += 1 }
@@ -242,19 +242,18 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.count = 0
 
-            do {
-                var storage = Storage<Tracker>.Inline<4>()
+            var storage = Storage<Tracker>.Inline<4>()
 
-                storage.initialize(to: Tracker(), at: 0)
-                storage.initialize(to: Tracker(), at: 1)
-                storage.initialize(to: Tracker(), at: 2)
+            storage.initialize(to: Tracker(), at: 0)
+            storage.initialize(to: Tracker(), at: 1)
+            storage.initialize(to: Tracker(), at: 2)
 
-                unsafe #expect(Tracker.count == 3)
-                #expect(storage.initialization.count == 3)
-                // storage goes out of scope - deinit iterates set bits and cleans up
-            }
+            unsafe #expect(Tracker.count == 3)
+            #expect(storage.initialization.count == 3)
+            // Buffer layer is responsible for cleanup — simulate it
+            storage.deinitialize.all()
 
-            unsafe #expect(Tracker.count == 0, "all trackers should be deinitialized by deinit")
+            unsafe #expect(Tracker.count == 0, "all trackers should be deinitialized by explicit cleanup")
         }
 
         @Test
@@ -266,18 +265,17 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitCount = 0
 
-            do {
-                var storage = Storage<Tracker>.Inline<8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
-                // Initialize sparse slots: 1, 3, 5, 7
-                storage.initialize(to: Tracker(), at: 1)
-                storage.initialize(to: Tracker(), at: 3)
-                storage.initialize(to: Tracker(), at: 5)
-                storage.initialize(to: Tracker(), at: 7)
+            // Initialize sparse slots: 1, 3, 5, 7
+            storage.initialize(to: Tracker(), at: 1)
+            storage.initialize(to: Tracker(), at: 3)
+            storage.initialize(to: Tracker(), at: 5)
+            storage.initialize(to: Tracker(), at: 7)
 
-                #expect(storage.initialization.count == 4)
-                // deinit should clean up exactly these 4 slots
-            }
+            #expect(storage.initialization.count == 4)
+            // Buffer layer is responsible for cleanup — simulate it
+            storage.deinitialize.all()
 
             unsafe #expect(Tracker.deinitCount == 4, "exactly 4 sparse slots should be deinitialized")
         }

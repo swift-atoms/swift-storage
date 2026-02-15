@@ -153,13 +153,14 @@ extension Property {
     /// The pool reuses the same backing storage.
     ///
     /// - Complexity: O(k) where k is the number of allocated slots.
-    // WORKAROUND: @_optimize(none) — CopyPropagation crash (Swift 6.2.3)
-    // WHEN TO REMOVE: When swiftlang/swift CopyPropagation ~Copyable deinit bug is fixed
-    @_optimize(none)
+    // WORKAROUND: `for-in` instead of `.forEach` closure — CopyPropagation crash (Swift 6.2.3)
+    // WHY: Closures capturing ~Copyable fields trigger LinearLifetimeChecker crash
+    //      in CopyPropagation. `for-in` desugars to an iterator loop without closure.
+    // WHEN TO REMOVE: When swiftlang/swift CopyPropagation ~Copyable closure bug is fixed
     @inlinable
     public func all<Element: ~Copyable>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool {
-        base._pool.allocation.indices.forEach { bitIndex in
+        for bitIndex in base._pool.allocation.indices {
             unsafe base.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
         base._pool.reset()

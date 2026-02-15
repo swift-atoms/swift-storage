@@ -119,7 +119,7 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `deinit automatically cleans up tracked elements`() {
+    func `explicit cleanup deinitializes tracked elements`() {
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
             deinit { unsafe Tracker.deinitCount += 1 }
@@ -127,16 +127,15 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        do {
-            var storage = Storage<Tracker>.Inline<8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
-            for i in 0..<4 {
-                storage.initialize(to: Tracker(), at: .init(integerLiteral: UInt(i)))
-            }
-
-            #expect(storage.initialization.count == 4)
-            // storage goes out of scope - deinit should clean up
+        for i in 0..<4 {
+            storage.initialize(to: Tracker(), at: .init(integerLiteral: UInt(i)))
         }
+
+        #expect(storage.initialization.count == 4)
+        // Buffer layer is responsible for cleanup — simulate it
+        storage.deinitialize.all()
 
         unsafe #expect(Tracker.deinitCount == 4)
     }
@@ -399,8 +398,8 @@ struct StorageInlineTests {
     }
 
     @Test
-    func `Storage_Inline deinit cleans up via bitvector tracking`() {
-        // Use a class element to track if Storage.Inline's deinit actually deinitializes
+    func `explicit cleanup via deinitialize all clears bitvector tracked elements`() {
+        // Verify that deinitialize.all() correctly cleans up all tracked elements
         final class Marker: @unchecked Sendable {
             nonisolated(unsafe) static var instanceCount = 0
             init() { unsafe Marker.instanceCount += 1 }
@@ -409,24 +408,22 @@ struct StorageInlineTests {
 
         unsafe Marker.instanceCount = 0
 
-        do {
-            var storage = Storage<Marker>.Inline<2>()
-            storage.initialize(to: Marker(), at: 0)
-            storage.initialize(to: Marker(), at: 1)
+        var storage = Storage<Marker>.Inline<2>()
+        storage.initialize(to: Marker(), at: 0)
+        storage.initialize(to: Marker(), at: 1)
 
-            #expect(storage.initialization.count == 2)
-            unsafe #expect(Marker.instanceCount == 2)
-            // storage goes out of scope, Storage.Inline.deinit should run
-        }
+        #expect(storage.initialization.count == 2)
+        unsafe #expect(Marker.instanceCount == 2)
+        // Buffer layer is responsible for cleanup — simulate it
+        storage.deinitialize.all()
 
-        // If Storage.Inline.deinit ran and called _deinitializeTrackedSlots(), markers should be gone
         unsafe #expect(Marker.instanceCount == 0)
     }
 
     // MARK: - Sparse Initialization Tests (new capability with BitVector)
 
     @Test
-    func `sparse initialization pattern`() {
+    func `sparse initialization pattern cleanup`() {
         // BitVector supports any initialization pattern, not just contiguous ranges
         final class Tracker: @unchecked Sendable {
             nonisolated(unsafe) static var deinitCount = 0
@@ -435,17 +432,16 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        do {
-            var storage = Storage<Tracker>.Inline<8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
-            // Initialize sparse slots: 0, 3, 7
-            storage.initialize(to: Tracker(), at: 0)
-            storage.initialize(to: Tracker(), at: 3)
-            storage.initialize(to: Tracker(), at: 7)
+        // Initialize sparse slots: 0, 3, 7
+        storage.initialize(to: Tracker(), at: 0)
+        storage.initialize(to: Tracker(), at: 3)
+        storage.initialize(to: Tracker(), at: 7)
 
-            #expect(storage.initialization.count == 3)
-            // deinit will clean up exactly these 3 slots
-        }
+        #expect(storage.initialization.count == 3)
+        // Buffer layer is responsible for cleanup — simulate it
+        storage.deinitialize.all()
 
         unsafe #expect(Tracker.deinitCount == 3)
     }
@@ -460,19 +456,18 @@ struct StorageInlineTests {
 
         unsafe Tracker.deinitCount = 0
 
-        do {
-            var storage = Storage<Tracker>.Inline<8>()
+        var storage = Storage<Tracker>.Inline<8>()
 
-            // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
-            storage.initialize(to: Tracker(), at: 0)
-            storage.initialize(to: Tracker(), at: 1)
-            storage.initialize(to: Tracker(), at: 2)
-            storage.initialize(to: Tracker(), at: 6)
-            storage.initialize(to: Tracker(), at: 7)
+        // Initialize slots 0, 1, 2 and slots 6, 7 (simulating wrapped ring buffer)
+        storage.initialize(to: Tracker(), at: 0)
+        storage.initialize(to: Tracker(), at: 1)
+        storage.initialize(to: Tracker(), at: 2)
+        storage.initialize(to: Tracker(), at: 6)
+        storage.initialize(to: Tracker(), at: 7)
 
-            #expect(storage.initialization.count == 5)
-            // deinit will clean up all 5 slots
-        }
+        #expect(storage.initialization.count == 5)
+        // Buffer layer is responsible for cleanup — simulate it
+        storage.deinitialize.all()
 
         unsafe #expect(Tracker.deinitCount == 5)
     }

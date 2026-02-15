@@ -267,7 +267,7 @@ struct StorageInlineEdgeCaseTests {
         }
 
         @Test
-        func `rapid initialize-deinit cycles with tracking`() {
+        func `rapid initialize-deinitialize cycles with tracking`() {
             final class Tracker: @unchecked Sendable {
                 nonisolated(unsafe) static var liveCount = 0
                 nonisolated(unsafe) static var totalCreated = 0
@@ -282,17 +282,16 @@ struct StorageInlineEdgeCaseTests {
             unsafe Tracker.totalCreated = 0
 
             for _ in 0..<100 {
-                do {
-                    var storage = Storage<Tracker>.Inline<4>()
+                var storage = Storage<Tracker>.Inline<4>()
 
-                    // Initialize all slots
-                    for i: Index<Tracker>.Bounded<4> in [0, 1, 2, 3] {
-                        storage.initialize(to: Tracker(), at: i)
-                    }
-
-                    #expect(storage.initialization.count == 4)
-                    // Storage goes out of scope, deinit cleans up
+                // Initialize all slots
+                for i: Index<Tracker>.Bounded<4> in [0, 1, 2, 3] {
+                    storage.initialize(to: Tracker(), at: i)
                 }
+
+                #expect(storage.initialization.count == 4)
+                // Buffer layer is responsible for cleanup — simulate it
+                storage.deinitialize.all()
             }
 
             unsafe #expect(Tracker.totalCreated == 400)
@@ -318,16 +317,16 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.deinitOrder = []
 
-            do {
-                var storage = Storage<Tracker>.Inline<8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
-                // Single element at first slot
-                storage.initialize(to: Tracker(0), at: 0)
-                // Single element at last slot
-                storage.initialize(to: Tracker(7), at: 7)
+            // Single element at first slot
+            storage.initialize(to: Tracker(0), at: 0)
+            // Single element at last slot
+            storage.initialize(to: Tracker(7), at: 7)
 
-                #expect(storage.initialization.count == 2)
-            }
+            #expect(storage.initialization.count == 2)
+            // Buffer layer is responsible for cleanup — simulate it
+            storage.deinitialize.all()
 
             unsafe #expect(Tracker.deinitOrder.count == 2)
             unsafe #expect(Tracker.deinitOrder.contains(0))
@@ -365,20 +364,20 @@ struct StorageInlineEdgeCaseTests {
 
             unsafe Tracker.count = 0
 
-            do {
-                var storage = Storage<Tracker>.Inline<8>()
+            var storage = Storage<Tracker>.Inline<8>()
 
-                // [0,3) and [4,7) - gap at slot 3
-                storage.initialize(to: Tracker(), at: 0)
-                storage.initialize(to: Tracker(), at: 1)
-                storage.initialize(to: Tracker(), at: 2)
-                storage.initialize(to: Tracker(), at: 4)
-                storage.initialize(to: Tracker(), at: 5)
-                storage.initialize(to: Tracker(), at: 6)
+            // [0,3) and [4,7) - gap at slot 3
+            storage.initialize(to: Tracker(), at: 0)
+            storage.initialize(to: Tracker(), at: 1)
+            storage.initialize(to: Tracker(), at: 2)
+            storage.initialize(to: Tracker(), at: 4)
+            storage.initialize(to: Tracker(), at: 5)
+            storage.initialize(to: Tracker(), at: 6)
 
-                unsafe #expect(Tracker.count == 6)
-                #expect(storage.initialization.count == 6)
-            }
+            unsafe #expect(Tracker.count == 6)
+            #expect(storage.initialization.count == 6)
+            // Buffer layer is responsible for cleanup — simulate it
+            storage.deinitialize.all()
 
             unsafe #expect(Tracker.count == 0)
         }

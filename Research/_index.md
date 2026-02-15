@@ -22,6 +22,7 @@ Research documents backing the storage-primitives implementation.
 | [storage-pool-architecture](storage-pool-architecture.md) | Tier 3: Composition vs independence for Storage.Pool | DECISION |
 | [noncopyable-copyable-conditional-audit](noncopyable-copyable-conditional-audit.md) | ~Copyable/Copyable conditional support audit across all disciplines | RECOMMENDATION |
 | [bounded-unbounded-storage-inline-api](bounded-unbounded-storage-inline-api.md) | Dual public API for bounded (preferred) + unbounded (infrastructure) index access | DECISION |
+| [inline-deinit-ownership](inline-deinit-ownership.md) | Where RAII cleanup lives: storage layer vs buffer layer (literature study) | DECISION |
 
 ## Key Architectural Decisions
 
