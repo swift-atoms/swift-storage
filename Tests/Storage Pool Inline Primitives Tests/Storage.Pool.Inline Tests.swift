@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Testing
-import Storage_Pool_Primitives
+import Storage_Pool_Inline_Primitives
 import Storage_Primitives_Test_Support
 
 /// Test element with non-trivial stride for inline pool testing.

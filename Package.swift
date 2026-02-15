@@ -37,6 +37,14 @@ let package = Package(
             targets: ["Storage Arena Primitives"]
         ),
         .library(
+            name: "Storage Pool Inline Primitives",
+            targets: ["Storage Pool Inline Primitives"]
+        ),
+        .library(
+            name: "Storage Arena Inline Primitives",
+            targets: ["Storage Arena Inline Primitives"]
+        ),
+        .library(
             name: "Storage Split Primitives",
             targets: ["Storage Split Primitives"]
         ),
@@ -100,6 +108,25 @@ let package = Package(
                 "Storage Primitives Core",
                 .product(name: "Memory Arena Primitives", package: "swift-memory-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
+            ]
+        ),
+        // Pool Inline: Inline pool storage with bounded capacity
+        .target(
+            name: "Storage Pool Inline Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
+            ]
+        ),
+        // Arena Inline: Inline arena storage with bounded capacity
+        .target(
+            name: "Storage Arena Inline Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
@@ -121,7 +148,9 @@ let package = Package(
                 "Storage Heap Primitives",
                 "Storage Inline Primitives",
                 "Storage Pool Primitives",
+                "Storage Pool Inline Primitives",
                 "Storage Arena Primitives",
+                "Storage Arena Inline Primitives",
                 "Storage Split Primitives",
             ]
         ),
@@ -166,6 +195,20 @@ let package = Package(
             name: "Storage Arena Primitives Tests",
             dependencies: [
                 .target(name: "Storage Arena Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
+            name: "Storage Pool Inline Primitives Tests",
+            dependencies: [
+                .target(name: "Storage Pool Inline Primitives"),
+                .target(name: "Storage Primitives Test Support")
+            ]
+        ),
+        .testTarget(
+            name: "Storage Arena Inline Primitives Tests",
+            dependencies: [
+                .target(name: "Storage Arena Inline Primitives"),
                 .target(name: "Storage Primitives Test Support")
             ]
         ),
