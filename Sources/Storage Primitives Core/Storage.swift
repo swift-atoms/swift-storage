@@ -239,16 +239,15 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Internal Pointer
 
-        /// Internal pointer for deinit iteration.
+        /// Returns a mutable pointer to the element at the given slot index.
         ///
-        /// Mirrors `Storage.Pool.pointer(at:)` from `Storage_Pool_Primitives`
-        /// but is available within the core module for deinit use.
-        /// Kept as a separate method: inlining the pointer chain directly into
-        /// deinit triggers a CopyPropagation crash on the Property.View.Read
-        /// temporary created by `_pool.allocation.indices`.
+        /// Used by buffer-layer consumers for initialization, move, and deinitialization.
+        /// Also used internally by deinit. Kept as a named method rather than inlined:
+        /// inlining the pointer chain directly into deinit triggers a CopyPropagation
+        /// crash on the Property.View.Read temporary created by `_pool.allocation.indices`.
         @unsafe
         @inlinable
-        package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
             unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
                 .assumingMemoryBound(to: Element.self)
         }
@@ -456,13 +455,13 @@ public enum Storage<Element: ~Copyable> {
                 + Index<Meta>.Offset(fromZero: slot.retag(Meta.self))
         }
 
-        /// Internal element pointer for deinit iteration.
+        /// Returns a mutable pointer to the element at the given slot index.
         ///
-        /// Mirrors `Storage.Arena.pointer(at:)` from `Storage_Arena_Primitives`
-        /// but is available within the core module for deinit use.
+        /// Used by buffer-layer consumers for initialization, move, and deinitialization.
+        /// Also used internally by deinit.
         @unsafe
         @inlinable
-        package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
             unsafe _arena.start
                 .advanced(by: Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity)))
                 .assumingMemoryBound(to: Element.self)
@@ -588,7 +587,7 @@ extension Storage.Heap where Element: ~Copyable {
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+    public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
             unsafe $0 + Index<Element>.Offset(fromZero: slot)
         }
@@ -603,7 +602,7 @@ extension Storage.Heap where Element: ~Copyable {
     @_lifetime(borrow self)
     @inlinable
     @_disfavoredOverload
-    package func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
         unsafe UnsafePointer(pointer(at: slot))
     }
 }
