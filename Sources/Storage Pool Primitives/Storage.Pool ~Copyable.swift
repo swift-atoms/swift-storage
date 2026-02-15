@@ -153,6 +153,9 @@ extension Property {
     /// The pool reuses the same backing storage.
     ///
     /// - Complexity: O(k) where k is the number of allocated slots.
+    // WORKAROUND: @_optimize(none) — CopyPropagation crash (Swift 6.2.3)
+    // WHEN TO REMOVE: When swiftlang/swift CopyPropagation ~Copyable deinit bug is fixed
+    @_optimize(none)
     @inlinable
     public func all<Element: ~Copyable>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool {

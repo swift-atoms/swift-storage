@@ -93,6 +93,7 @@ public enum Storage<Element: ~Copyable> {
     /// let value = storage.move(at: .zero)
     /// ```
     public final class Heap: ManagedBuffer<Storage.Heap.Header, Element> {
+        @_optimize(none)
         deinit {
             deinitialize()
         }
@@ -272,6 +273,7 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Deinit
 
+        @_optimize(none)
         deinit {
             _pool.allocation.indices.forEach { bitIndex in
                 unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
@@ -350,6 +352,7 @@ public enum Storage<Element: ~Copyable> {
                 _allocated = .zero
             }
 
+            @_optimize(none)
             deinit {
                 _slots.ones.forEach { bitIndex in
                     unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
@@ -499,6 +502,7 @@ public enum Storage<Element: ~Copyable> {
 
         // MARK: - Deinit
 
+        @_optimize(none)
         deinit {
             // WORKAROUND: Uses `for i in` instead of `.forEach` closure
             // WHY: Closures capturing ~Copyable fields of `self` inside deinit trigger
@@ -572,6 +576,7 @@ public enum Storage<Element: ~Copyable> {
                 _allocated = .zero
             }
 
+            @_optimize(none)
             deinit {
                 _slots.ones.forEach { bitIndex in
                     unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
@@ -625,6 +630,7 @@ public enum Storage<Element: ~Copyable> {
             _slots = Bit.Vector.Static<4>()
         }
 
+        @_optimize(none)
         deinit {
             _slots.ones.forEach { bitIndex in
                 unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
