@@ -168,7 +168,7 @@ extension Property.View where Base: ~Copyable {
     @_lifetime(&self)
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Arena.Inline<capacity> {
-        unsafe base.pointee._slots.ones.forEach { bitIndex in
+        for bitIndex in unsafe base.pointee._slots.ones {
             unsafe base.pointee._pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
         unsafe base.pointee._slots.clear.all()

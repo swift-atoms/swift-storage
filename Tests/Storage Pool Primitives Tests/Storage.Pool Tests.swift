@@ -93,7 +93,7 @@ extension Storage<Node>.Pool.Test.Unit {
 
         let node = Node(value: 42, tag: 7)
         unsafe pool.pointer(at: slot).initialize(to: node)
-        let readBack: Node = unsafe (pool.pointer(at: slot) as UnsafePointer<Node>).pointee
+        let readBack: Node = unsafe pool.pointer(at: slot).pointee
         #expect(readBack == node)
         _ = unsafe pool.pointer(at: slot).move()
 
@@ -161,9 +161,9 @@ extension Storage<Node>.Pool.Test.Integration {
         unsafe pool.pointer(at: s1).initialize(to: Node(value: 200, tag: 2))
         unsafe pool.pointer(at: s2).initialize(to: Node(value: 300, tag: 3))
 
-        #expect(unsafe (pool.pointer(at: s0) as UnsafePointer<Node>).pointee == Node(value: 100, tag: 1))
-        #expect(unsafe (pool.pointer(at: s1) as UnsafePointer<Node>).pointee == Node(value: 200, tag: 2))
-        #expect(unsafe (pool.pointer(at: s2) as UnsafePointer<Node>).pointee == Node(value: 300, tag: 3))
+        #expect(unsafe pool.pointer(at: s0).pointee == Node(value: 100, tag: 1))
+        #expect(unsafe pool.pointer(at: s1).pointee == Node(value: 200, tag: 2))
+        #expect(unsafe pool.pointer(at: s2).pointee == Node(value: 300, tag: 3))
 
         _ = unsafe pool.pointer(at: s0).move()
         _ = unsafe pool.pointer(at: s1).move()
@@ -224,12 +224,12 @@ extension Storage<Node>.Pool.Test.Integration {
 
         #expect(copy.allocated == 2)
         #expect(copy.capacity == 4)
-        #expect(unsafe (copy.pointer(at: s0) as UnsafePointer<Node>).pointee == Node(value: 100, tag: 1))
-        #expect(unsafe (copy.pointer(at: s1) as UnsafePointer<Node>).pointee == Node(value: 200, tag: 2))
+        #expect(unsafe copy.pointer(at: s0).pointee == Node(value: 100, tag: 1))
+        #expect(unsafe copy.pointer(at: s1).pointee == Node(value: 200, tag: 2))
 
         // Verify independence
         unsafe pool.pointer(at: s0).pointee = Node(value: 999, tag: 0)
-        #expect(unsafe (copy.pointer(at: s0) as UnsafePointer<Node>).pointee == Node(value: 100, tag: 1))
+        #expect(unsafe copy.pointer(at: s0).pointee == Node(value: 100, tag: 1))
 
         // Both pools deinit automatically
     }

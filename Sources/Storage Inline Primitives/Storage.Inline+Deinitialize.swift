@@ -67,9 +67,8 @@ extension Property.View where Base: ~Copyable {
         range: Swift.Range<Index<Element>>
     ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
         guard !range.isEmpty else { return }
-        unsafe UnsafeMutablePointer(
-            mutating: base.pointee.pointer(at: range.lowerBound)
-        ).deinitialize(count: range.count)
+        unsafe base.pointee._mutablePointer(at: range.lowerBound)
+            .deinitialize(count: range.count)
         unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
     }
     
@@ -90,10 +89,9 @@ extension Property.View where Base: ~Copyable {
     @_lifetime(&self)
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe base.pointee._slots.ones.forEach { bitIndex in
-            unsafe UnsafeMutablePointer(
-                mutating: base.pointee.pointer(at: bitIndex.retag(Element.self))
-            ).deinitialize(count: .one)
+        for bitIndex in unsafe base.pointee._slots.ones {
+            unsafe base.pointee._mutablePointer(at: bitIndex.retag(Element.self))
+                .deinitialize(count: .one)
         }
         unsafe base.pointee._slots.clear.all()
     }
@@ -114,7 +112,7 @@ extension Storage.Inline where Element: ~Copyable {
     @inlinable
     public func _deinitializeTrackedSlots() {
         for bitIndex in _slots.ones {
-            unsafe UnsafeMutablePointer(mutating: pointer(at: bitIndex.retag(Element.self)))
+            unsafe _mutablePointer(at: bitIndex.retag(Element.self))
                 .deinitialize(count: .one)
         }
     }

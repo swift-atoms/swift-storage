@@ -98,7 +98,7 @@ extension Storage.Inline where Element: Copyable {
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
         var span = unsafe MutableSpan(
-            _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: range.lowerBound)),
+            _unsafeStart: _mutablePointer(at: range.lowerBound),
             count: range.count
         )
         return try body(&span)

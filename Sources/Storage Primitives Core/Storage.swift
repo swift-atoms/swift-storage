@@ -96,10 +96,7 @@ public enum Storage<Element: ~Copyable> {
         deinit {
             header.initialization.forEach { range in
                 guard !range.isEmpty else { return }
-                _ = unsafe withUnsafeMutablePointerToElements {
-                    unsafe ($0 + Index<Element>.Offset(fromZero: range.lowerBound))
-                        .deinitialize(count: range.count)
-                }
+                unsafe pointer(at: range.lowerBound).deinitialize(count: range.count)
             }
             header.initialization = .empty
         }
@@ -240,13 +237,27 @@ public enum Storage<Element: ~Copyable> {
             self._pool = pool
         }
 
+        // MARK: - Internal Pointer
+
+        /// Internal pointer for deinit iteration.
+        ///
+        /// Mirrors `Storage.Pool.pointer(at:)` from `Storage_Pool_Primitives`
+        /// but is available within the core module for deinit use.
+        /// Kept as a separate method: inlining the pointer chain directly into
+        /// deinit triggers a CopyPropagation crash on the Property.View.Read
+        /// temporary created by `_pool.allocation.indices`.
+        @unsafe
+        @inlinable
+        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+            unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
+                .assumingMemoryBound(to: Element.self)
+        }
+
         // MARK: - Deinit
 
         deinit {
             for bitIndex in _pool.allocation.indices {
-                unsafe _pool.pointer(at: bitIndex.retag(Memory.Pool.Slot.self))
-                    .assumingMemoryBound(to: Element.self)
-                    .deinitialize(count: .one)
+                unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
             }
         }
 
@@ -432,25 +443,42 @@ public enum Storage<Element: ~Copyable> {
             return elementAlignment.align.up(metaBytes)
         }
 
+        // MARK: - Internal Pointer Helpers
+
+        /// Internal meta pointer for deinit iteration.
+        ///
+        /// Mirrors `Storage.Arena.meta` from `Storage_Arena_Primitives`
+        /// but is available within the core module for deinit use.
+        @unsafe
+        @inlinable
+        package func _meta(at slot: Index<Element>) -> UnsafeMutablePointer<Meta> {
+            unsafe _arena.start.assumingMemoryBound(to: Meta.self)
+                + Index<Meta>.Offset(fromZero: slot.retag(Meta.self))
+        }
+
+        /// Internal element pointer for deinit iteration.
+        ///
+        /// Mirrors `Storage.Arena.pointer(at:)` from `Storage_Arena_Primitives`
+        /// but is available within the core module for deinit use.
+        @unsafe
+        @inlinable
+        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+            unsafe _arena.start
+                .advanced(by: Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity)))
+                .assumingMemoryBound(to: Element.self)
+                + Index<Element>.Offset(fromZero: slot)
+        }
+
         // MARK: - Deinit
 
         deinit {
-            // WORKAROUND: Uses `for i in` instead of `.forEach` closure
-            // WHY: Closures capturing ~Copyable fields of `self` inside deinit trigger
-            //      CopiedLoadBorrowEliminationVisitor segfault (swift-frontend signal 11)
-            // WHEN TO REMOVE: When MoveOnlyChecker deinit closure crash is fixed
-            let hw = Int(bitPattern: _highWater)
-            let meta = unsafe _arena.start.assumingMemoryBound(to: Meta.self)
-            let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
-            let elemBase = unsafe _arena.start.advanced(by: offset)
-            let stride = MemoryLayout<Element>.stride
-            for i in 0..<hw {
-                if unsafe meta[i].isOccupied {
-                    unsafe elemBase
-                        .advanced(by: i * stride)
-                        .assumingMemoryBound(to: Element.self)
-                        .deinitialize(count: .one)
+            let end = _highWater.map(Ordinal.init)
+            var slot: Index<Element> = .zero
+            while slot < end {
+                if unsafe _meta(at: slot).pointee.isOccupied {
+                    unsafe _pointer(at: slot).deinitialize(count: .one)
                 }
+                slot = slot.successor.saturating()
             }
             // Memory.Arena deinit fires automatically → frees raw storage
         }

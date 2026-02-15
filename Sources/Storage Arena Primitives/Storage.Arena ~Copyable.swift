@@ -39,10 +39,7 @@ extension Storage.Arena where Element: ~Copyable {
     public func pointer(
         at slot: Index<Element>
     ) -> UnsafeMutablePointer<Element> {
-        let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
-        return unsafe _arena.start
-            .advanced(by: offset + Int(bitPattern: slot) * MemoryLayout<Element>.stride)
-            .assumingMemoryBound(to: Element.self)
+        unsafe _pointer(at: slot)
     }
 }
 

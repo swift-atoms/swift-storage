@@ -48,7 +48,7 @@ extension Storage.Inline where Element: ~Copyable {
         @_lifetime(&self)
         mutating get {
             let span = unsafe MutableSpan(
-                _unsafeStart: UnsafeMutablePointer(mutating: pointer(at: .zero)),
+                _unsafeStart: _mutablePointer(at: .zero),
                 count: initialization.count
             )
             return unsafe _overrideLifetime(span, mutating: &self)
@@ -98,7 +98,7 @@ extension Storage.Inline where Element: Copyable {
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
         return try unsafe body(UnsafeMutableBufferPointer(
-            start: UnsafeMutablePointer(mutating: pointer(at: .zero)),
+            start: _mutablePointer(at: .zero),
             count: initialization.count
         ))
     }

@@ -26,7 +26,7 @@ extension Storage.Inline where Element: ~Copyable {
     @_lifetime(borrow self)
     @inlinable
     public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
-        unsafe UnsafeMutablePointer(mutating: pointer(at: Index<Element>(slot)))
+        unsafe _mutablePointer(at: Index<Element>(slot))
     }
 
     /// Returns an immutable pointer to the element at the given bounded physical slot.
@@ -60,6 +60,21 @@ extension Storage.Inline where Element: ~Copyable {
                 .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
                 .assumingMemoryBound(to: Element.self)
         }
+    }
+
+    /// Returns a mutable pointer to the element at the given physical slot.
+    ///
+    /// Encapsulates the `UnsafeMutablePointer(mutating:)` cast in one place.
+    /// All mutable slot access methods delegate to this.
+    ///
+    /// - Parameter slot: The physical slot coordinate.
+    /// - Returns: A mutable pointer to the element.
+    /// - Precondition: The element at `slot` must be initialized.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    package func _mutablePointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe UnsafeMutablePointer(mutating: pointer(at: slot))
     }
 }
 

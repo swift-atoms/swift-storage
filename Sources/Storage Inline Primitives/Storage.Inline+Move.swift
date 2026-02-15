@@ -61,7 +61,7 @@ extension Property.View where Base: ~Copyable {
         guard !range.isEmpty else { return }
         unsafe destination.pointer(at: offset)
             .move.initialize(
-                from: UnsafeMutablePointer(mutating: base.pointee.pointer(at: range.lowerBound)),
+                from: base.pointee._mutablePointer(at: range.lowerBound),
                 count: range.count
             )
         unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })

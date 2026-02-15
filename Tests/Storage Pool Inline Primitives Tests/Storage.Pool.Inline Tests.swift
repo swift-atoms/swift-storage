@@ -74,7 +74,7 @@ struct StoragePoolInlineTests {
 
         let node = InlineNode(value: 42, tag: 7)
         unsafe pool.pointer(at: slot).initialize(to: node)
-        let readBack: InlineNode = unsafe (pool.pointer(at: slot) as UnsafePointer<InlineNode>).pointee
+        let readBack: InlineNode = unsafe pool.pointer(at: slot).pointee
         #expect(readBack == node)
         _ = unsafe pool.pointer(at: slot).move()
 
@@ -173,7 +173,7 @@ struct StoragePoolInlineTests {
             #expect(pool.isExhausted == true)
 
             for (i, slot) in slots.enumerated() {
-                let value = unsafe (pool.pointer(at: slot) as UnsafePointer<InlineNode>).pointee
+                let value = unsafe pool.pointer(at: slot).pointee
                 #expect(value == InlineNode(value: cycle * 100 + i, tag: UInt8(i)))
             }
 
@@ -213,7 +213,7 @@ struct StoragePoolInlineTests {
         }
 
         for (i, slot) in slots.enumerated() {
-            let value = unsafe (pool.pointer(at: slot) as UnsafePointer<InlineNode>).pointee
+            let value = unsafe pool.pointer(at: slot).pointee
             #expect(value == InlineNode(value: i * 10, tag: UInt8(i)))
         }
 

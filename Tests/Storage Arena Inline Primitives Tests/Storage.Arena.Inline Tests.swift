@@ -60,7 +60,7 @@ struct StorageArenaInlineTests {
 
         unsafe arena.pointer(at: slot).initialize(to: InlinePayload(x: 42, y: 7))
 
-        let value = unsafe (arena.pointer(at: slot) as UnsafePointer<InlinePayload>).pointee
+        let value = unsafe arena.pointer(at: slot).pointee
         #expect(value == InlinePayload(x: 42, y: 7))
     }
 
@@ -200,7 +200,7 @@ struct StorageArenaInlineTests {
         }
 
         for (i, slot) in slots.enumerated() {
-            let value = unsafe (arena.pointer(at: slot) as UnsafePointer<InlinePayload>).pointee
+            let value = unsafe arena.pointer(at: slot).pointee
             #expect(value == InlinePayload(x: i * 10, y: UInt8(i)))
         }
 
