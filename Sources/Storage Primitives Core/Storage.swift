@@ -248,7 +248,7 @@ public enum Storage<Element: ~Copyable> {
         /// temporary created by `_pool.allocation.indices`.
         @unsafe
         @inlinable
-        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
             unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
                 .assumingMemoryBound(to: Element.self)
         }
@@ -257,7 +257,7 @@ public enum Storage<Element: ~Copyable> {
 
         deinit {
             for bitIndex in _pool.allocation.indices {
-                unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+                unsafe pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
             }
         }
 
@@ -462,7 +462,7 @@ public enum Storage<Element: ~Copyable> {
         /// but is available within the core module for deinit use.
         @unsafe
         @inlinable
-        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
             unsafe _arena.start
                 .advanced(by: Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity)))
                 .assumingMemoryBound(to: Element.self)
@@ -476,7 +476,7 @@ public enum Storage<Element: ~Copyable> {
             var slot: Index<Element> = .zero
             while slot < end {
                 if unsafe _meta(at: slot).pointee.isOccupied {
-                    unsafe _pointer(at: slot).deinitialize(count: .one)
+                    unsafe pointer(at: slot).deinitialize(count: .one)
                 }
                 slot = slot.successor.saturating()
             }
@@ -588,7 +588,7 @@ extension Storage.Heap where Element: ~Copyable {
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+    package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
             unsafe $0 + Index<Element>.Offset(fromZero: slot)
         }
@@ -603,7 +603,7 @@ extension Storage.Heap where Element: ~Copyable {
     @_lifetime(borrow self)
     @inlinable
     @_disfavoredOverload
-    public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+    package func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
         unsafe UnsafePointer(pointer(at: slot))
     }
 }

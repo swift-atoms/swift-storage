@@ -97,7 +97,7 @@ no CoW use case.
 2. Add `Storage.Arena.Inline<let capacity: Int>` — bump-allocated arena with bulk reset
 3. Both types return `Index<Element>.Bounded<capacity>` from allocate
 4. Both types accept `Index<Element>.Bounded<capacity>` in `pointer(at:)` (precondition-free)
-5. Internal `_pointer(at: Index<Element>)` for deinit iteration (unbounded, package-visible)
+5. Internal `pointer(at: Index<Element>)` for deinit iteration (unbounded, package-visible)
 6. Pool.Inline uses bitmap scanning (not in-band free list)
 7. Pool.Inline reuses `Storage.Pool.Error`
 8. Arena.Inline returns `Optional` from allocate

@@ -59,7 +59,9 @@ extension Storage.Initialization where Element: ~Copyable {
             body(second)
         }
     }
+}
 
+extension Storage.Initialization where Element: ~Copyable {
     /// Calls `body` for each initialized range with its linear destination offset.
     ///
     /// Ranges are visited in order, and the offset advances by each range's

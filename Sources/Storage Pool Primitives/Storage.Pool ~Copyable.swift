@@ -16,18 +16,6 @@ internal import Property_Primitives
 // MARK: - Pointer Primitive
 
 extension Storage.Pool where Element: ~Copyable {
-    /// Returns a mutable pointer to the element at the given slot index.
-    ///
-    /// - Parameter slot: A slot index. Must be < capacity.
-    /// - Returns: Mutable pointer to the element's memory.
-    /// - Precondition: `slot` is within bounds.
-    @unsafe
-    @inlinable
-    public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
-            .assumingMemoryBound(to: Element.self)
-    }
-
     /// Returns an immutable pointer to the element at the given slot index.
     ///
     /// - Parameter slot: A slot index. Must be < capacity.

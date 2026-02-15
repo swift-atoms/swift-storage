@@ -41,6 +41,8 @@ struct StorageInlineInvariantTests {
 
             // For Double with capacity 8
             let doubleStride = MemoryLayout<Double>.stride
+            // I'd rather use this:
+//            let doubleStride = Affine.Discrete.Ratio<Double, Memory>.stride
             let expectedDoubleSize = doubleStride * 8 + bitvectorSize
             let actualDoubleSize = MemoryLayout<Storage<Double>.Inline<8>>.size
 

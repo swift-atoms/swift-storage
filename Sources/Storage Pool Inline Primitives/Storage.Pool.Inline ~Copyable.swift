@@ -27,7 +27,7 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     @_lifetime(borrow self)
     @inlinable
     public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
-        unsafe _pointer(at: Index<Element>(slot))
+        unsafe pointer(at: Index<Element>(slot))
     }
 
     /// Returns an immutable pointer to the element at the given bounded slot.
@@ -41,14 +41,14 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     @inlinable
     @_disfavoredOverload
     public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
-        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
+        unsafe UnsafePointer(pointer(at: Index<Element>(slot)))
     }
 
     /// Internal unbounded pointer for deinit iteration.
     @unsafe
     @_lifetime(borrow self)
     @inlinable
-    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+    package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in
             unsafe UnsafeMutablePointer(mutating:
                 UnsafeRawPointer(base)
@@ -177,7 +177,7 @@ extension Property.View where Base: ~Copyable {
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Pool.Inline<capacity> {
         for bitIndex in unsafe base.pointee._slots.ones {
-            unsafe base.pointee._pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+            unsafe base.pointee.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
         unsafe base.pointee._slots.clear.all()
         unsafe base.pointee._allocated = .zero

@@ -32,15 +32,6 @@ extension Storage.Arena where Element: ~Copyable {
     public var meta: UnsafeMutablePointer<Meta> {
         unsafe _arena.start.assumingMemoryBound(to: Meta.self)
     }
-
-    /// Pointer to the element at the given slot index.
-    @unsafe
-    @inlinable
-    public func pointer(
-        at slot: Index<Element>
-    ) -> UnsafeMutablePointer<Element> {
-        unsafe _pointer(at: slot)
-    }
 }
 
 // MARK: - Factory
