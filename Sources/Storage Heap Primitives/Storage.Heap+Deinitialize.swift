@@ -45,10 +45,28 @@ extension Property {
     @inlinable
     public func all<Element: ~Copyable>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
-        base.deinitialize()
+        base.header.initialization.forEach { range in
+            guard !range.isEmpty else { return }
+            unsafe base.pointer(at: range.lowerBound).deinitialize(count: range.count)
+        }
+        base.header.initialization = .empty
     }
-    
-    
+
+    /// Deinitializes all elements in the given range.
+    ///
+    /// Uses bulk deinitialization for better performance on contiguous ranges.
+    ///
+    /// - Parameter range: The contiguous range of slots to deinitialize.
+    /// - Precondition: All slots in the range must contain initialized elements.
+    /// - Note: The caller is responsible for updating `initialization` state.
+    @inlinable
+    public func callAsFunction<Element: ~Copyable>(
+        range: Swift.Range<Index<Element>>
+    ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
+        guard !range.isEmpty else { return }
+        unsafe base.pointer(at: range.lowerBound).deinitialize(count: range.count)
+    }
+
     /// Deinitializes the element at the given physical slot.
     ///
     /// - Parameter slot: The physical slot to deinitialize.

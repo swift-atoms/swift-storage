@@ -14,6 +14,51 @@ public import Bit_Vector_Primitives
 public import Finite_Primitives
 internal import Property_Primitives
 
+// MARK: - Pointer Access
+
+extension Storage.Arena.Inline where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Mutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
+        unsafe _pointer(at: Index<Element>(slot))
+    }
+
+    /// Returns an immutable pointer to the element at the given bounded slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded slot index returned by `allocate()`.
+    /// - Returns: Immutable pointer to the element's memory.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
+        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
+    }
+
+    /// Internal unbounded pointer for deinit iteration.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) { base in
+            unsafe UnsafeMutablePointer(mutating:
+                UnsafeRawPointer(base)
+                    .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
+                    .assumingMemoryBound(to: Element.self)
+            )
+        }
+    }
+}
+
 // MARK: - Properties
 
 extension Storage.Arena.Inline where Element: ~Copyable {
@@ -130,3 +175,9 @@ extension Property.View where Base: ~Copyable {
         unsafe base.pointee._allocated = .zero
     }
 }
+
+// MARK: - Sendable
+
+// @_rawLayout types require @unchecked Sendable
+extension Storage.Arena.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+extension Storage.Arena.Inline: @unchecked Sendable where Element: Sendable {}

@@ -13,6 +13,56 @@ public import Storage_Primitives_Core
 public import Bit_Vector_Primitives
 internal import Vector_Primitives
 
+// MARK: - Pointer Access
+
+extension Storage.Inline where Element: ~Copyable {
+    /// Returns a mutable pointer to the element at the given bounded physical slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded physical slot coordinate.
+    /// - Returns: A mutable pointer to the element.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
+        unsafe UnsafeMutablePointer(mutating: pointer(at: Index<Element>(slot)))
+    }
+
+    /// Returns an immutable pointer to the element at the given bounded physical slot.
+    ///
+    /// Precondition-free — the bounded index guarantees validity.
+    ///
+    /// - Parameter slot: A bounded physical slot coordinate.
+    /// - Returns: An immutable pointer to the element.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    @_disfavoredOverload
+    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
+        unsafe pointer(at: Index<Element>(slot))
+    }
+
+    /// Returns an immutable pointer to the element at the given physical slot.
+    ///
+    /// This is the primitive address computation for inline storage.
+    /// All other slot access methods delegate to this.
+    ///
+    /// - Parameter slot: The physical slot coordinate.
+    /// - Returns: An immutable pointer to the element.
+    /// - Precondition: The element at `slot` must be initialized.
+    @unsafe
+    @_lifetime(borrow self)
+    @inlinable
+    package func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) { base in
+            unsafe UnsafeRawPointer(base)
+                .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
+                .assumingMemoryBound(to: Element.self)
+        }
+    }
+}
+
 // MARK: - Properties
 
 extension Storage.Inline where Element: ~Copyable {
@@ -58,4 +108,13 @@ extension Storage.Inline where Element: ~Copyable {
         }
     }
 }
+
+// MARK: - Sendable
+
+// @_rawLayout types require @unchecked Sendable
+extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
+
+/// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
+/// Requires @unchecked because _Raw uses @unchecked Sendable.
+extension Storage.Inline: @unchecked Sendable where Element: Sendable {}
 

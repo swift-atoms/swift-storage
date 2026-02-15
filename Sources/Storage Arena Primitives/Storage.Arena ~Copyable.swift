@@ -11,6 +11,41 @@
 
 public import Storage_Primitives_Core
 
+// MARK: - Layout
+
+extension Storage.Arena where Element: ~Copyable {
+    /// Total bytes required for the SoA layout.
+    @inlinable
+    public static func _totalBytes(
+        capacity: Index<Element>.Count
+    ) -> Memory.Address.Count {
+        _elementRegionOffset(capacity: capacity) + capacity * .stride
+    }
+}
+
+// MARK: - Pointer Access
+
+extension Storage.Arena where Element: ~Copyable {
+    /// Pointer to the meta array base.
+    @unsafe
+    @inlinable
+    public var meta: UnsafeMutablePointer<Meta> {
+        unsafe _arena.start.assumingMemoryBound(to: Meta.self)
+    }
+
+    /// Pointer to the element at the given slot index.
+    @unsafe
+    @inlinable
+    public func pointer(
+        at slot: Index<Element>
+    ) -> UnsafeMutablePointer<Element> {
+        let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
+        return unsafe _arena.start
+            .advanced(by: offset + Int(bitPattern: slot) * MemoryLayout<Element>.stride)
+            .assumingMemoryBound(to: Element.self)
+    }
+}
+
 // MARK: - Factory
 
 extension Storage.Arena where Element: ~Copyable {

@@ -11,7 +11,7 @@
 
 import Index_Primitives
 public import Bit_Vector_Primitives
-public import Finite_Primitives
+import Finite_Primitives
 
 /// Namespace for storage primitives.
 ///
@@ -94,30 +94,12 @@ public enum Storage<Element: ~Copyable> {
     /// ```
     public final class Heap: ManagedBuffer<Storage.Heap.Header, Element> {
         deinit {
-            deinitialize()
-        }
-        
-        /// Deinitializes all elements in the given range.
-        ///
-        /// Uses bulk deinitialization for better performance on contiguous ranges.
-        ///
-        /// - Parameter range: The contiguous range of slots to deinitialize.
-        /// - Precondition: All slots in the range must contain initialized elements.
-        /// - Note: The caller is responsible for updating `initialization` state.
-        @inlinable
-        public func deinitialize(range: Swift.Range<Index<Element>>) {
-            guard !range.isEmpty else { return }
-            unsafe pointer(at: range.lowerBound).deinitialize(count: range.count)
-        }
-        
-        /// Deinitializes all tracked initialized slots and resets initialization to .empty.
-        ///
-        /// Iterates the `initialization` state and deinitializes exactly those slots
-        /// that are tracked as initialized.
-        @inlinable
-        public func deinitialize() {
             header.initialization.forEach { range in
-                deinitialize(range: range)
+                guard !range.isEmpty else { return }
+                _ = unsafe withUnsafeMutablePointerToElements {
+                    unsafe ($0 + Index<Element>.Offset(fromZero: range.lowerBound))
+                        .deinitialize(count: range.count)
+                }
             }
             header.initialization = .empty
         }
@@ -258,24 +240,13 @@ public enum Storage<Element: ~Copyable> {
             self._pool = pool
         }
 
-        // MARK: - Internal Pointer
-
-        /// Internal pointer for deinit iteration.
-        ///
-        /// Mirrors `Storage.Pool.pointer(at:)` from `Storage_Pool_Primitives`
-        /// but is available within the core module for deinit use.
-        @unsafe
-        @inlinable
-        package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-            unsafe _pool.pointer(at: slot.retag(Memory.Pool.Slot.self))
-                .assumingMemoryBound(to: Element.self)
-        }
-
         // MARK: - Deinit
 
         deinit {
             for bitIndex in _pool.allocation.indices {
-                unsafe _pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+                unsafe _pool.pointer(at: bitIndex.retag(Memory.Pool.Slot.self))
+                    .assumingMemoryBound(to: Element.self)
+                    .deinitialize(count: .one)
             }
         }
 
@@ -461,35 +432,6 @@ public enum Storage<Element: ~Copyable> {
             return elementAlignment.align.up(metaBytes)
         }
 
-        /// Total bytes required for the SoA layout.
-        @inlinable
-        public static func _totalBytes(
-            capacity: Index<Element>.Count
-        ) -> Memory.Address.Count {
-            _elementRegionOffset(capacity: capacity) + capacity * .stride
-        }
-
-        // MARK: - Pointer Access
-
-        /// Pointer to the meta array base.
-        @unsafe
-        @inlinable
-        public var meta: UnsafeMutablePointer<Meta> {
-            unsafe _arena.start.assumingMemoryBound(to: Meta.self)
-        }
-
-        /// Pointer to the element at the given slot index.
-        @unsafe
-        @inlinable
-        public func pointer(
-            at slot: Index<Element>
-        ) -> UnsafeMutablePointer<Element> {
-            let offset = Int(bitPattern: Self._elementRegionOffset(capacity: _slotCapacity))
-            return unsafe _arena.start
-                .advanced(by: offset + Int(bitPattern: slot) * MemoryLayout<Element>.stride)
-                .assumingMemoryBound(to: Element.self)
-        }
-
         // MARK: - Deinit
 
         deinit {
@@ -503,7 +445,7 @@ public enum Storage<Element: ~Copyable> {
             let elemBase = unsafe _arena.start.advanced(by: offset)
             let stride = MemoryLayout<Element>.stride
             for i in 0..<hw {
-                if meta[i].isOccupied {
+                if unsafe meta[i].isOccupied {
                     unsafe elemBase
                         .advanced(by: i * stride)
                         .assumingMemoryBound(to: Element.self)
@@ -638,163 +580,3 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-// MARK: - Fundamental Slot Access (Inline)
-
-extension Storage.Inline where Element: ~Copyable {
-    /// Returns a mutable pointer to the element at the given bounded physical slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded physical slot coordinate.
-    /// - Returns: A mutable pointer to the element.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
-        unsafe UnsafeMutablePointer(mutating: pointer(at: Index<Element>(slot)))
-    }
-
-    /// Returns an immutable pointer to the element at the given bounded physical slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded physical slot coordinate.
-    /// - Returns: An immutable pointer to the element.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    @_disfavoredOverload
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
-        unsafe pointer(at: Index<Element>(slot))
-    }
-
-    /// Returns an immutable pointer to the element at the given physical slot.
-    ///
-    /// This is the primitive address computation for inline storage.
-    /// All other slot access methods delegate to this.
-    ///
-    /// - Parameter slot: The physical slot coordinate.
-    /// - Returns: An immutable pointer to the element.
-    /// - Precondition: The element at `slot` must be initialized.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    package func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
-        unsafe withUnsafePointer(to: _storage) { base in
-            unsafe UnsafeRawPointer(base)
-                .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
-                .assumingMemoryBound(to: Element.self)
-        }
-    }
-}
-
-// MARK: - Fundamental Slot Access (Pool.Inline)
-
-extension Storage.Pool.Inline where Element: ~Copyable {
-    /// Returns a mutable pointer to the element at the given bounded slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded slot index returned by `allocate()`.
-    /// - Returns: Mutable pointer to the element's memory.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
-        unsafe _pointer(at: Index<Element>(slot))
-    }
-
-    /// Returns an immutable pointer to the element at the given bounded slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded slot index returned by `allocate()`.
-    /// - Returns: Immutable pointer to the element's memory.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    @_disfavoredOverload
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
-        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
-    }
-
-    /// Internal unbounded pointer for deinit iteration.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafePointer(to: _storage) { base in
-            unsafe UnsafeMutablePointer(mutating:
-                UnsafeRawPointer(base)
-                    .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
-                    .assumingMemoryBound(to: Element.self)
-            )
-        }
-    }
-}
-
-// MARK: - Fundamental Slot Access (Arena.Inline)
-
-extension Storage.Arena.Inline where Element: ~Copyable {
-    /// Returns a mutable pointer to the element at the given bounded slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded slot index returned by `allocate()`.
-    /// - Returns: Mutable pointer to the element's memory.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
-        unsafe _pointer(at: Index<Element>(slot))
-    }
-
-    /// Returns an immutable pointer to the element at the given bounded slot.
-    ///
-    /// Precondition-free — the bounded index guarantees validity.
-    ///
-    /// - Parameter slot: A bounded slot index returned by `allocate()`.
-    /// - Returns: Immutable pointer to the element's memory.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    @_disfavoredOverload
-    public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
-        unsafe UnsafePointer(_pointer(at: Index<Element>(slot)))
-    }
-
-    /// Internal unbounded pointer for deinit iteration.
-    @unsafe
-    @_lifetime(borrow self)
-    @inlinable
-    package func _pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafePointer(to: _storage) { base in
-            unsafe UnsafeMutablePointer(mutating:
-                UnsafeRawPointer(base)
-                    .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
-                    .assumingMemoryBound(to: Element.self)
-            )
-        }
-    }
-}
-
-// MARK: - Conditional Conformances
-
-// @_rawLayout types require @unchecked Sendable
-extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
-
-// Note: Storage.Inline cannot be conditionally Copyable because _Raw
-// (an @_rawLayout type) is always ~Copyable. This is acceptable since Storage.Inline
-// manages initialization state and ~Copyable is the correct semantic.
-
-/// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
-/// Requires @unchecked because _Raw uses @unchecked Sendable.
-extension Storage.Inline: @unchecked Sendable where Element: Sendable {}
-
-// Pool.Inline
-extension Storage.Pool.Inline._Raw: @unchecked Sendable where Element: Sendable {}
-extension Storage.Pool.Inline: @unchecked Sendable where Element: Sendable {}
-
-// Arena.Inline
-extension Storage.Arena.Inline._Raw: @unchecked Sendable where Element: Sendable {}
-extension Storage.Arena.Inline: @unchecked Sendable where Element: Sendable {}

@@ -418,7 +418,7 @@ struct StorageInlineInvariantTests {
             let second: Swift.Range<Index<Tracker>> = 5..<7
             heap.initialization = .two(first: first, second: second)
 
-            heap.deinitialize()
+            heap.deinitialize.all()
 
             unsafe #expect(Tracker.deinitOrder.count == 4)
             // First range deinitialized first
