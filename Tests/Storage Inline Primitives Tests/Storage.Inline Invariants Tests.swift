@@ -28,26 +28,26 @@ struct StorageInlineInvariantTests {
     struct Layout {
 
         @Test
-        func `INV-INLINE-001a: size equals stride times capacity plus bitvector overhead`() {
+        func `INV-INLINE-001a: size equals stride times capacity plus bitvector overhead`() throws {
             // For Int with capacity 4
-            let intStride = MemoryLayout<Int>.stride
-            let bitvectorSize = 32 // 4 words × 8 bytes = 32 bytes for Bit.Vector.Static<4>
-            let expectedIntSize = intStride * 4 + bitvectorSize
-            let actualIntSize = MemoryLayout<Storage<Int>.Inline<4>>.size
+            let intStride: Affine.Discrete.Ratio<Int, Memory> = .stride
+            let intBytes: Memory.Address.Count = Index<Int>.Count(4) * intStride
+            let bitvectorBytes = Memory.Address.Count(32) // 4 words × 8 bytes = 32 bytes for Bit.Vector.Static<4>
+            let expectedIntSize = intBytes + bitvectorBytes
+            let actualIntSize = try Memory.Address.Count(MemoryLayout<Storage<Int>.Inline<4>>.size)
 
             // Actual size may include alignment padding, so use >= for lower bound
-            #expect(actualIntSize >= intStride * 4, "Storage must hold at least 4 Ints")
-            #expect(actualIntSize <= expectedIntSize + 16, "Size should be close to expected")
+            #expect(actualIntSize >= intBytes, "Storage must hold at least 4 Ints")
+            #expect(actualIntSize <= expectedIntSize + Memory.Address.Count(16), "Size should be close to expected")
 
             // For Double with capacity 8
-            let doubleStride = MemoryLayout<Double>.stride
-            // I'd rather use this:
-//            let doubleStride = Affine.Discrete.Ratio<Double, Memory>.stride
-            let expectedDoubleSize = doubleStride * 8 + bitvectorSize
-            let actualDoubleSize = MemoryLayout<Storage<Double>.Inline<8>>.size
+            let doubleStride: Affine.Discrete.Ratio<Double, Memory> = .stride
+            let doubleBytes: Memory.Address.Count = Index<Double>.Count(8) * doubleStride
+            let expectedDoubleSize = doubleBytes + bitvectorBytes
+            let actualDoubleSize = try Memory.Address.Count(MemoryLayout<Storage<Double>.Inline<8>>.size)
 
-            #expect(actualDoubleSize >= doubleStride * 8, "Storage must hold at least 8 Doubles")
-            #expect(actualDoubleSize <= expectedDoubleSize + 16, "Size should be close to expected")
+            #expect(actualDoubleSize >= doubleBytes, "Storage must hold at least 8 Doubles")
+            #expect(actualDoubleSize <= expectedDoubleSize + Memory.Address.Count(16), "Size should be close to expected")
         }
 
         @Test
@@ -84,15 +84,15 @@ struct StorageInlineInvariantTests {
             let ptr2: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 2)
             let ptr3: UnsafeMutablePointer<Int> = unsafe storage.pointer(at: 3)
 
-            let stride = MemoryLayout<Int>.stride
+            let oneStride = Index<Int>.Offset(1)
 
-            let diff01 = unsafe UnsafeRawPointer(ptr1) - UnsafeRawPointer(ptr0)
-            let diff12 = unsafe UnsafeRawPointer(ptr2) - UnsafeRawPointer(ptr1)
-            let diff23 = unsafe UnsafeRawPointer(ptr3) - UnsafeRawPointer(ptr2)
+            let diff01: Index<Int>.Offset = unsafe ptr1 - ptr0
+            let diff12: Index<Int>.Offset = unsafe ptr2 - ptr1
+            let diff23: Index<Int>.Offset = unsafe ptr3 - ptr2
 
-            #expect(diff01 == stride, "Slot 0 to 1 should be exactly one stride")
-            #expect(diff12 == stride, "Slot 1 to 2 should be exactly one stride")
-            #expect(diff23 == stride, "Slot 2 to 3 should be exactly one stride")
+            #expect(diff01 == oneStride, "Slot 0 to 1 should be exactly one stride")
+            #expect(diff12 == oneStride, "Slot 1 to 2 should be exactly one stride")
+            #expect(diff23 == oneStride, "Slot 2 to 3 should be exactly one stride")
 
             // Cleanup
             _ = storage.move(at: 0)
@@ -104,7 +104,6 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-001d: slot i is at exactly i times stride bytes`() {
             var storage = Storage<Double>.Inline<4>()
-            let stride = MemoryLayout<Double>.stride
 
             storage.initialize(to: 1.0, at: 0)
             storage.initialize(to: 2.0, at: 1)
@@ -116,11 +115,10 @@ struct StorageInlineInvariantTests {
             let ptr2: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 2)
             let ptr3: UnsafeMutablePointer<Double> = unsafe storage.pointer(at: 3)
 
-            let base = unsafe UnsafeRawPointer(ptr0)
-            #expect(unsafe UnsafeRawPointer(ptr0) == base + 0 * stride)
-            #expect(unsafe UnsafeRawPointer(ptr1) == base + 1 * stride)
-            #expect(unsafe UnsafeRawPointer(ptr2) == base + 2 * stride)
-            #expect(unsafe UnsafeRawPointer(ptr3) == base + 3 * stride)
+            #expect(unsafe ptr0 == ptr0 + Index<Double>.Offset(0))
+            #expect(unsafe ptr1 == ptr0 + Index<Double>.Offset(1))
+            #expect(unsafe ptr2 == ptr0 + Index<Double>.Offset(2))
+            #expect(unsafe ptr3 == ptr0 + Index<Double>.Offset(3))
 
             // Cleanup
             _ = storage.move(at: 0)
@@ -130,20 +128,20 @@ struct StorageInlineInvariantTests {
         }
 
         @Test
-        func `layout is optimal for various element types`() {
+        func `layout is optimal for various element types`() throws {
             // UInt8 - 1 byte stride
-            let uint8Size = MemoryLayout<Storage<UInt8>.Inline<16>>.size
-            let uint8Ideal = 16 * MemoryLayout<UInt8>.stride
+            let uint8Size = try Memory.Address.Count(MemoryLayout<Storage<UInt8>.Inline<16>>.size)
+            let uint8Ideal: Memory.Address.Count = Index<UInt8>.Count(16) * .stride
             #expect(uint8Size >= uint8Ideal, "UInt8×16 must fit 16 bytes of elements")
 
             // Int32 - 4 byte stride
-            let int32Size = MemoryLayout<Storage<Int32>.Inline<8>>.size
-            let int32Ideal = 8 * MemoryLayout<Int32>.stride
+            let int32Size = try Memory.Address.Count(MemoryLayout<Storage<Int32>.Inline<8>>.size)
+            let int32Ideal: Memory.Address.Count = Index<Int32>.Count(8) * .stride
             #expect(int32Size >= int32Ideal, "Int32×8 must fit 32 bytes of elements")
 
             // Int64 - 8 byte stride
-            let int64Size = MemoryLayout<Storage<Int64>.Inline<4>>.size
-            let int64Ideal = 4 * MemoryLayout<Int64>.stride
+            let int64Size = try Memory.Address.Count(MemoryLayout<Storage<Int64>.Inline<4>>.size)
+            let int64Ideal: Memory.Address.Count = Index<Int64>.Count(4) * .stride
             #expect(int64Size >= int64Ideal, "Int64×4 must fit 32 bytes of elements")
         }
     }

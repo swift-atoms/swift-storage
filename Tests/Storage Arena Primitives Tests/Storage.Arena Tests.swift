@@ -37,9 +37,9 @@ struct StorageArenaTests {
         let meta = unsafe arena.meta
         let cap = Int(bitPattern: arena.slotCapacity)
         for i in 0..<cap {
-            #expect(meta[i].token == 0)
-            #expect(meta[i].link == .max)
-            #expect(meta[i].isOccupied == false)
+            unsafe #expect(meta[i].token == 0)
+            unsafe #expect(meta[i].link == .max)
+            unsafe #expect(meta[i].isOccupied == false)
         }
     }
 
@@ -98,16 +98,16 @@ struct StorageArenaTests {
         let meta = unsafe arena.meta
 
         // Initially virgin
-        #expect(meta[0].token == 0)
-        #expect(meta[0].isOccupied == false)
+        unsafe #expect(meta[0].token == 0)
+        unsafe #expect(meta[0].isOccupied == false)
 
         // Simulate allocation: set odd token
-        meta[0].token = 1
-        #expect(meta[0].isOccupied == true)
+        unsafe meta[0].token = 1
+        unsafe #expect(meta[0].isOccupied == true)
 
         // Simulate deallocation: set even token
-        meta[0].token = 2
-        #expect(meta[0].isOccupied == false)
+        unsafe meta[0].token = 2
+        unsafe #expect(meta[0].isOccupied == false)
     }
 
     // MARK: - HighWater
@@ -143,18 +143,18 @@ struct StorageArenaTests {
             let slot0 = Index<Tracker>(Ordinal(UInt(0)))
             let slot1 = Index<Tracker>(Ordinal(UInt(1)))
 
-            arena.initialize(to: Tracker(onDeinit: { deinitCount += 1 }), at: slot0)
-            meta[0].token = 1  // mark occupied
+            arena.initialize(to: Tracker(onDeinit: { unsafe deinitCount += 1 }), at: slot0)
+            unsafe meta[0].token = 1  // mark occupied
 
-            arena.initialize(to: Tracker(onDeinit: { deinitCount += 1 }), at: slot1)
-            meta[1].token = 1  // mark occupied
+            arena.initialize(to: Tracker(onDeinit: { unsafe deinitCount += 1 }), at: slot1)
+            unsafe meta[1].token = 1  // mark occupied
 
             arena.highWater = Index<Tracker>.Count(Cardinal(UInt(2)))
 
             // Arena goes out of scope here — deinit should clean up
         }
 
-        #expect(deinitCount == 2)
+        unsafe #expect(deinitCount == 2)
     }
 
     @Test("Deinit skips free slots")
@@ -177,19 +177,19 @@ struct StorageArenaTests {
             let slot0 = Index<Tracker>(Ordinal(UInt(0)))
             let slot1 = Index<Tracker>(Ordinal(UInt(1)))
 
-            arena.initialize(to: Tracker(onDeinit: { deinitCount += 1 }), at: slot0)
-            meta[0].token = 1  // occupied
+            arena.initialize(to: Tracker(onDeinit: { unsafe deinitCount += 1 }), at: slot0)
+            unsafe meta[0].token = 1  // occupied
 
-            arena.initialize(to: Tracker(onDeinit: { deinitCount += 1 }), at: slot1)
+            arena.initialize(to: Tracker(onDeinit: { unsafe deinitCount += 1 }), at: slot1)
             // Move out slot1 so it's deinitialized, then mark free
             _ = arena.move(at: slot1)
-            meta[1].token = 2  // free (even)
+            unsafe meta[1].token = 2  // free (even)
 
             arena.highWater = Index<Tracker>.Count(Cardinal(UInt(2)))
         }
 
         // slot1 deinitialized by move+discard, slot0 by arena deinit
-        #expect(deinitCount == 2)
+        unsafe #expect(deinitCount == 2)
     }
 
     // MARK: - Layout
