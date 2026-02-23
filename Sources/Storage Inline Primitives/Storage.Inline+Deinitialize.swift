@@ -16,18 +16,23 @@ public import Bit_Vector_Primitives
 // MARK: - Deinitialize Accessor
 
 extension Storage.Inline where Element: ~Copyable {
-    /// Accessor for tracked deinitialize operations.
+    /// Accessor for deinitialize operations.
     ///
-    /// Provides both `.deinitialize()` and `.deinitialize.all()` for cleanup.
-    ///
+    /// Non-mutating `_read` enables use in `deinit` contexts:
     /// ```swift
-    /// storage.deinitialize()      // Deinitializes all elements via callAsFunction
-    /// storage.deinitialize.all()  // Same effect via named method
+    /// deinit { unsafe storage.deinitialize() }
+    /// ```
+    ///
+    /// Mutating `_modify` enables tracked operations that clear bits:
+    /// ```swift
+    /// storage.deinitialize(at: slot)   // Single slot, clears tracking bit
+    /// storage.deinitialize(range: r)   // Range, clears tracking bits
+    /// storage.deinitialize.all()       // All slots, clears all tracking bits
     /// ```
     @inlinable
     public var `deinitialize`: Property<Storage.Deinitialize, Self>.View {
-        mutating _read {
-            yield unsafe Property<Storage.Deinitialize, Self>.View(&self)
+        _read {
+            yield unsafe Property<Storage.Deinitialize, Self>.View(borrowing: self)
         }
         mutating _modify {
             var view = unsafe Property<Storage.Deinitialize, Self>.View(&self)
@@ -95,24 +100,25 @@ extension Property.View where Base: ~Copyable {
         }
         unsafe base.pointee._slots.clear.all()
     }
-}
 
-// MARK: - Non-Mutating Cleanup (for deinit)
-
-extension Storage.Inline where Element: ~Copyable {
-    /// Deinitializes all slots tracked as initialized.
+    /// Deinitializes all tracked slots without clearing tracking bits.
     ///
-    /// This method is non-mutating and does not reset the tracking state —
-    /// intended for use in `deinit` contexts where the storage is being consumed
-    /// and no further state updates are needed.
+    /// Non-mutating — intended for `deinit` contexts where the storage
+    /// is being consumed and no further state updates are needed.
     ///
-    /// Uses the per-slot bitvector as the source of truth, correctly handling
-    /// linear, sparse, and disjoint initialization patterns.
+    /// Iterates the per-slot bitvector and deinitializes exactly those
+    /// slots that are tracked as initialized. Handles linear, sparse,
+    /// and disjoint initialization patterns.
+    ///
+    /// ```swift
+    /// deinit { unsafe storage.deinitialize() }
+    /// ```
     @unsafe
     @inlinable
-    public func _deinitializeTrackedSlots() {
-        for bitIndex in _slots.ones {
-            unsafe _mutablePointer(at: bitIndex.retag(Element.self))
+    public func callAsFunction<Element: ~Copyable, let capacity: Int>()
+    where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
+        for bitIndex in unsafe base.pointee._slots.ones {
+            unsafe base.pointee._mutablePointer(at: bitIndex.retag(Element.self))
                 .deinitialize(count: .one)
         }
     }
