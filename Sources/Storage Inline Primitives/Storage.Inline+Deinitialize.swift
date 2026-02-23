@@ -18,7 +18,7 @@ public import Bit_Vector_Primitives
 extension Storage.Inline where Element: ~Copyable {
     /// Accessor for deinitialize operations.
     ///
-    /// Non-mutating `_read` enables use in `deinit` contexts:
+    /// Non-mutating `get` enables use in `deinit` contexts:
     /// ```swift
     /// deinit { unsafe storage.deinitialize() }
     /// ```
@@ -29,10 +29,26 @@ extension Storage.Inline where Element: ~Copyable {
     /// storage.deinitialize(range: r)   // Range, clears tracking bits
     /// storage.deinitialize.all()       // All slots, clears all tracking bits
     /// ```
+    ///
+    /// - Note: Uses `@_unsafeNonescapableResult` on `get` (not `_read`) because
+    ///   `~Escapable` values with `@_lifetime(borrow base)` cannot exist in deinit
+    ///   scope. The attribute suppresses lifetime-dependence diagnostics on the
+    ///   `@owned` return value. `@_unsafeNonescapableResult` on `_read` would be
+    ///   semantically cleaner but crashes the compiler (yielded values are
+    ///   `@guaranteed`, not `@owned`).
+    ///   See: `Research/escapable-deinit-lifetime.md`
     @inlinable
     public var `deinitialize`: Property<Storage.Deinitialize, Self>.View {
-        _read {
-            yield unsafe Property<Storage.Deinitialize, Self>.View(borrowing: self)
+        // WORKAROUND: get instead of _read
+        // WHY: @_unsafeNonescapableResult on _read crashes the compiler —
+        //      _read yields @guaranteed, but the attribute assumes @owned.
+        // WHEN TO REMOVE: When swiftlang/swift fixes the assertion failure
+        //      in LifetimeDependenceUtils.swift:173 for _read coroutines.
+        //      Replace with: @_unsafeNonescapableResult _read { yield ... }
+        // TRACKING: Experiments/escapable-deinit-lifetime/ V14
+        @_unsafeNonescapableResult
+        get {
+            unsafe Property<Storage.Deinitialize, Self>.View(borrowing: self)
         }
         mutating _modify {
             var view = unsafe Property<Storage.Deinitialize, Self>.View(&self)

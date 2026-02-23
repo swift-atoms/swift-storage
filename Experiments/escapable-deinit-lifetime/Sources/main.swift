@@ -216,7 +216,7 @@ struct Container9: ~Copyable {
 // MARK: - Variant 10: _overrideLifetime to rebind view lifetime in deinit
 // Hypothesis: _overrideLifetime can rebind the view's lifetime dependency
 //             to something the compiler accepts in deinit.
-// Result: (pending)
+// Result: REFUTED — both view and rebound escape deinit scope
 // ============================================================================
 
 // struct Container10: ~Copyable {
@@ -233,7 +233,9 @@ struct Container9: ~Copyable {
 // ============================================================================
 // MARK: - Variant 11: @_unsafeNonescapableResult on borrowing func
 // Hypothesis: Attribute on function suppresses lifetime diagnostics for result.
-// Result: (pending)
+// Result: CONFIRMED — Build Succeeded
+//         @_unsafeNonescapableResult suppresses lifetime-dependence diagnostics,
+//         allowing the ~Escapable return value to be used in deinit.
 // ============================================================================
 
 extension Storage {
@@ -254,7 +256,7 @@ struct Container11: ~Copyable {
 // MARK: - Variant 12: withUnsafePointer + create view inside closure
 // Hypothesis: Pointer obtained via withUnsafePointer has closure-scoped
 //             lifetime that the compiler can verify.
-// Result: (pending)
+// Result: CONFIRMED — Build Succeeded
 // ============================================================================
 
 struct Container12: ~Copyable {
@@ -270,7 +272,7 @@ struct Container12: ~Copyable {
 // ============================================================================
 // MARK: - Variant 13: _overrideLifetime with immortal-like pattern
 // Hypothesis: Override lifetime to copy from a trivially-lived value.
-// Result: (pending)
+// Result: REFUTED — same as V10
 // ============================================================================
 
 // struct Container13: ~Copyable {
@@ -284,33 +286,44 @@ struct Container12: ~Copyable {
 // Result: REFUTED — same as V10
 
 // ============================================================================
-// MARK: - Results Summary
+// MARK: - Results Summary (main.swift + accessor_test.swift)
 //
 // REFUTED (error: lifetime-dependent value escapes its scope):
-//   V1: _read accessor + method            — REFUTED
-//   V2: ConstView via _read                — REFUTED
-//   V3: Inline MutView construction        — REFUTED
-//   V4: Inline ConstView construction      — REFUTED
-//   V5: borrowing func                     — REFUTED
-//   V8: callAsFunction via _read           — REFUTED
+//   V1:  _read accessor + method            — REFUTED
+//   V2:  ConstView via _read                — REFUTED
+//   V3:  Inline MutView construction        — REFUTED
+//   V4:  Inline ConstView construction      — REFUTED
+//   V5:  borrowing func                     — REFUTED
+//   V8:  callAsFunction via _read           — REFUTED
+//   V10: _overrideLifetime in deinit        — REFUTED
+//   V13: _overrideLifetime immortal-like    — REFUTED
+//   V16: _read delegating to @_unsafeNonescapableResult func — REFUTED
 //
 // CONFIRMED (compiles):
-//   V6: Plain non-mutating method          — CONFIRMED (Build Succeeded, Output: prints)
-//   V7: Method with internal ~Escapable    — CONFIRMED (Build Succeeded, Output: prints)
-//   V9: withUnsafePointer closure          — CONFIRMED (Build Succeeded, Output: prints)
+//   V6:  Plain non-mutating method          — CONFIRMED
+//   V7:  Method with internal ~Escapable    — CONFIRMED
+//   V9:  withUnsafePointer closure          — CONFIRMED
+//   V11: @_unsafeNonescapableResult func    — CONFIRMED
+//   V12: withUnsafePointer + view in closure — CONFIRMED
+//   V17: @_unsafeNonescapableResult on get  — CONFIRMED ← KEY
+//   V18: get + _modify combined             — CONFIRMED ← SOLUTION
 //
-// CONCLUSION: ~Escapable values fundamentally cannot exist in deinit when
-//   they borrow stored properties of self. The deinit scope treats self's
-//   stored properties as having a lifetime that ~Escapable borrows cannot
-//   satisfy. This is independent of:
-//     - Construction method (property _read, borrowing func, inline)
-//     - Pointer mutability (UnsafePointer vs UnsafeMutablePointer)
-//     - Usage pattern (named method vs callAsFunction)
+// COMPILER BUG (see accessor_test.swift):
+//   V14: @_unsafeNonescapableResult on _read — CRASH
+//   V15: Combined _read + _modify with attr  — CRASH
 //
-//   VIABLE PATTERN: V7 — a plain method on Storage.Inline that internally
-//   creates and uses the ~Escapable view. The ~Escapable boundary stays
-//   inside the method body; only a regular method call crosses the deinit
-//   boundary.
+// CONCLUSION: ~Escapable values cannot exist in deinit when they borrow
+//   stored properties of self. The `_read` coroutine yields @guaranteed
+//   values that always carry lifetime dependence.
+//
+//   SOLUTION: @_unsafeNonescapableResult on `get` accessor (V17/V18).
+//   `get` returns @owned values, which the attribute can suppress lifetime
+//   tracking for. Combined with `mutating _modify` for tracked operations,
+//   this gives a single property that works in both deinit (get path) and
+//   mutating contexts (_modify path).
+//
+//   The `_read` path (V14) would be semantically cleaner but crashes the
+//   compiler. When that bug is fixed, `get` can be replaced with `_read`.
 // ============================================================================
 
-print("Variants 6, 7, 9 compiled successfully")
+print("Variants 6, 7, 9, 11, 12, 17, 18 compiled successfully")
