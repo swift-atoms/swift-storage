@@ -9,15 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Re-export all modules for consumers.
-// Users import Storage_Primitives and get everything.
-
 @_exported public import Storage_Primitives_Core
 @_exported public import Storage_Heap_Primitives
-@_exported public import Storage_Inline_Primitives
-@_exported public import Storage_Pool_Primitives
-@_exported public import Storage_Pool_Inline_Primitives
-@_exported public import Storage_Arena_Primitives
-@_exported public import Storage_Arena_Inline_Primitives
-@_exported public import Storage_Slab_Primitives
-@_exported public import Storage_Split_Primitives
+@_exported public import Bit_Vector_Primitives

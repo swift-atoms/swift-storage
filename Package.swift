@@ -45,6 +45,10 @@ let package = Package(
             targets: ["Storage Arena Inline Primitives"]
         ),
         .library(
+            name: "Storage Slab Primitives",
+            targets: ["Storage Slab Primitives"]
+        ),
+        .library(
             name: "Storage Split Primitives",
             targets: ["Storage Split Primitives"]
         ),
@@ -131,6 +135,15 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
+        // Slab: Bitmap-tracked heap storage for sparse data structures
+        .target(
+            name: "Storage Slab Primitives",
+            dependencies: [
+                "Storage Primitives Core",
+                "Storage Heap Primitives",
+                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+            ]
+        ),
         // Split: Metadata-driven dual-lane storage
         .target(
             name: "Storage Split Primitives",
@@ -151,6 +164,7 @@ let package = Package(
                 "Storage Pool Inline Primitives",
                 "Storage Arena Primitives",
                 "Storage Arena Inline Primitives",
+                "Storage Slab Primitives",
                 "Storage Split Primitives",
             ]
         ),
