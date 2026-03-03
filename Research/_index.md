@@ -23,6 +23,7 @@ Research documents backing the storage-primitives implementation.
 | [noncopyable-copyable-conditional-audit](noncopyable-copyable-conditional-audit.md) | ~Copyable/Copyable conditional support audit across all disciplines | RECOMMENDATION |
 | [bounded-unbounded-storage-inline-api](bounded-unbounded-storage-inline-api.md) | Dual public API for bounded (preferred) + unbounded (infrastructure) index access | DECISION |
 | [inline-deinit-ownership](inline-deinit-ownership.md) | Where RAII cleanup lives: storage layer vs buffer layer (literature study) | DECISION |
+| [inline-storage-layering](inline-storage-layering.md) | Separating raw addressable storage (memory layer) from initialization tracking (storage layer) | RECOMMENDATION |
 
 ## Key Architectural Decisions
 

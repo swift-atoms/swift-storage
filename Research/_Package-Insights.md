@@ -9,11 +9,6 @@ applies_to: [swift-storage-primitives]
 normative: false
 ---
 -->
-
-@Metadata {
-    @TitleHeading("Storage Primitives")
-}
-
 Design decisions, implementation patterns, and lessons learned specific to this package.
 
 ## Overview
@@ -116,10 +111,8 @@ Totality should be the default. When an operation seems partial, look for altern
 
 ---
 
-## Topics
+## Related
 
-### Related Documents
-
-- <doc:Storage-Ring>
-- <doc:Storage-Contiguous>
-- <doc:Storage-Inline>
+- Storage-Ring
+- Storage-Contiguous
+- Storage-Inline
