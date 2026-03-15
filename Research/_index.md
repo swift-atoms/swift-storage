@@ -24,6 +24,10 @@ Research documents backing the storage-primitives implementation.
 | [bounded-unbounded-storage-inline-api](bounded-unbounded-storage-inline-api.md) | Dual public API for bounded (preferred) + unbounded (infrastructure) index access | DECISION |
 | [inline-deinit-ownership](inline-deinit-ownership.md) | Where RAII cleanup lives: storage layer vs buffer layer (literature study) | DECISION |
 | [inline-storage-layering](inline-storage-layering.md) | Separating raw addressable storage (memory layer) from initialization tracking (storage layer) | RECOMMENDATION |
+| [escapable-deinit-lifetime](escapable-deinit-lifetime.md) | ~Escapable values in deinit: lifetime-dependence limitation | DECISION |
+| [initialization-visibility](initialization-visibility.md) | Initialization property visibility to prevent state drift | IN_PROGRESS |
+| [inline-pool-arena](inline-pool-arena.md) | Inline pool and arena storage | DECISION |
+| [ordinal-cardinal-count-association](ordinal-cardinal-count-association.md) | Ordinal-Cardinal count association for Range<Index<Element>>.count | IN_PROGRESS |
 
 ## Key Architectural Decisions
 
