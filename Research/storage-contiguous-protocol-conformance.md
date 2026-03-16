@@ -8,6 +8,8 @@ status: DECISION
 ---
 -->
 
+> **See also**: `storage-contiguous-api-design.md` is the comprehensive API design decision that incorporates this document's conformance conclusion.
+
 ## Context
 
 `Memory.Contiguous.Protocol` (from swift-memory-primitives) defines a standard interface for types providing contiguous memory access.

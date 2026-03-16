@@ -8,6 +8,8 @@ status: DEFERRED
 ---
 -->
 
+> **Dependency**: This problem may be eliminated entirely by `per-slot-initialization-tracking.md` — if initialization is auto-tracked per-slot via BitVector, the double-free footgun disappears because deinit always knows exactly which slots are initialized.
+
 ## Context
 
 **Trigger**: During testing of `Storage.Inline`, multiple tests crashed with double-free errors. The root cause: tests explicitly called `storage.deinitialize()` but did not reset `storage.initialization = .empty` afterward. When the storage went out of scope, `deinit` called `deinitialize()` again, attempting to free already-freed memory.

@@ -8,6 +8,8 @@ status: DEFERRED
 ---
 -->
 
+> **Dependency**: This question may be superseded by `per-slot-initialization-tracking.md` — if BitVector-based per-slot tracking is adopted, the `_initialization` property may cease to exist as a settable property.
+
 ## Context
 
 We refactored `Storage.Heap` to prevent "state drift" - a footgun where callers manually initialize/move/deinitialize elements but forget to update `initialization` state, leading to memory leaks or double-deinit crashes.
