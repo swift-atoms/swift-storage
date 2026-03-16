@@ -1,4 +1,11 @@
 # Architectural Patterns in Swift Collection Primitives: A Design Analysis
+<!--
+---
+version: 1.0.0
+last_updated: 2026-01-20
+status: IMPLEMENTED
+---
+-->
 
 **Abstract.** This paper analyzes the architectural patterns underlying the Swift Institute's collection primitives—Deque, Heap, and Queue—with emphasis on their support for move-only (`~Copyable`) elements, typed error handling, and variant-based capacity strategies. We examine the design decisions that enable these primitives to serve as foundational building blocks while maintaining zero-cost abstractions and strict memory safety. The patterns documented here establish a replicable framework for implementing additional collection primitives.
 
