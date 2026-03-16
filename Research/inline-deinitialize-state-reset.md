@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 1.0.0
-last_updated: 2026-02-05
-status: IN_PROGRESS
+version: 1.0.1
+last_updated: 2026-03-15
+status: DEFERRED
 ---
 -->
 
@@ -377,3 +377,11 @@ See `Experiments/discard-self-availability` for detailed investigation.
 - Swift Evolution: [SE-0366 `consume` operator](https://github.com/apple/swift-evolution/blob/main/proposals/0366-move-function.md)
 - Swift Evolution: [SE-0390 Noncopyable structs and enums](https://github.com/apple/swift-evolution/blob/main/proposals/0390-noncopyable-structs-and-enums.md)
 - Related: `@_rawLayout` cross-module deinit bug (swiftlang/swift#86652)
+
+### Deferral
+
+**Date**: 2026-03-15
+
+**Reason**: The document reached RECOMMENDATION status (Option E + I: make bulk `deinitialize()` package-internal and accept the value/reference asymmetry between Storage.Inline and Storage.Heap). The `discard self` experiment conclusively showed Option C is not viable due to `@_rawLayout` types not being trivially destructible. The ~Copyable value-generic deinit workaround (2026-03-10, using `UnsafeMutablePointer` in deinit) addresses a related but distinct problem. This document's recommendation stands as-is but implementation was deprioritized during the buffer inline module split.
+
+**Resume when**: Storage.Inline API is being revised, or when Swift's `discard self` support for `@_rawLayout` types changes.

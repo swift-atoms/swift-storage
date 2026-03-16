@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 1.0.0
-last_updated: 2026-01-26
-status: IN_PROGRESS
+version: 1.0.1
+last_updated: 2026-03-15
+status: DEFERRED
 tier: 3
 applies_to: [swift-index-primitives, swift-queue-primitives, swift-deque-primitives]
 ---
@@ -616,3 +616,11 @@ For runtime-bounded collections, `capacity` MUST be typed as `Index<Element>.Cou
 - Rust `VecDeque` implementation: https://doc.rust-lang.org/src/alloc/collections/vec_deque/mod.rs.html
 - Swift Evolution SE-0322, SE-0370
 
+
+### Deferral
+
+**Date**: 2026-03-15
+
+**Reason**: The decision (Option A + D combined: `Index % Count` for runtime-bounded and cyclic group arithmetic on `Index.Bounded<N>` for compile-time bounded collections) was reached on 2026-01-26. Implementation was blocked by the subsequent buffer-primitives inline module split in February 2026, which restructured the queue and buffer packages that are the primary consumers of this design. The implementation path (steps 1-6 in Section 9) has not been started.
+
+**Resume when**: Buffer-primitives inline module restructuring is stable and queue-primitives are ready to adopt the new index arithmetic operators.

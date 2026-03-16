@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 1.0.0
-last_updated: 2026-02-05
-status: IN_PROGRESS
+version: 1.0.1
+last_updated: 2026-03-15
+status: DEFERRED
 tier: 2
 ---
 -->
@@ -228,3 +228,11 @@ The **distance between positions** naturally yields a **quantity**—this is the
 ### Programming Language Theory
 - [Practical Affine Types (Tov & Pucella)](https://users.cs.northwestern.edu/~jesse/pubs/alms/tovpucella-alms.pdf)
 - [Dependent Types for Low-Level Programming](https://people.eecs.berkeley.edu/~necula/Papers/deputy-esop07.pdf)
+
+### Deferral
+
+**Date**: 2026-03-15
+
+**Reason**: The document reached RECOMMENDATION status (Option A: add `Count` associated type to `Ordinal.Protocol`). The mathematical justification is complete -- distance between finite ordinals is definitionally a cardinal. Implementation requires updating `swift-ordinal-primitives` (Ordinal.Protocol), adding `Count = Cardinal` conformance, and updating storage-primitives Range extension. This was deprioritized because the ordinal/cardinal foundations work shifted focus to memory-primitives scope (Index<T>.Count already exists and works), and the protocol change would ripple across many downstream packages.
+
+**Resume when**: Ordinal-primitives undergoes a protocol revision, or when the `Range<Index<T>>.count` return type is actively needed to return `Index<T>.Count` instead of `Int`.

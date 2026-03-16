@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 1.2.0
-last_updated: 2026-02-12
-status: IN_PROGRESS
+version: 1.2.1
+last_updated: 2026-03-15
+status: DEFERRED
 tier: 2
 changelog:
   - "1.2.0: Mark analysis phases complete. Experiment and implementation pending."
@@ -360,3 +360,15 @@ Pool allocators use scattered slots (not contiguous ranges), so Span-based acces
 - [MEM-COPY-*] memory skill — Ownership and copyability rules
 - [COPY-FIX-*] copyable-remediation skill — Constraint propagation fixes
 - swiftlang/swift#86652 — Deinit workaround for cross-module ~Copyable structs
+
+---
+
+## Deferral
+
+**Date**: 2026-03-15
+**Previous status**: IN_PROGRESS (since 2026-02-12)
+**New status**: DEFERRED
+
+**Blocker/Reason**: All 6 comparative analyses are complete. Two action items remain: (1) validate Span<~Copyable> in closures via experiment, and (2) relax Heap.withMutableSpan(body:) and range-based closure methods to ~Copyable. Both are blocked on the experiment (EXP phase), which has not been run. The analysis identified 1 high-priority gap (Heap mutable span access) and 4 medium-priority gaps (range-based closure access). Deferred because the experiment requires focused compiler-interaction time and the gaps have not been blocking in practice.
+
+**Resumption trigger**: When a downstream consumer needs ~Copyable mutable span access on Storage.Heap, or when Swift compiler ~Copyable-in-closures support is verified stable.

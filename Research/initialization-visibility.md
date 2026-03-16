@@ -2,9 +2,9 @@
 
 <!--
 ---
-version: 1.0.0
-last_updated: 2026-02-05
-status: IN_PROGRESS
+version: 1.0.1
+last_updated: 2026-03-15
+status: DEFERRED
 ---
 -->
 
@@ -154,3 +154,11 @@ public var _initialization: Storage.Initialization {
 
 - Research: `/Users/coen/Developer/swift-primitives/swift-storage-primitives/Research/initialization-visibility.md`
 - Related: State drift prevention design discussion (conversation context)
+
+### Deferral
+
+**Date**: 2026-03-15
+
+**Reason**: The document reached RECOMMENDATION status (Option A: make `_initialization` public with underscore prefix). The implementation is trivial (change `package` to `public` on the `_initialization` property, then 30 find-replace operations in buffer-primitives). Execution was deferred because buffer-primitives focus shifted to the inline module split and higher-priority buffer restructuring work. The visibility change is a one-line fix that can be applied whenever buffer-primitives compilation against storage-primitives is next needed.
+
+**Resume when**: Buffer-primitives needs to compile against updated storage-primitives with the read-only `initialization` property.

@@ -2,14 +2,20 @@
 
 <!--
 ---
-version: 1.0.0
-last_updated: 2026-02-10
-status: IN_PROGRESS
+version: 1.1.0
+last_updated: 2026-03-15
+status: SUPERSEDED
 tier: 3
 applies_to: [swift-storage-primitives, swift-memory-primitives, swift-buffer-primitives]
-normative: true
+normative: false
+superseded_by: ../Research/memory-storage-composition-feasibility.md
 ---
 -->
+
+> **Status**: SUPERSEDED (2026-03-15)
+> **Superseded by**: `memory-storage-composition-feasibility.md` (2026-02-11)
+> This document concluded Option B (independent implementation). That conclusion was explicitly reversed by the follow-up feasibility analysis, which demonstrated all friction points are resolvable at zero runtime cost. The current code implements composition: `Storage.Pool` stores `_pool: Memory.Pool` and delegates all operations via `.retag()` and `.assumingMemoryBound(to:)`.
+> It remains as historical context for why composition was initially rejected.
 
 ## Context
 
@@ -333,3 +339,17 @@ Memory.Pool remains at Tier 10 for raw-byte consumers.
 - pool-free-list-representation.md (DECISION) -- typed sentinel pattern
 - storage-ownership-reference-synthesis.md (DECISION v3.0.0) -- layered split, Phase 2
 - storage-primitives-comparative-analysis.md (RECOMMENDATION) -- gap: no pool at storage tier
+
+---
+
+## Deferral
+
+**Date**: 2026-03-15
+**Previous status**: IN_PROGRESS (since 2026-02-10)
+**New status**: DEFERRED
+
+**Blocker/Reason**: Document reached DECISION status (Option B: independent implementation) on 2026-02-10 but frontmatter was never updated from IN_PROGRESS. The decision is made; remaining work is implementation of Storage.Pool and amendment of the synthesis document. No active research questions remain. Deferred because implementation has not been prioritized.
+
+**Contradiction note**: This document's decision (Option B: Storage.Pool implements independently, sharing the design pattern but not the code with Memory.Pool) contradicts the normative synthesis document `storage-ownership-reference-synthesis.md` (DECISION v3.0.0, line 218), which states "Pool<Element> is Memory.Pool + typed access" (implying composition). Section "Reconciling with the Synthesis Document" argues the synthesis document's intent is satisfied by independent implementation of the same design. This contradiction needs explicit resolution: either amend the synthesis document per this decision's recommendation, or revisit this decision. Until resolved, both documents claim normative authority with incompatible positions.
+
+**Resumption trigger**: When Storage.Pool implementation is prioritized, or when the synthesis document is next revised.
