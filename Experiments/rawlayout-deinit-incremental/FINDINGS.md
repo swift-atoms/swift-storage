@@ -3,8 +3,8 @@
 <!--
 ---
 version: 1.0.0
-last_updated: 2026-02-05
-status: IN_PROGRESS
+last_updated: 2026-03-16
+status: DEFERRED
 ---
 -->
 
@@ -100,6 +100,10 @@ var storage = Storage<Element>.Inline<N>()
 storage.deinitialize()  // REQUIRED - deinit is broken
 // storage goes out of scope
 ```
+
+## Outcome
+
+**Deferred** (2026-03-16): Analysis complete. Confirmed compiler bug — `@_rawLayout` deinit not running for types in pre-compiled dependency packages. **Blocker**: Upstream Swift compiler bug (not yet filed). **Resumption trigger**: Bug filed and fix available in production toolchain. **Workaround**: Callers must manually invoke `deinitialize()` before scope exit.
 
 ## Toolchain
 
