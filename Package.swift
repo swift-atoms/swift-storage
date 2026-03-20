@@ -67,7 +67,8 @@ let package = Package(
         .package(path: "../swift-finite-primitives"),
     ],
     targets: [
-        // Core: Type declarations and fundamental access
+
+        // MARK: - Core
         .target(
             name: "Storage Primitives Core",
             dependencies: [
@@ -77,7 +78,8 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
-        // Heap: Bulk operations on heap storage
+
+        // MARK: - Heap
         .target(
             name: "Storage Heap Primitives",
             dependencies: [
@@ -86,7 +88,8 @@ let package = Package(
                 .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
         ),
-        // Inline: Inline storage operations
+
+        // MARK: - Inline
         .target(
             name: "Storage Inline Primitives",
             dependencies: [
@@ -95,7 +98,8 @@ let package = Package(
                 .product(name: "Vector Primitives", package: "swift-vector-primitives"),
             ]
         ),
-        // Pool: Fixed-capacity pool allocation with per-slot reuse
+
+        // MARK: - Pool
         .target(
             name: "Storage Pool Primitives",
             dependencies: [
@@ -105,7 +109,8 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
-        // Arena: Bump-allocated typed storage with bulk reset
+
+        // MARK: - Arena
         .target(
             name: "Storage Arena Primitives",
             dependencies: [
@@ -115,7 +120,8 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
-        // Pool Inline: Inline pool storage with bounded capacity
+
+        // MARK: - Pool Inline
         .target(
             name: "Storage Pool Inline Primitives",
             dependencies: [
@@ -125,7 +131,8 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
-        // Arena Inline: Inline arena storage with bounded capacity
+
+        // MARK: - Arena Inline
         .target(
             name: "Storage Arena Inline Primitives",
             dependencies: [
@@ -135,7 +142,8 @@ let package = Package(
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
-        // Slab: Bitmap-tracked heap storage for sparse data structures
+
+        // MARK: - Slab
         .target(
             name: "Storage Slab Primitives",
             dependencies: [
@@ -144,7 +152,8 @@ let package = Package(
                 .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
             ]
         ),
-        // Split: Metadata-driven dual-lane storage
+
+        // MARK: - Split
         .target(
             name: "Storage Split Primitives",
             dependencies: [
@@ -153,7 +162,8 @@ let package = Package(
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
             ]
         ),
-        // Public: Re-exports all modules
+
+        // MARK: - Umbrella
         .target(
             name: "Storage Primitives",
             dependencies: [
@@ -168,6 +178,8 @@ let package = Package(
                 "Storage Split Primitives",
             ]
         ),
+
+        // MARK: - Test Support
         .target(
             name: "Storage Primitives Test Support",
             dependencies: [
@@ -176,6 +188,8 @@ let package = Package(
             ],
             path: "Tests/Support"
         ),
+
+        // MARK: - Tests
         .testTarget(
             name: "Storage Primitives Core Tests",
             dependencies: [
