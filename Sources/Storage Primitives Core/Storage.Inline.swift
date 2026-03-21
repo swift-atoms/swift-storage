@@ -76,6 +76,15 @@ extension Storage where Element: ~Copyable {
         ///
         /// Fixed at 4 words (256 bits) to cover all valid capacities without
         /// requiring an additional generic parameter.
+        ///
+        /// LAYERING: `_slots` belongs in Storage, not the buffer layer.
+        /// Tracking which physical slots are initialized is a storage concern —
+        /// buffer types manage logical state (head/count/capacity).
+        /// The compiler bug (swiftlang/swift#86652) that prevents Storage.Inline
+        /// from having a deinit is caused by this being a SECOND stored field
+        /// alongside `_storage` (the 2-field rule). The fix is a compiler fix,
+        /// not moving `_slots` to a different layer.
+        /// See: Research/storage-inline-deinit-handoff.md (in buffer-primitives)
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
 
