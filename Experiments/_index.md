@@ -7,18 +7,28 @@
 | inline-uninitialized | Test approaches for uninitialized InlineArray with ~Copyable | 2026-01-29 | Swift 6.2.3 | REFUTED |
 | inline-storage-best-of-both-worlds | Parameterized Slot type for zero-overhead dense packing + ~Copyable | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | rawlayout-automatic-sizing | @_rawLayout(likeArrayOf:count:) for AUTOMATIC optimal layout | 2026-02-05 | Swift 6.2 | CONFIRMED |
-| rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | CONFIRMED |
+| rawlayout-wrapper-validation | Wrapper approach: @_rawLayout internal + public wrapper with init tracking | 2026-02-05 | Swift 6.2 | SUPERSEDED |
 | contiguous-protocol-conformance | Test Memory.Contiguous.Protocol conformance for Storage.Heap and Storage.Inline | 2026-02-05 | Swift 6.2 | CONFIRMED |
 | span-copyable-constraint | Validate Span<Element> constraint behavior in ~Copyable extensions | 2026-02-05 | Swift 6.2 | CONFIRMED |
-| rawlayout-deinit-crossmodule | Investigate @_rawLayout deinit not called cross-module (bug #86652) | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
-| rawlayout-deinit-incremental | Incremental construction to isolate deinit bug factors | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
-| rawlayout-deinit-investigation | Combined deinit bug investigation | 2026-02-05 | Swift 6.2 | CONFIRMED (bug) |
-| rawlayout-noncopyable-elements | Test @_rawLayout with ~Copyable elements | 2026-02-05 | Swift 6.2 | CONFIRMED |
-| discard-self-availability | Test `discard self` availability for consuming cleanup methods | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
-| deinit-guard-idempotence | Test reference-type guard for idempotent cleanup from non-mutating | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
+| rawlayout-deinit-crossmodule | Investigate @_rawLayout deinit not called cross-module (bug #86652) | 2026-02-05 | Swift 6.2 | SUPERSEDED |
+| rawlayout-deinit-incremental | Incremental construction to isolate deinit bug factors | 2026-02-05 | Swift 6.2 | SUPERSEDED |
+| rawlayout-deinit-investigation | Combined deinit bug investigation | 2026-02-05 | Swift 6.2 | SUPERSEDED |
+| rawlayout-noncopyable-elements | Test @_rawLayout with ~Copyable elements | 2026-02-05 | Swift 6.2 | SUPERSEDED |
+| discard-self-availability | Test `discard self` availability for consuming cleanup methods | 2026-02-05 | Swift 6.2.3 | SUPERSEDED |
+| deinit-guard-idempotence | Test reference-type guard for idempotent cleanup from non-mutating | 2026-02-05 | Swift 6.2.3 | SUPERSEDED |
+| escapable-deinit-lifetime | ~Escapable values in deinit: @_unsafeNonescapableResult on get accessor | 2026-02-23 | Swift 6.2.3 | SUPERSEDED |
 | bitvector-slot-tracking | Test Bit.Vector.Static for per-slot initialization tracking | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
 | nonmutating-copy-accessor | Non-mutating Property accessor for copy on ~Copyable types | 2026-02-06 | Swift 6.2 | CONFIRMED |
 | nary-soa-feasibility | N-ary SoA feasibility: packs (PARTIAL), fixed-arity/HList/schema/handles (CONFIRMED) | 2026-02-07 | Swift 6.2.3 | PARTIAL |
+
+### Consolidation (2026-03-21)
+
+Experiments marked SUPERSEDED have been consolidated into `swift-buffer-primitives/Experiments/`:
+- `rawlayout-llvm-verifier-crash/` — Bug 1: LLVM verifier crash (8 variants)
+- `rawlayout-sil-ownership-crash/` — Bug 2: SIL ownership crash + enum _modify (3 variants)
+- `rawlayout-deinit-alternatives/` — Deinit workaround alternatives (4 variants)
+
+See `swift-buffer-primitives/Research/rawlayout-experiment-consolidation-handoff.md` for details.
 
 ## Summary
 

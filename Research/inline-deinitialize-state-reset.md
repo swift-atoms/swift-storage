@@ -301,7 +301,7 @@ public struct ManagedStorage<Element: ~Copyable, let capacity: Int>: ~Copyable {
 
 ### UPDATE 2026-02-05: `discard self` Experiments
 
-Experiment `Experiments/discard-self-availability` thoroughly investigated `discard self`:
+Experiment `Experiments/discard-self-availability` (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-deinit-alternatives/` V01-discard-self) thoroughly investigated `discard self`:
 
 **What works:**
 - `discard self` compiles and prevents deinit from running
@@ -372,7 +372,7 @@ Attempted workaround (tuple-based storage) showed:
 - BUT deinit can't clean up elements without knowing the type
 - Storing a deinitializer closure breaks trivial destructibility
 
-See `Experiments/discard-self-availability` for detailed investigation.
+See `Experiments/discard-self-availability` (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-deinit-alternatives/` V01-discard-self) for detailed investigation.
 
 ## References
 

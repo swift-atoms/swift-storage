@@ -288,6 +288,6 @@ Experiment `Experiments/bitvector-slot-tracking` confirmed:
 ## References
 
 - `Research/inline-deinitialize-state-reset.md` — Original footgun analysis
-- `Experiments/deinit-guard-idempotence/` — Guard pattern validation
+- `Experiments/deinit-guard-idempotence/` — Guard pattern validation (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-deinit-alternatives/` V02-guard-idempotence)
 - `swift-bit-vector-primitives/` — BitVector implementation
 - Swift Evolution: SE-0393 Value and Type Parameter Packs

@@ -158,4 +158,4 @@ What are all the invariants for `Storage.Inline` that must be preserved across m
 - `Storage.Inline.swift:44-72` — Type definition
 - `Storage.Inline ~Copyable.swift:27-167` — Operations
 - `Storage.Initialization.swift:12-98` — Initialization enum
-- `Experiments/rawlayout-wrapper-validation/` — Layout verification
+- `Experiments/rawlayout-wrapper-validation/` — Layout verification (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-llvm-verifier-crash/` V06-wrapper-patterns)

@@ -22,7 +22,7 @@ Can `~Escapable` values (like `Property.View`) be used in deinit when they borro
 
 ### Experiment
 
-`Experiments/escapable-deinit-lifetime/` tested 18 variants systematically.
+`Experiments/escapable-deinit-lifetime/` tested 18 variants systematically. (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-deinit-alternatives/` V03-escapable-lifetime)
 
 ### Findings
 
@@ -124,7 +124,7 @@ storage.deinitialize.all()
 ## References
 
 - `Research/inline-deinit-ownership.md` — Storage.Inline has no deinit by design
-- `Experiments/escapable-deinit-lifetime/` — Empirical verification (18 variants)
+- `Experiments/escapable-deinit-lifetime/` — Empirical verification (18 variants) (SUPERSEDED — consolidated into `swift-buffer-primitives/Experiments/rawlayout-deinit-alternatives/` V03-escapable-lifetime)
 - Swift Evolution: Lifetime Dependence (SE-0456) — `@_lifetime` semantics
 - `swift/include/swift/AST/Attr.def` — `@_unsafeNonescapableResult` declaration
 - `swift/lib/SIL/Utils/LifetimeDependenceUtils.swift:173` — Crash site for V14/V15
