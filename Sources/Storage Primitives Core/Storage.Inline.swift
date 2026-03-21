@@ -80,11 +80,17 @@ extension Storage where Element: ~Copyable {
         /// LAYERING: `_slots` belongs in Storage, not the buffer layer.
         /// Tracking which physical slots are initialized is a storage concern —
         /// buffer types manage logical state (head/count/capacity).
-        /// The compiler bug (swiftlang/swift#86652) that prevents Storage.Inline
-        /// from having a deinit is caused by this being a SECOND stored field
-        /// alongside `_storage` (the 2-field rule). The fix is a compiler fix,
-        /// not moving `_slots` to a different layer.
-        /// See: Research/storage-inline-deinit-handoff.md (in buffer-primitives)
+        ///
+        /// COMPILER BUG (swiftlang/swift#86652): This second stored field
+        /// alongside `_storage` triggers the 2-field rule, preventing
+        /// Storage.Inline from having a deinit under -O.
+        ///
+        /// VIABLE FIX: Encode the bitmap WITHIN the @_rawLayout region using
+        /// `@_rawLayout(like: CombinedLayout)` where CombinedLayout contains
+        /// both element storage and bitmap. This reduces Storage.Inline to
+        /// 1 stored field, satisfying the 2-field rule. `_slots` becomes a
+        /// computed property backed by pointer access into the raw region.
+        /// See: rawlayout-release-crash-investigation.md (in buffer-primitives)
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
 
