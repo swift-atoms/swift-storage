@@ -85,11 +85,10 @@ extension Storage where Element: ~Copyable {
         /// alongside `_storage` triggers the 2-field rule, preventing
         /// Storage.Inline from having a deinit under -O.
         ///
-        /// VIABLE FIX: Encode the bitmap WITHIN the @_rawLayout region using
-        /// `@_rawLayout(like: CombinedLayout)` where CombinedLayout contains
-        /// both element storage and bitmap. This reduces Storage.Inline to
-        /// 1 stored field, satisfying the 2-field rule. `_slots` becomes a
-        /// computed property backed by pointer access into the raw region.
+        /// INVESTIGATED: Encoding the bitmap within the @_rawLayout region
+        /// (`@_rawLayout(like: CombinedLayout)`) works for `internal` types
+        /// but crashes for `public` types. Since Storage.Inline must be public,
+        /// this path is blocked until the compiler bug is fixed.
         /// See: rawlayout-release-crash-investigation.md (in buffer-primitives)
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
