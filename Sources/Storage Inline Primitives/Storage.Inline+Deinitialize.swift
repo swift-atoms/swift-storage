@@ -69,7 +69,6 @@ extension Property.View where Base: ~Copyable {
     /// - Precondition: The slot must be initialized.
     /// - Note: Automatically clears the slot's tracking bit.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<
         Element: ~Copyable,
         let capacity: Int
@@ -84,7 +83,6 @@ extension Property.View where Base: ~Copyable {
     /// - Precondition: All slots in the range must contain initialized elements.
     /// - Note: Automatically clears each slot's tracking bit.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         range: Swift.Range<Index<Element>>
     ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
@@ -108,7 +106,6 @@ extension Property.View where Base: ~Copyable {
     /// storage.deinitialize.all()  // Elements deinitialized, state is now empty
     /// ```
     @inlinable
-    @_lifetime(&self)
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
         for bitIndex in unsafe base.pointee._slots.ones {

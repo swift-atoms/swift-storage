@@ -50,7 +50,6 @@ extension Property.View where Base: ~Copyable {
     /// - Precondition: The element at `slot` must be uninitialized.
     /// - Note: Automatically marks the slot as initialized in the tracking bit vector.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         to element: consuming Element,
         at slot: Index<Element>.Bounded<capacity>
@@ -78,7 +77,6 @@ extension Property.View where Base: ~Copyable {
     ///   For `~Copyable` elements, verify capacity before calling.
     @inlinable
     @discardableResult
-    @_lifetime(&self)
     public mutating func next<Element: ~Copyable, let capacity: Int>(
         to element: consuming Element
     ) throws(Storage<Element>.Error) -> Index<Element>.Bounded<capacity>

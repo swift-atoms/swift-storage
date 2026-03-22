@@ -53,7 +53,6 @@ extension Property.View where Base: ~Copyable {
     /// - Note: Automatically clears slot tracking bits for moved slots.
     /// - Note: Caller must update destination's initialization state.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         range: Swift.Range<Index<Element>>,
         to destination: Storage<Element>.Heap,
@@ -81,7 +80,6 @@ extension Property.View where Base: ~Copyable {
     /// - Note: Automatically clears slot tracking bits for moved slots.
     /// - Note: Caller must update destination's initialization state.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         range: Swift.Range<Index<Element>>,
         to destination: Storage<Element>.Heap
@@ -99,7 +97,6 @@ extension Property.View where Base: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized.
     /// - Note: Automatically marks the slot as uninitialized in the tracking bit vector.
     @inlinable
-    @_lifetime(&self)
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         at slot: Index<Element>.Bounded<capacity>
     ) -> Element where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
@@ -124,7 +121,6 @@ extension Property.View where Base: ~Copyable {
     /// - Returns: The moved element.
     /// - Throws: ``Storage/Error/empty`` if storage has no initialized elements.
     @inlinable
-    @_lifetime(&self)
     public mutating func last<
         Element: ~Copyable,
         let capacity: Int

@@ -165,7 +165,6 @@ extension Property.View where Base: ~Copyable {
     ///
     /// - Complexity: O(k) where k is the number of allocated slots.
     @inlinable
-    @_lifetime(&self)
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Arena.Inline<capacity> {
         for bitIndex in unsafe base.pointee._slots.ones {
