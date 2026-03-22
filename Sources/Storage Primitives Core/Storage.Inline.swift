@@ -55,20 +55,6 @@ extension Storage where Element: ~Copyable {
     /// // Consumer (buffer type) handles cleanup via _slots.ones iteration
     /// ```
     public struct Inline<let capacity: Int>: ~Copyable {
-        /// Internal raw storage with automatic layout computation.
-        ///
-        /// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
-        /// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
-        @_rawLayout(likeArrayOf: Element, count: capacity)
-        @usableFromInline
-        package struct _Raw: ~Copyable {
-            @usableFromInline
-            init() {}
-        }
-
-        @usableFromInline
-        package var _storage: _Raw
-
         /// Per-slot initialization tracking.
         ///
         /// Each bit represents one slot: `true` = initialized, `false` = uninitialized.
@@ -93,6 +79,30 @@ extension Storage where Element: ~Copyable {
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
 
+        /// Internal raw storage with automatic layout computation.
+        ///
+        /// Uses `@_rawLayout(likeArrayOf: Element, count: capacity)` to compute optimal
+        /// layout at compile time: `size = stride(Element) × capacity`, `alignment = alignment(Element)`.
+        @_rawLayout(likeArrayOf: Element, count: capacity)
+        @usableFromInline
+        package struct _Raw: ~Copyable {
+            @usableFromInline
+            init() {}
+        }
+
+        // NOTE: _storage MUST be the last stored property. When a containing
+        // type has a custom deinit (e.g. List.Linked.Inline), the compiler
+        // generates composite value witnesses that iterate through the
+        // @_rawLayout elements in a loop. If fixed-size fields follow the
+        // variable-size @_rawLayout storage, the compiler computes their
+        // offsets using stride * capacity — but stride is only loaded inside
+        // the loop body, causing an LLVM "Instruction does not dominate all
+        // uses" verifier crash in release builds (Swift 6.2.4 IRGen bug).
+        // Placing _storage last means no fields need stride-based offset
+        // computation post-loop.
+        @usableFromInline
+        package var _storage: _Raw
+
         /// Creates uninitialized inline storage.
         ///
         /// All slots start as uninitialized (all bits cleared).
@@ -101,8 +111,8 @@ extension Storage where Element: ~Copyable {
         @inlinable
         public init() {
             precondition(capacity <= 256, "Storage.Inline capacity must be ≤256; use Storage.Heap for larger capacities")
-            _storage = _Raw()
             _slots = Bit.Vector.Static<4>()
+            _storage = _Raw()
         }
     }
 }

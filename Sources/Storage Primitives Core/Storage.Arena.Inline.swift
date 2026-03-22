@@ -45,17 +45,21 @@ extension Storage.Arena where Element: ~Copyable {
             @usableFromInline init() {}
         }
 
-        @usableFromInline package var _storage: _Raw
         @usableFromInline package var _slots: Bit.Vector.Static<4>
         @usableFromInline package var _allocated: Index<Element>.Count
+
+        // NOTE: _storage MUST be the last stored property. See Storage.Inline
+        // for the full explanation of the Swift 6.2.4 IRGen crash when fixed-size
+        // fields follow a variable-size @_rawLayout field.
+        @usableFromInline package var _storage: _Raw
 
         /// Creates an empty inline arena with all slots unallocated.
         @inlinable
         public init() {
             precondition(capacity <= 256, "Storage.Arena.Inline capacity must be ≤256")
-            _storage = _Raw()
             _slots = Bit.Vector.Static<4>()
             _allocated = .zero
+            _storage = _Raw()
         }
     }
 }
