@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-public import Property_Primitives
+internal import Property_Primitives
 
 // MARK: - Move Accessor
 

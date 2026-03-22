@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-public import Property_Primitives
-public import Bit_Vector_Primitives
+internal import Property_Primitives
+internal import Bit_Vector_Primitives
 
 // MARK: - Initialize Accessor
 

@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-public import Bit_Vector_Primitives
+internal import Bit_Vector_Primitives
 public import Vector_Primitives_Core
 internal import Vector_Primitives
 
