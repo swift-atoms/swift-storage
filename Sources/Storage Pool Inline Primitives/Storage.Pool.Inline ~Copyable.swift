@@ -24,7 +24,6 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     /// - Parameter slot: A bounded slot index returned by `allocate()`.
     /// - Returns: Mutable pointer to the element's memory.
     @unsafe
-    @_lifetime(borrow self)
     @inlinable
     public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafeMutablePointer<Element> {
         unsafe pointer(at: Index<Element>(slot))
@@ -37,7 +36,6 @@ extension Storage.Pool.Inline where Element: ~Copyable {
     /// - Parameter slot: A bounded slot index returned by `allocate()`.
     /// - Returns: Immutable pointer to the element's memory.
     @unsafe
-    @_lifetime(borrow self)
     @inlinable
     @_disfavoredOverload
     public func pointer(at slot: Index<Element>.Bounded<capacity>) -> UnsafePointer<Element> {
@@ -46,7 +44,6 @@ extension Storage.Pool.Inline where Element: ~Copyable {
 
     /// Internal unbounded pointer for deinit iteration.
     @unsafe
-    @_lifetime(borrow self)
     @inlinable
     package func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafePointer(to: _storage) { base in

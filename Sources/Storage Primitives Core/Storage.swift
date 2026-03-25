@@ -84,7 +84,6 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Returns: A mutable pointer to the element.
     /// - Warning: The caller must ensure the slot is valid and within capacity.
     @unsafe
-    @_lifetime(borrow self)
     @inlinable
     public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointerToElements {
@@ -98,7 +97,6 @@ extension Storage.Heap where Element: ~Copyable {
     /// - Returns: An immutable pointer to the element.
     /// - Warning: The caller must ensure the slot is valid and within capacity.
     @unsafe
-    @_lifetime(borrow self)
     @inlinable
     @_disfavoredOverload
     public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
