@@ -55,6 +55,17 @@ extension Storage where Element: ~Copyable {
     /// // Consumer (buffer type) handles cleanup via _slots.ones iteration
     /// ```
     public struct Inline<let capacity: Int>: ~Copyable {
+        // WORKAROUND: swiftlang/swift#86652 — @_rawLayout triviality misclassification.
+        // Forces compiler to recognize type as non-trivially destructible so deinit executes.
+        // COST: 8 bytes overhead per instance.
+        // WHEN TO REMOVE: When the compiler correctly classifies @_rawLayout types
+        //   with deinit as non-trivially destructible.
+        // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md
+        //
+        // NOTE: Must be declared BEFORE _slots and _storage. @_rawLayout storage
+        // must be the last stored property (field-ordering fix for LLVM verifier crash).
+        private var _deinitWorkaround: AnyObject? = nil
+
         /// Per-slot initialization tracking.
         ///
         /// Each bit represents one slot: `true` = initialized, `false` = uninitialized.
@@ -66,16 +77,6 @@ extension Storage where Element: ~Copyable {
         /// LAYERING: `_slots` belongs in Storage, not the buffer layer.
         /// Tracking which physical slots are initialized is a storage concern —
         /// buffer types manage logical state (head/count/capacity).
-        ///
-        /// COMPILER BUG (swiftlang/swift#86652): This second stored field
-        /// alongside `_storage` triggers the 2-field rule, preventing
-        /// Storage.Inline from having a deinit under -O.
-        ///
-        /// INVESTIGATED: Encoding the bitmap within the @_rawLayout region
-        /// (`@_rawLayout(like: CombinedLayout)`) works for `internal` types
-        /// but crashes for `public` types. Since Storage.Inline must be public,
-        /// this path is blocked until the compiler bug is fixed.
-        /// See: rawlayout-release-crash-investigation.md (in buffer-primitives)
         @usableFromInline
         package var _slots: Bit.Vector.Static<4>
 
@@ -113,6 +114,26 @@ extension Storage where Element: ~Copyable {
             precondition(capacity <= 256, "Storage.Inline capacity must be ≤256; use Storage.Heap for larger capacities")
             _slots = Bit.Vector.Static<4>()
             _storage = _Raw()
+        }
+
+        // MARK: - Deinit
+
+        /// Deinitializes all initialized elements tracked by the bitvector.
+        ///
+        /// Iterates `_slots.ones` and deinitializes each initialized slot.
+        /// Safe for all consumers:
+        /// - Types using Storage tracking (Ring, Linear, Linked): proper cleanup
+        /// - Types bypassing Storage tracking (Slab): bitvector is empty → no-op
+        deinit {
+            for bitIndex in _slots.ones {
+                let slot = bitIndex.retag(Element.self)
+                unsafe withUnsafePointer(to: _storage) { base in
+                    unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base))
+                        .advanced(by: Index<Element>.Offset(fromZero: slot) * .stride)
+                        .assumingMemoryBound(to: Element.self)
+                        .deinitialize(count: 1)
+                }
+            }
         }
     }
 }
