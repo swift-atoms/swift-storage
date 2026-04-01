@@ -19,18 +19,11 @@ struct Node: Equatable {
     var tag: UInt8
 }
 
-extension Storage<Node>.Pool {
-    @Suite
-    struct Test {
-        @Suite struct Unit {}
-        @Suite struct EdgeCase {}
-        @Suite struct Integration {}
-    }
-}
+@Suite("Storage.Pool")
+struct StoragePoolTests {
 
-// MARK: - Unit Tests
+    // MARK: - Unit Tests
 
-extension Storage<Node>.Pool.Test.Unit {
     @Test
     func `init creates pool with specified capacity`() throws {
         let pool = try Storage<Node>.Pool(capacity: 16)
@@ -99,11 +92,9 @@ extension Storage<Node>.Pool.Test.Unit {
 
         try pool.deallocate(at: slot)
     }
-}
 
-// MARK: - Edge Case Tests
+    // MARK: - Edge Cases
 
-extension Storage<Node>.Pool.Test.EdgeCase {
     @Test
     func `init with zero capacity throws`() {
         #expect(throws: Storage<Node>.Pool.Error.invalidCapacity) {
@@ -144,11 +135,9 @@ extension Storage<Node>.Pool.Test.EdgeCase {
         try pool.deallocate(at: s0)
         #expect(pool.isExhausted == false)
     }
-}
 
-// MARK: - Integration Tests
+    // MARK: - Integration
 
-extension Storage<Node>.Pool.Test.Integration {
     @Test
     func `typed element roundtrip`() throws {
         let pool = try Storage<Node>.Pool(capacity: 8)
