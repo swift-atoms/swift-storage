@@ -12,6 +12,7 @@
 | bitvector-slot-tracking | Test Bit.Vector.Static for per-slot initialization tracking | 2026-02-05 | Swift 6.2.3 | CONFIRMED |
 | nonmutating-copy-accessor | Non-mutating Property accessor for copy on ~Copyable types | 2026-02-06 | Swift 6.2 | CONFIRMED |
 | nary-soa-feasibility | N-ary SoA feasibility: packs (PARTIAL), fixed-arity/HList/schema/handles (CONFIRMED) | 2026-02-07 | Swift 6.2.3 | PARTIAL |
+| escapable-heap-storage | ~Escapable heap storage: blocked on upstream `nonescapable-pointers` branch | 2026-04-02 | Swift 6.3 | BLOCKED |
 
 ### Removed (2026-03-21)
 
