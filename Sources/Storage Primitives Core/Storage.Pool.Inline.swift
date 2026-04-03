@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Bit_Vector_Static_Primitives
+
 extension Storage.Pool where Element: ~Copyable {
     /// Static-capacity inline pool with bitmap-scanned per-slot reuse.
     ///

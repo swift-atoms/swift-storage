@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Bit_Vector_Bounded_Primitives
+
 extension Storage where Element: ~Copyable {
     /// Bitmap-tracked heap storage for slab (sparse) data structures.
     ///

@@ -9,6 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Bit_Vector_Static_Primitives
+public import Memory_Primitives_Standard_Library_Integration
+
 extension Storage where Element: ~Copyable {
     /// Fixed-capacity inline storage with automatic per-slot initialization tracking.
     ///

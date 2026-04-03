@@ -10,9 +10,10 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
-internal import Bit_Vector_Primitives
+public import Bit_Vector_Static_Primitives
 internal import Finite_Primitives
 internal import Property_Primitives
+public import Memory_Primitives_Standard_Library_Integration
 
 // MARK: - Pointer Access
 

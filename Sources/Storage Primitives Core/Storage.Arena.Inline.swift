@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Bit_Vector_Static_Primitives
+
 extension Storage.Arena where Element: ~Copyable {
     /// Static-capacity inline arena with bump allocation and bulk reset.
     ///

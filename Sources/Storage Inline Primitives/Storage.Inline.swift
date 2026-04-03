@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Bit_Vector_Primitives
+public import Bit_Vector_Static_Primitives
 
 extension Storage.Inline where Element: ~Copyable {
     

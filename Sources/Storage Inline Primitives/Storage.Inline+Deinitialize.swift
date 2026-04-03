@@ -11,7 +11,7 @@
 
 public import Storage_Primitives_Core
 internal import Property_Primitives
-internal import Bit_Vector_Primitives
+public import Bit_Vector_Static_Primitives
 public import Vector_Primitives_Core
 
 // MARK: - Deinitialize Accessor

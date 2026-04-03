@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Memory_Arena_Primitives
+
 extension Storage where Element: ~Copyable {
     /// Slot-based typed storage with generation tokens and SoA layout.
     ///

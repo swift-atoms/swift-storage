@@ -11,4 +11,4 @@
 
 @_exported public import Storage_Primitives_Core
 @_exported public import Storage_Heap_Primitives
-@_exported public import Bit_Vector_Primitives
+@_exported public import Bit_Vector_Bounded_Primitives

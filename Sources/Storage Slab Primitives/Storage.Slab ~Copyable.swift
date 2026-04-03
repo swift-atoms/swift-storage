@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitives_Core
+public import Bit_Vector_Bounded_Primitives
 
 // MARK: - Factory
 

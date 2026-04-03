@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Memory_Pool_Primitives
+
 extension Storage where Element: ~Copyable {
     /// Fixed-capacity pool storage with O(1) allocate and deallocate.
     ///

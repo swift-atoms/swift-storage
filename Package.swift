@@ -73,8 +73,13 @@ let package = Package(
             name: "Storage Primitives Core",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
-                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Memory Primitives Core", package: "swift-memory-primitives"),
+                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
+                .product(name: "Memory Arena Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Pool Primitives", package: "swift-memory-primitives"),
+                .product(name: "Bit Vector Primitives Core", package: "swift-bit-vector-primitives"),
+                .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Bit Vector Bounded Primitives", package: "swift-bit-vector-primitives"),
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
@@ -127,7 +132,7 @@ let package = Package(
             dependencies: [
                 "Storage Primitives Core",
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
@@ -138,7 +143,7 @@ let package = Package(
             dependencies: [
                 "Storage Primitives Core",
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ]
         ),
@@ -149,7 +154,7 @@ let package = Package(
             dependencies: [
                 "Storage Primitives Core",
                 "Storage Heap Primitives",
-                .product(name: "Bit Vector Primitives", package: "swift-bit-vector-primitives"),
+                .product(name: "Bit Vector Bounded Primitives", package: "swift-bit-vector-primitives"),
             ]
         ),
 

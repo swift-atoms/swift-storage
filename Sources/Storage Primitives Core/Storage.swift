@@ -10,7 +10,6 @@
 // ===----------------------------------------------------------------------===//
 
 import Index_Primitives
-public import Bit_Vector_Primitives
 import Finite_Primitives
 
 /// Namespace for storage primitives.
