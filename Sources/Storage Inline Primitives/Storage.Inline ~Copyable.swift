@@ -124,10 +124,34 @@ extension Storage.Inline where Element: ~Copyable {
 
 // MARK: - Sendable
 
-// @_rawLayout types require @unchecked Sendable
+// WHY: Category D — structural Sendable workaround (SP-2).
+// WHY: `Storage.Inline._Raw` is a @_rawLayout wrapper whose sole purpose is
+// WHY: layout computation. @_rawLayout blocks structural Sendable inference.
+// WHY: No caller invariant — the raw bytes simply contain Elements.
+// WHEN TO REMOVE: When compiler gains structural Sendable inference through
+// WHEN TO REMOVE: @_rawLayout types.
+// TRACKING: unsafe-audit-findings.md Category D SP-2.
 extension Storage.Inline._Raw: @unchecked Sendable where Element: Sendable {}
 
-/// `Storage.Inline` is `Sendable` when its elements are `Sendable`.
-/// Requires @unchecked because _Raw uses @unchecked Sendable.
-extension Storage.Inline: @unchecked Sendable where Element: Sendable {}
+/// Sendable conformance for `Storage.Inline`.
+///
+/// ## Safety Invariant
+///
+/// `~Copyable` guarantees single ownership: the value lives in exactly one
+/// stack slot at a time, and transfer across threads is a move. The inline
+/// `@_rawLayout` buffer and its slot-tracking bitvector travel together as
+/// one unit.
+///
+/// ## Intended Use
+///
+/// - Moving a fixed-capacity inline buffer from a producer thread to a
+///   consumer thread as a one-shot transfer.
+/// - Storing inside a larger `~Copyable` / `Sendable` container that is
+///   itself ownership-transferred.
+///
+/// ## Non-Goals
+///
+/// Does NOT support concurrent access. Ownership is single-owner; transfer
+/// is one-shot.
+extension Storage.Inline: @unsafe @unchecked Sendable where Element: Sendable {}
 

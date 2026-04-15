@@ -65,4 +65,25 @@ extension Storage.Slab where Element: ~Copyable {
 
 // MARK: - Sendable
 
-extension Storage.Slab: @unchecked Sendable where Element: Sendable {}
+/// `Storage.Slab` is `Sendable` when its elements are `Sendable`.
+///
+/// ## Safety Invariant
+///
+/// The class holds `Storage.Heap` + `Bit.Vector.Bounded` without internal
+/// synchronization. Soundness depends on the wrapping `~Copyable` container
+/// (`Buffer.Slab` / `Buffer.Slab.Bounded`) enforcing single-owner semantics:
+/// the class reference is held by exactly one struct at a time, and ownership
+/// transfer across threads is a move (not a copy).
+///
+/// ## Intended Use
+///
+/// - Moving a `Buffer.Slab`-backed data structure from a producer thread to
+///   a consumer thread as a one-shot transfer.
+/// - Value-type CoW dispatch via `isKnownUniquelyReferenced`.
+///
+/// ## Non-Goals
+///
+/// Does NOT support concurrent access. The storage has no internal locks.
+/// All access must be serialized by the owning thread; sendability is
+/// ownership transfer, not sharing.
+extension Storage.Slab: @unsafe @unchecked Sendable where Element: Sendable {}

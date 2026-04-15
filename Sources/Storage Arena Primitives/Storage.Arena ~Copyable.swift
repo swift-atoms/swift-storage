@@ -112,4 +112,23 @@ extension Storage.Arena where Element: ~Copyable {
 
 // MARK: - Sendable
 
-extension Storage.Arena: @unchecked Sendable where Element: Sendable {}
+/// `Storage.Arena` is `Sendable` when its elements are `Sendable`.
+///
+/// ## Safety Invariant
+///
+/// The class holds `Memory.Arena` + a generation-token meta array without
+/// internal synchronization. Soundness depends on the wrapping `~Copyable`
+/// container (`Buffer.Arena` / `Buffer.Arena.Bounded`) enforcing single-
+/// owner semantics: exactly one struct holds the class reference at any
+/// time, and ownership transfer across threads is a move.
+///
+/// ## Intended Use
+///
+/// - Moving a `Buffer.Arena`-backed data structure from a producer thread
+///   to a consumer thread as a one-shot transfer.
+///
+/// ## Non-Goals
+///
+/// Does NOT support concurrent slot allocation/reclamation. All arena
+/// operations must be serialized by the owning thread.
+extension Storage.Arena: @unsafe @unchecked Sendable where Element: Sendable {}

@@ -175,6 +175,28 @@ extension Property.View where Base: ~Copyable {
 
 // MARK: - Sendable
 
-// @_rawLayout types require @unchecked Sendable
+// WHY: Category D — structural Sendable workaround (SP-2).
+// WHY: `Storage.Arena.Inline._Raw` is a @_rawLayout wrapper. @_rawLayout
+// WHY: blocks structural Sendable inference. No caller invariant.
+// WHEN TO REMOVE: When compiler gains structural Sendable inference through
+// WHEN TO REMOVE: @_rawLayout types.
+// TRACKING: unsafe-audit-findings.md Category D SP-2.
 extension Storage.Arena.Inline._Raw: @unchecked Sendable where Element: Sendable {}
-extension Storage.Arena.Inline: @unchecked Sendable where Element: Sendable {}
+
+/// Sendable conformance for `Storage.Arena.Inline`.
+///
+/// ## Safety Invariant
+///
+/// `~Copyable` guarantees single ownership. The inline arena buffer and its
+/// slot-tracking state travel together as one unit during moves. Cross-thread
+/// transfer relinquishes the sender's access.
+///
+/// ## Intended Use
+///
+/// - Moving a fixed-capacity inline arena from a producer thread to a
+///   consumer thread as a one-shot transfer.
+///
+/// ## Non-Goals
+///
+/// Does NOT support concurrent access. Single-owner semantics only.
+extension Storage.Arena.Inline: @unsafe @unchecked Sendable where Element: Sendable {}

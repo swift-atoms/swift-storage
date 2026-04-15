@@ -153,4 +153,23 @@ extension Property {
 
 // MARK: - Sendable
 
-extension Storage.Pool: @unchecked Sendable where Element: Sendable {}
+/// `Storage.Pool` is `Sendable` when its elements are `Sendable`.
+///
+/// ## Safety Invariant
+///
+/// The class holds `Memory.Pool` without internal synchronization. Soundness
+/// depends on the wrapping `~Copyable` container (`Buffer.Pool`) enforcing
+/// single-owner semantics: exactly one struct holds the class reference at
+/// any time, and ownership transfer across threads is a move.
+///
+/// ## Intended Use
+///
+/// - Moving a `Buffer.Pool`-backed data structure from a producer thread
+///   to a consumer thread as a one-shot transfer.
+/// - CoW dispatch via `isKnownUniquelyReferenced`.
+///
+/// ## Non-Goals
+///
+/// Does NOT support concurrent allocation/deallocation. All pool operations
+/// must be serialized by the owning thread.
+extension Storage.Pool: @unsafe @unchecked Sendable where Element: Sendable {}
