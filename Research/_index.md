@@ -28,6 +28,7 @@ Research documents backing the storage-primitives implementation.
 | [initialization-visibility](initialization-visibility.md) | Initialization property visibility to prevent state drift | IN_PROGRESS |
 | [inline-pool-arena](inline-pool-arena.md) | Inline pool and arena storage | DECISION |
 | [ordinal-cardinal-count-association](ordinal-cardinal-count-association.md) | Ordinal-Cardinal count association for Range<Index<Element>>.count | IN_PROGRESS |
+| [storage-primitives-modularization-review](storage-primitives-modularization-review.md) | Modularization review triggered by Chase-Lev surfacing an apparent (Heap, Single-lane, None) gap. **Outcome: no new Storage primitive.** The taxonomy is intentional curation, not an orthogonal grid; concurrent collections like `Executor.Job.Deque` are their own L1 primitive backed directly by `ManagedBuffer`, matching the stdlib `_ContiguousArrayStorage` pattern. ManagedBuffer is vestigial in the ecosystem; replacing it is a separate, larger effort. Tier 2. | DECISION |
 
 ## Key Architectural Decisions
 
