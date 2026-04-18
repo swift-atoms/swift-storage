@@ -495,4 +495,4 @@ s uses ManagedBuffer for allocation/deallocation
 
 ### Internal Research
 
-See `_index.md` for current document inventory.
+See `_index.json` for current document inventory.
