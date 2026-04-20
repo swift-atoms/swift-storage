@@ -24,8 +24,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Init
 
-    @Test("Init creates empty pool")
-    func initEmpty() {
+    @Test
+    func `Init creates empty pool`() {
         var pool = Storage<InlineNode>.Pool.Inline<8>()
         #expect(pool.isEmpty == true)
         #expect(pool.allocated == .zero)
@@ -36,8 +36,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Allocate
 
-    @Test("Allocate returns valid bounded index")
-    func allocateValid() throws {
+    @Test
+    func `Allocate returns valid bounded index`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<8>()
         let slot = try pool.allocate()
         #expect(pool.allocated == 1)
@@ -47,8 +47,8 @@ struct StoragePoolInlineTests {
         try pool.deallocate(at: slot)
     }
 
-    @Test("Allocate returns sequential indices")
-    func allocateSequential() throws {
+    @Test
+    func `Allocate returns sequential indices`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
         let s0 = try pool.allocate()
         let s1 = try pool.allocate()
@@ -67,8 +67,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Pointer
 
-    @Test("Pointer write/read roundtrip via bounded pointer")
-    func pointerRoundtrip() throws {
+    @Test
+    func `Pointer write/read roundtrip via bounded pointer`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
         let slot = try pool.allocate()
 
@@ -83,8 +83,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Deallocate
 
-    @Test("Deallocate returns slot and updates counts")
-    func deallocateCounts() throws {
+    @Test
+    func `Deallocate returns slot and updates counts`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<8>()
         let slot = try pool.allocate()
         try pool.deallocate(at: slot)
@@ -95,8 +95,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Slot Reuse
 
-    @Test("Slot reuse after deallocate")
-    func slotReuse() throws {
+    @Test
+    func `Slot reuse after deallocate`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
 
         let s0 = try pool.allocate()
@@ -112,8 +112,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Exhaustion
 
-    @Test("Allocate throws when exhausted")
-    func exhaustion() throws {
+    @Test
+    func `Allocate throws when exhausted`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<2>()
         _ = try pool.allocate()
         _ = try pool.allocate()
@@ -124,8 +124,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Double Free
 
-    @Test("Deallocate detects double free")
-    func doubleFree() throws {
+    @Test
+    func `Deallocate detects double free`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
         let slot = try pool.allocate()
         try pool.deallocate(at: slot)
@@ -136,8 +136,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Deinitialize
 
-    @Test("Deinitialize all resets pool")
-    func deinitializeAll() throws {
+    @Test
+    func `Deinitialize all resets pool`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
 
         let s0 = try pool.allocate()
@@ -157,8 +157,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Full Cycle
 
-    @Test("Full cycle: allocate all, deinitialize, reallocate")
-    func fullCycle() throws {
+    @Test
+    func `Full cycle: allocate all, deinitialize, reallocate`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<4>()
 
         for cycle in 0..<3 {
@@ -184,8 +184,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Small Element
 
-    @Test("Small element type works (no stride constraint)")
-    func smallElement() throws {
+    @Test
+    func `Small element type works (no stride constraint)`() throws {
         var pool = Storage<UInt8>.Pool.Inline<4>()
         let s0 = try pool.allocate()
         let s1 = try pool.allocate()
@@ -201,8 +201,8 @@ struct StoragePoolInlineTests {
 
     // MARK: - Typed Roundtrip
 
-    @Test("Typed element roundtrip")
-    func typedRoundtrip() throws {
+    @Test
+    func `Typed element roundtrip`() throws {
         var pool = Storage<InlineNode>.Pool.Inline<8>()
         var slots: [Index<InlineNode>.Bounded<8>] = []
 

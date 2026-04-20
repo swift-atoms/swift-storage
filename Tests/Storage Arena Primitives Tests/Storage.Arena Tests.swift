@@ -24,15 +24,15 @@ struct StorageArenaTests {
 
     // MARK: - Init
 
-    @Test("Init creates arena with correct slotCapacity")
-    func initCapacity() {
+    @Test
+    func `Init creates arena with correct slotCapacity`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 8)
         #expect(arena.slotCapacity >= 8)
         #expect(arena.highWater == .zero)
     }
 
-    @Test("Meta is initialized to virgin state")
-    func metaVirgin() {
+    @Test
+    func `Meta is initialized to virgin state`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         let meta = unsafe arena.meta
         let cap = Int(bitPattern: arena.slotCapacity)
@@ -45,8 +45,8 @@ struct StorageArenaTests {
 
     // MARK: - Element Operations
 
-    @Test("Initialize and read element via pointer")
-    func initializeAndRead() {
+    @Test
+    func `Initialize and read element via pointer`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         let slot = Index<Payload>(Ordinal(UInt(0)))
 
@@ -58,8 +58,8 @@ struct StorageArenaTests {
         arena.deinitialize(at: slot)
     }
 
-    @Test("Move element out of slot")
-    func moveElement() {
+    @Test
+    func `Move element out of slot`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         let slot = Index<Payload>(Ordinal(UInt(0)))
 
@@ -69,8 +69,8 @@ struct StorageArenaTests {
         #expect(moved == Payload(x: 99, y: 1))
     }
 
-    @Test("Multiple elements at different slots")
-    func multipleElements() {
+    @Test
+    func `Multiple elements at different slots`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 8)
 
         for i in 0..<5 {
@@ -92,8 +92,8 @@ struct StorageArenaTests {
 
     // MARK: - Meta Access
 
-    @Test("Meta read and write")
-    func metaReadWrite() {
+    @Test
+    func `Meta read and write`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         let meta = unsafe arena.meta
 
@@ -112,8 +112,8 @@ struct StorageArenaTests {
 
     // MARK: - HighWater
 
-    @Test("HighWater get and set")
-    func highWater() {
+    @Test
+    func `HighWater get and set`() {
         let arena = Storage<Payload>.Arena(minimumCapacity: 4)
         #expect(arena.highWater == .zero)
 
@@ -123,8 +123,8 @@ struct StorageArenaTests {
 
     // MARK: - Deinit Cleanup
 
-    @Test("Deinit deinitializes occupied elements")
-    func deinitCleanup() {
+    @Test
+    func `Deinit deinitializes occupied elements`() {
         nonisolated(unsafe) var deinitCount = 0
 
         final class Tracker {
@@ -157,8 +157,8 @@ struct StorageArenaTests {
         unsafe #expect(deinitCount == 2)
     }
 
-    @Test("Deinit skips free slots")
-    func deinitSkipsFree() {
+    @Test
+    func `Deinit skips free slots`() {
         nonisolated(unsafe) var deinitCount = 0
 
         final class Tracker {
@@ -194,8 +194,8 @@ struct StorageArenaTests {
 
     // MARK: - Layout
 
-    @Test("Element region offset is properly aligned")
-    func layoutAlignment() {
+    @Test
+    func `Element region offset is properly aligned`() {
         let cap = Index<Payload>.Count(Cardinal(UInt(10)))
         let offset = Storage<Payload>.Arena._elementRegionOffset(capacity: cap)
         let elementAlignment = try! Memory.Alignment(max(MemoryLayout<Payload>.alignment, 1))
@@ -204,8 +204,8 @@ struct StorageArenaTests {
         #expect(offset >= metaBytes)
     }
 
-    @Test("Total bytes covers meta and elements")
-    func totalBytes() {
+    @Test
+    func `Total bytes covers meta and elements`() {
         let cap = Index<Payload>.Count(Cardinal(UInt(10)))
         let total = Storage<Payload>.Arena._totalBytes(capacity: cap)
         let offset = Storage<Payload>.Arena._elementRegionOffset(capacity: cap)

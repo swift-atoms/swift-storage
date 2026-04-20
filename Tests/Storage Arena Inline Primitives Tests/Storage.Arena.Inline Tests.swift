@@ -24,8 +24,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Init
 
-    @Test("Init creates empty arena")
-    func initEmpty() {
+    @Test
+    func `Init creates empty arena`() {
         var arena = Storage<InlinePayload>.Arena.Inline<8>()
         #expect(arena.isEmpty == true)
         #expect(arena.allocated == .zero)
@@ -35,8 +35,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Allocate
 
-    @Test("Allocate returns sequential bounded indices")
-    func allocateSequential() {
+    @Test
+    func `Allocate returns sequential bounded indices`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
 
         let slot0 = arena.allocate()
@@ -53,8 +53,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Pointer
 
-    @Test("Pointer write/read roundtrip via bounded pointer")
-    func pointerRoundtrip() {
+    @Test
+    func `Pointer write/read roundtrip via bounded pointer`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
         let slot = arena.allocate()!
 
@@ -66,8 +66,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Properties
 
-    @Test("Properties track allocation state")
-    func properties() {
+    @Test
+    func `Properties track allocation state`() {
         var arena = Storage<InlinePayload>.Arena.Inline<3>()
 
         #expect(arena.allocated == .zero)
@@ -89,8 +89,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Exhaustion
 
-    @Test("Exhaustion returns nil")
-    func exhaustion() {
+    @Test
+    func `Exhaustion returns nil`() {
         var arena = Storage<InlinePayload>.Arena.Inline<2>()
 
         let slot0 = arena.allocate()
@@ -105,8 +105,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Deinitialize
 
-    @Test("Deinitialize all resets arena")
-    func deinitializeAll() {
+    @Test
+    func `Deinitialize all resets arena`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
 
         let slot0 = arena.allocate()!
@@ -123,8 +123,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Unallocate
 
-    @Test("Unallocate rolls back most recent allocation")
-    func unallocate() {
+    @Test
+    func `Unallocate rolls back most recent allocation`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
 
         let slot0 = arena.allocate()!
@@ -138,8 +138,8 @@ struct StorageArenaInlineTests {
         #expect(arena.remaining == 3)
     }
 
-    @Test("Unallocate then reallocate reuses index")
-    func unallocateThenReallocate() {
+    @Test
+    func `Unallocate then reallocate reuses index`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
 
         let slot0 = arena.allocate()!
@@ -152,8 +152,8 @@ struct StorageArenaInlineTests {
         #expect(Index<InlinePayload>(slot1) == Index<InlinePayload>(slot1Again))
     }
 
-    @Test("Unallocate after deinitialize all cycle")
-    func unallocateAfterDeinitializeAll() {
+    @Test
+    func `Unallocate after deinitialize all cycle`() {
         var arena = Storage<InlinePayload>.Arena.Inline<4>()
 
         let slot0 = arena.allocate()!
@@ -169,8 +169,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Full Cycle
 
-    @Test("Full cycle: allocate all, deinitialize, reallocate")
-    func fullCycle() {
+    @Test
+    func `Full cycle: allocate all, deinitialize, reallocate`() {
         var arena = Storage<InlinePayload>.Arena.Inline<3>()
 
         for cycle in 0..<3 {
@@ -188,8 +188,8 @@ struct StorageArenaInlineTests {
 
     // MARK: - Typed Roundtrip
 
-    @Test("Typed element roundtrip")
-    func typedRoundtrip() {
+    @Test
+    func `Typed element roundtrip`() {
         var arena = Storage<InlinePayload>.Arena.Inline<8>()
         var slots: [Index<InlinePayload>.Bounded<8>] = []
 
