@@ -41,7 +41,7 @@ extension Storage.Inline where Element: ~Copyable {
     public var `deinitialize`: Property<Storage.Deinitialize, Self>.View {
         @_unsafeNonescapableResult
         _read {
-            yield unsafe Property<Storage.Deinitialize, Self>.View(borrowing: self)
+            yield unsafe Property<Storage.Deinitialize, Self>.View(self)
         }
         mutating _modify {
             var view = unsafe Property<Storage.Deinitialize, Self>.View(&self)
