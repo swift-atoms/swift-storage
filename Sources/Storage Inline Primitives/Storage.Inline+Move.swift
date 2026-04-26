@@ -61,10 +61,10 @@ extension Property.View where Base: ~Copyable {
         guard !range.isEmpty else { return }
         unsafe destination.pointer(at: offset)
             .move.initialize(
-                from: base.pointee._mutablePointer(at: range.lowerBound),
+                from: base.value._mutablePointer(at: range.lowerBound),
                 count: range.count
             )
-        unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
+        unsafe base.value._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
     }
 
     /// Moves elements in range to linear positions in destination heap storage.
@@ -100,8 +100,8 @@ extension Property.View where Base: ~Copyable {
     public mutating func callAsFunction<Element: ~Copyable, let capacity: Int>(
         at slot: Index<Element>.Bounded<capacity>
     ) -> Element where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
-        let element = unsafe base.pointee.pointer(at: slot).move()
-        unsafe base.pointee._slots[Index<Element>(slot).retag()] = false
+        let element = unsafe base.value.pointer(at: slot).move()
+        unsafe base.value._slots[Index<Element>(slot).retag()] = false
         return element
     }
     
@@ -126,7 +126,7 @@ extension Property.View where Base: ~Copyable {
         let capacity: Int
     >() throws(Storage<Element>.Error) -> Element
     where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<capacity> {
-        let currentCount = unsafe base.pointee.initialization.count
+        let currentCount = unsafe base.value.initialization.count
         guard currentCount > .zero else { throw .empty }
         let slot = currentCount.subtract.saturating(.one).map(Ordinal.init)
         let bounded = Index<Element>.Bounded<capacity>(slot)!

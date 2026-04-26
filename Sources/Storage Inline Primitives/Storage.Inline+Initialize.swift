@@ -54,8 +54,8 @@ extension Property.View where Base: ~Copyable {
         to element: consuming Element,
         at slot: Index<Element>.Bounded<capacity>
     ) where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe base.pointee.pointer(at: slot).initialize(to: element)
-        unsafe base.pointee._slots[Index<Element>(slot).retag()] = true
+        unsafe base.value.pointer(at: slot).initialize(to: element)
+        unsafe base.value._slots[Index<Element>(slot).retag()] = true
     }
     
     /// Initializes the next available slot with the given element.
@@ -81,8 +81,8 @@ extension Property.View where Base: ~Copyable {
         to element: consuming Element
     ) throws(Storage<Element>.Error) -> Index<Element>.Bounded<capacity>
     where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Inline<capacity> {
-        let slot = unsafe base.pointee.initialization.count.map(Ordinal.init)
-        guard unsafe slot < base.pointee.slotCapacity else { throw .capacityExceeded }
+        let slot = unsafe base.value.initialization.count.map(Ordinal.init)
+        guard unsafe slot < base.value.slotCapacity else { throw .capacityExceeded }
         let bounded = Index<Element>.Bounded<capacity>(slot)!
         self(to: element, at: bounded)
         return bounded

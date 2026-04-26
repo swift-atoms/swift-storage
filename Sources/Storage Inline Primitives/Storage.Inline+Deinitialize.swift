@@ -65,8 +65,8 @@ extension Property.View where Base: ~Copyable {
         Element: ~Copyable,
         let capacity: Int
     >(at slot: Index<Element>.Bounded<capacity>) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        unsafe base.pointee.pointer(at: slot).deinitialize(count: .one)
-        unsafe base.pointee._slots[Index<Element>(slot).retag()] = false
+        unsafe base.value.pointer(at: slot).deinitialize(count: .one)
+        unsafe base.value._slots[Index<Element>(slot).retag()] = false
     }
     
     /// Deinitializes all elements in the given range.
@@ -79,9 +79,9 @@ extension Property.View where Base: ~Copyable {
         range: Swift.Range<Index<Element>>
     ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
         guard !range.isEmpty else { return }
-        unsafe base.pointee._mutablePointer(at: range.lowerBound)
+        unsafe base.value._mutablePointer(at: range.lowerBound)
             .deinitialize(count: range.count)
-        unsafe base.pointee._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
+        unsafe base.value._slots.clear.range(range.map.bounds { $0.retag(Bit.self) })
     }
     
     
@@ -100,11 +100,11 @@ extension Property.View where Base: ~Copyable {
     @inlinable
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        for bitIndex in unsafe base.pointee._slots.ones {
-            unsafe base.pointee._mutablePointer(at: bitIndex.retag(Element.self))
+        for bitIndex in unsafe base.value._slots.ones {
+            unsafe base.value._mutablePointer(at: bitIndex.retag(Element.self))
                 .deinitialize(count: .one)
         }
-        unsafe base.pointee._slots.clear.all()
+        unsafe base.value._slots.clear.all()
     }
 
     /// Deinitializes all tracked slots without clearing tracking bits.
@@ -123,8 +123,8 @@ extension Property.View where Base: ~Copyable {
     @inlinable
     public func callAsFunction<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Inline<capacity> {
-        for bitIndex in unsafe base.pointee._slots.ones {
-            unsafe base.pointee._mutablePointer(at: bitIndex.retag(Element.self))
+        for bitIndex in unsafe base.value._slots.ones {
+            unsafe base.value._mutablePointer(at: bitIndex.retag(Element.self))
                 .deinitialize(count: .one)
         }
     }

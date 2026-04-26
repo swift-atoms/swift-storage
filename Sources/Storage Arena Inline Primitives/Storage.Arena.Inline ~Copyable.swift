@@ -165,11 +165,11 @@ extension Property.View where Base: ~Copyable {
     @inlinable
     public mutating func all<Element: ~Copyable, let capacity: Int>()
     where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Arena.Inline<capacity> {
-        for bitIndex in unsafe base.pointee._slots.ones {
-            unsafe base.pointee.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
+        for bitIndex in unsafe base.value._slots.ones {
+            unsafe base.value.pointer(at: bitIndex.retag(Element.self)).deinitialize(count: .one)
         }
-        unsafe base.pointee._slots.clear.all()
-        unsafe base.pointee._allocated = .zero
+        unsafe base.value._slots.clear.all()
+        unsafe base.value._allocated = .zero
     }
 }
 
