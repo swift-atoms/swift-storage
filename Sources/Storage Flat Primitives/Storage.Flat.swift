@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Storage_Initialization_Primitives
 public import Storage_Primitive
 public import Store_Protocol_Primitives
 
@@ -47,6 +48,7 @@ extension Storage where Element: ~Copyable {
         /// The composed element-store substrate.
         @usableFromInline
         internal var _substrate: Substrate
+
 
         /// Creates flat storage over the given substrate.
         ///

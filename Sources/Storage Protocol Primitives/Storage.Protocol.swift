@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Storage_Primitive
+public import Storage_Initialization_Primitives
 public import Store_Protocol_Primitives
 
 // MARK: - Storage.Protocol (Hoisted as __StorageProtocol)
@@ -30,7 +31,18 @@ public import Store_Protocol_Primitives
 /// `~Copyable` is restated on the refinement so it does not re-impose `Copyable`
 /// on conformers (a bare `: __StoreProtocol` refinement would silently require
 /// `Copyable`).
-public protocol __StorageProtocol: __StoreProtocol, ~Copyable {}
+public protocol __StorageProtocol: __StoreProtocol, ~Copyable {
+    /// The range-tracked initialization view that the store's OWN teardown
+    /// honors — the converged "uninit↔init transitions" slot-topology content
+    /// (ASK-1 (b′) lift, supervisor-approved 2026-06-04).
+    ///
+    /// Disciplines that delegate cleanup to their storage (Ring/Linear over a
+    /// tracked substrate) SYNC this before release; stores whose teardown is
+    /// NOT range-driven (per-slot bitmaps, meta/token oracles, untracked
+    /// substrates) vend an explicit `.empty` and document that sets do not
+    /// arm their teardown — see each conformer's witness.
+    var initialization: Storage<Element>.Initialization { get set }
+}
 
 // MARK: - Namespace Typealias
 
@@ -67,8 +79,8 @@ extension Storage where Element: ~Copyable {
     ///
     /// ## Multi-region disciplines
     ///
-    /// `Storage.Split` is multi-region — its access primitive is
-    /// `pointer(_:at:)` over a `Storage.Field` handle — and therefore does not
-    /// conform to this single-region contract.
+    /// `Storage.Split` is dual-plane; it conforms over its PAYLOAD plane
+    /// (W3 — `initialization` forwards the payload plane's, available when
+    /// the plane is itself a `Storage.`Protocol`` conformer).
     public typealias `Protocol` = __StorageProtocol
 }

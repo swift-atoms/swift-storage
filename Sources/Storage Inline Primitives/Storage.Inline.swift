@@ -11,6 +11,7 @@
 
 public import Bit_Vector_Static_Primitives
 import Memory_Address_Primitives
+public import Storage_Initialization_Primitives
 public import Storage_Primitive
 
 extension Storage where Element: ~Copyable {
@@ -141,3 +142,4 @@ extension Storage where Element: ~Copyable {
         }
     }
 }
+

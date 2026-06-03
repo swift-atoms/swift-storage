@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Storage_Initialization_Primitives
 public import Storage_Primitive
 public import Storage_Protocol_Primitives
 public import Store_Protocol_Primitives
@@ -63,6 +64,22 @@ extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
     @inlinable
     public mutating func move(at slot: Index<Element>) -> Element {
         _substrate.move(at: slot)
+    }
+}
+
+// MARK: - Storage.Protocol `initialization` Witness (ASK-1 (b′) lift)
+
+extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
+    /// EXPLICIT `.empty` SEMANTICS (the supervisor-sanctioned shape for a
+    /// Flat over an UNTRACKED substrate): the composed `Store.`Protocol``
+    /// substrate carries no initialization tracking and Flat itself arms no
+    /// teardown (conditionally Copyable ⇒ no deinit). Reads vend `.empty`;
+    /// sets do not arm cleanup. Disciplines over Flat own their occupancy
+    /// (exactly the Buffer-tier contract).
+    @inlinable
+    public var initialization: Storage<Element>.Initialization {
+        get { .empty }
+        set {}
     }
 }
 

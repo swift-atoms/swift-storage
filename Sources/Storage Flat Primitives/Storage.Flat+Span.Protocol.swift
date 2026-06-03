@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Span_Protocol_Primitives
+public import Storage_Initialization_Primitives
 public import Storage_Primitive
 public import Store_Protocol_Primitives
 
