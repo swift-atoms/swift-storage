@@ -9,15 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Re-export all modules for consumers.
-// Users import Storage_Primitives and get everything.
-
-@_exported public import Storage_Accessor_Primitives
-@_exported public import Storage_Error_Primitives
-@_exported public import Storage_Field_Primitives
-@_exported public import Storage_Heap_Primitives
-@_exported public import Storage_Initialization_Primitives
-@_exported public import Storage_Flat_Primitives
-@_exported public import Storage_Inline_Primitives
 @_exported public import Storage_Primitive
 @_exported public import Storage_Protocol_Primitives
+@_exported public import Store_Protocol_Primitives
