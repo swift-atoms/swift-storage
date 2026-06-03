@@ -33,12 +33,17 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swift-primitives/swift-index-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-finite-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
+        // W2 mesh: resolve memory against the W2 worktree (Memory.Contiguous conforms Span.Protocol).
+        // Path-dep identity is the directory basename `swift-memory-primitives--w2`.
+        .package(path: "../swift-memory-primitives--w2"),
         .package(url: "https://github.com/swift-primitives/swift-affine-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-range-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-bit-vector-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
+        // W2 neutral substrate packages (canonical sibling paths).
+        .package(path: "../swift-store-primitives"),
+        .package(path: "../swift-span-primitives"),
     ],
     targets: [
 
@@ -70,7 +75,7 @@ let package = Package(
             name: "Storage Field Primitives",
             dependencies: [
                 "Storage Primitive",
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Address Primitives", package: "swift-memory-primitives--w2"),
                 .product(name: "Affine Primitives", package: "swift-affine-primitives"),
             ]
         ),
@@ -89,6 +94,7 @@ let package = Package(
             dependencies: [
                 "Storage Primitive",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
             ]
         ),
 
@@ -102,10 +108,11 @@ let package = Package(
                 "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
+                .product(name: "Memory Address Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives--w2"),
+                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
@@ -123,10 +130,11 @@ let package = Package(
                 "Storage Heap Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Finite Bounded Primitives", package: "swift-finite-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
+                .product(name: "Memory Address Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives--w2"),
+                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives--w2"),
+                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
                 .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
@@ -153,7 +161,7 @@ let package = Package(
             name: "Storage Primitives Test Support",
             dependencies: [
                 "Storage Primitives",
-                .product(name: "Memory Primitives Test Support", package: "swift-memory-primitives"),
+                .product(name: "Memory Primitives Test Support", package: "swift-memory-primitives--w2"),
             ],
             path: "Tests/Support"
         ),

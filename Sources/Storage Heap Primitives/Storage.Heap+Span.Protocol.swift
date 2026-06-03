@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
-public import Memory_Contiguous_Primitives
 public import Memory_Primitives_Standard_Library_Integration
+public import Span_Protocol_Primitives
 
 // MARK: - Span (~Copyable)
 
@@ -122,9 +122,9 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-// MARK: - Memory.Contiguous.Protocol Conformance
+// MARK: - Span.Protocol Conformance
 
-extension Storage.Heap: Memory.Contiguous.`Protocol` {
+extension Storage.Heap: Span.`Protocol` {
     /// Unsafe read access for C interop with unannotated APIs.
     ///
     /// Provides raw pointer access to initialized elements for C functions

@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
-public import Memory_Contiguous_Primitives
+public import Span_Protocol_Primitives
 public import Storage_Initialization_Primitives
 public import Storage_Primitive
 
@@ -27,10 +27,10 @@ extension Storage.Inline where Element: ~Copyable {
     ///   undefined behavior as the elements are not contiguous from zero.
     /// - Complexity: O(1)
     @inlinable
-    public var span: Span<Element> {
+    public var span: Swift.Span<Element> {
         @_lifetime(borrow self)
         borrowing get {
-            let span = unsafe Span(
+            let span = unsafe Swift.Span(
                 _unsafeStart: pointer(at: .zero),
                 count: initialization.count
             )
@@ -46,10 +46,10 @@ extension Storage.Inline where Element: ~Copyable {
     /// - Precondition: Storage must be linearly initialized.
     /// - Complexity: O(1)
     @inlinable
-    public var mutableSpan: MutableSpan<Element> {
+    public var mutableSpan: Swift.MutableSpan<Element> {
         @_lifetime(&self)
         mutating get {
-            let span = unsafe MutableSpan(
+            let span = unsafe Swift.MutableSpan(
                 _unsafeStart: _mutablePointer(at: .zero),
                 count: initialization.count
             )
@@ -58,9 +58,9 @@ extension Storage.Inline where Element: ~Copyable {
     }
 }
 
-// MARK: - Memory.Contiguous.Protocol Conformance
+// MARK: - Span.Protocol Conformance
 
-extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: ~Copyable {
+extension Storage.Inline: Span.`Protocol` where Element: ~Copyable {
     /// Unsafe read access for C interop with unannotated APIs.
     ///
     /// Provides raw pointer access to initialized elements for C functions
