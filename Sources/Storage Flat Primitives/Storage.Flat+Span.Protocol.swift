@@ -15,7 +15,7 @@ public import Store_Protocol_Primitives
 
 // MARK: - Span.Protocol (conditional — substrate-provided contiguity)
 
-extension Storage.Flat: Span.`Protocol` where Element: ~Copyable, Substrate: Span.`Protocol` {
+extension Storage.Flat: Span.`Protocol` where Element: ~Copyable, Substrate: ~Copyable, Substrate: Span.`Protocol` {
     /// A borrowed view of the substrate's contiguous region.
     ///
     /// Available exactly when the substrate itself vends a span —

@@ -16,7 +16,7 @@ public import Store_Protocol_Primitives
 
 // MARK: - Storage.Protocol Witnesses (forwarded to the substrate)
 
-extension Storage.Flat where Element: ~Copyable {
+extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
     /// Total slot capacity — the substrate's capacity, unchanged.
     @inlinable
     public var capacity: Index<Element>.Count {
@@ -68,4 +68,4 @@ extension Storage.Flat where Element: ~Copyable {
 
 // MARK: - Storage.Protocol Conformance
 
-extension Storage.Flat: Storage.`Protocol` where Element: ~Copyable {}
+extension Storage.Flat: Storage.`Protocol` where Element: ~Copyable, Substrate: ~Copyable {}
