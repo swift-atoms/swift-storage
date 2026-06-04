@@ -16,7 +16,7 @@ public import Store_Protocol_Primitives
 extension Storage where Element: ~Copyable {
     /// Contiguous storage lifting an element-store substrate into the Storage tier.
     ///
-    /// `Storage.Flat` is the trivial single-plane storage of the substitution
+    /// `Storage.Contiguous` is the trivial single-plane storage of the substitution
     /// tower: it composes ONE element-store substrate (`Store.`Protocol``) and
     /// forwards the four element-store operations to it unchanged. Its value is
     /// positional — it lifts any substrate (a Memory-tier typed lens such as
@@ -28,7 +28,7 @@ extension Storage where Element: ~Copyable {
     ///
     /// ```
     /// Buffer.Ring<S>               (occupancy discipline)
-    ///     └─ S = Storage.Flat<M>   (typed slots, single contiguous plane)
+    ///     └─ S = Storage.Contiguous<M>   (typed slots, single contiguous plane)
     ///            └─ M              (owned region: Memory-tier typed lens)
     /// ```
     ///
@@ -38,12 +38,12 @@ extension Storage where Element: ~Copyable {
     ///
     /// ## Ownership
     ///
-    /// `Storage.Flat` owns its substrate (`consuming` at init); the substrate's
+    /// `Storage.Contiguous` owns its substrate (`consuming` at init); the substrate's
     /// own `deinit` releases the underlying region. Element lifecycle remains
     /// the consumer's responsibility, exactly as on the substrate itself.
     ///
     /// - SeeAlso: ``Storage/Split``, the dual-plane (lane + element) sibling.
-    public struct Flat<Substrate: Store.`Protocol` & ~Copyable>: ~Copyable
+    public struct Contiguous<Substrate: Store.`Protocol` & ~Copyable>: ~Copyable
     where Substrate.Element == Element {
         /// The composed element-store substrate.
         @usableFromInline
@@ -60,3 +60,13 @@ extension Storage where Element: ~Copyable {
         }
     }
 }
+
+// MARK: - Conditional Copyable (NEW — the storage/memory split)
+
+/// `Storage.Contiguous` is `Copyable` exactly when its substrate is — so the
+/// composed `Storage<E>.Heap` (= `Contiguous<Memory.Heap<E>>`) keeps the fused
+/// type's `Copyable where Element: Copyable` law through the leaf's own
+/// conditional Copyability. Same-file per [COPY-FIX-004]. No `deinit` anywhere
+/// on this type — conditionally-Copyable generic structs cannot carry one (the
+/// `bd04f32` wall); cleanup belongs to the leaf's class.
+extension Storage.Contiguous: Copyable where Element: ~Copyable, Substrate: Copyable {}

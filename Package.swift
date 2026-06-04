@@ -23,7 +23,7 @@ let package = Package(
         // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
         .library(name: "Storage Heap Primitives", targets: ["Storage Heap Primitives"]),
         .library(name: "Storage Inline Primitives", targets: ["Storage Inline Primitives"]),
-        .library(name: "Storage Flat Primitives", targets: ["Storage Flat Primitives"]),
+        .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
         // MARK: - Umbrella
         .library(name: "Storage Primitives", targets: ["Storage Primitives"]),
@@ -150,15 +150,16 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Flat (substrate-lifting storage form — the trivial tower plane, W3)
+        // MARK: - Contiguous (substrate-lifting storage discipline; the #2 Flat rename — storage-memory-split.md)
         .target(
-            name: "Storage Flat Primitives",
+            name: "Storage Contiguous Primitives",
             dependencies: [
                 "Storage Primitive",
                 "Storage Protocol Primitives",
                 "Storage Initialization Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
             ]
         ),
@@ -175,7 +176,7 @@ let package = Package(
                 "Storage Protocol Primitives",
                 "Storage Heap Primitives",
                 "Storage Inline Primitives",
-                "Storage Flat Primitives",
+                "Storage Contiguous Primitives",
             ]
         ),
 
@@ -225,9 +226,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "Storage Flat Primitives Tests",
+            name: "Storage Contiguous Primitives Tests",
             dependencies: [
-                "Storage Flat Primitives",
+                "Storage Contiguous Primitives",
                 "Storage Heap Primitives",
                 "Storage Primitives Test Support",
             ]
