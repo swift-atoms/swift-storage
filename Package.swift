@@ -239,6 +239,16 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "Storage Small Primitives Tests",
+            dependencies: [
+                "Storage Small Primitives",
+                "Storage Inline Primitives",
+                "Storage Heap Primitives",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+            ]
+        ),
+        .testTarget(
             name: "Storage Primitives Tests",
             dependencies: [
                 "Storage Primitives",
