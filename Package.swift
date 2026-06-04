@@ -94,6 +94,7 @@ let package = Package(
             name: "Storage Protocol Primitives",
             dependencies: [
                 "Storage Primitive",
+                "Storage Initialization Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
             ]
