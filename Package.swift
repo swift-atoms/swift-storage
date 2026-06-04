@@ -23,6 +23,7 @@ let package = Package(
         // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
         .library(name: "Storage Heap Primitives", targets: ["Storage Heap Primitives"]),
         .library(name: "Storage Inline Primitives", targets: ["Storage Inline Primitives"]),
+        .library(name: "Storage Small Primitives", targets: ["Storage Small Primitives"]),
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
         // MARK: - Umbrella
@@ -140,6 +141,27 @@ let package = Package(
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 .product(name: "Range Primitives", package: "swift-range-primitives"),
                 .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
+            ]
+        ),
+
+        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; lifts INV-INLINE-004a via Optional-slot inline arm)
+        .target(
+            name: "Storage Small Primitives",
+            dependencies: [
+                "Storage Primitive",
+                "Storage Error Primitives",
+                "Storage Initialization Primitives",
+                "Storage Accessor Primitives",
+                "Storage Protocol Primitives",
+                "Storage Heap Primitives",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Range Primitives", package: "swift-range-primitives"),
+                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
             ]
         ),
 
