@@ -73,9 +73,10 @@ extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
     /// EXPLICIT `.empty` SEMANTICS (the supervisor-sanctioned shape for a
     /// Flat over an UNTRACKED substrate): the composed `Store.`Protocol``
     /// substrate carries no initialization tracking and Flat itself arms no
-    /// teardown (conditionally Copyable ⇒ no deinit). Reads vend `.empty`;
-    /// sets do not arm cleanup. Disciplines over Flat own their occupancy
-    /// (exactly the Buffer-tier contract).
+    /// teardown (conditionally Copyable ⇒ no deinit).
+    ///
+    /// Reads vend `.empty`; sets do not arm cleanup. Disciplines over Flat
+    /// own their occupancy (exactly the Buffer-tier contract).
     @inlinable
     public var initialization: Storage<Element>.Initialization {
         get { .empty }

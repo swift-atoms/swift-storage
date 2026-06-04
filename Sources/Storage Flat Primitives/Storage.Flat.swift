@@ -49,7 +49,6 @@ extension Storage where Element: ~Copyable {
         @usableFromInline
         internal var _substrate: Substrate
 
-
         /// Creates flat storage over the given substrate.
         ///
         /// - Parameter substrate: The element store providing the slots;
