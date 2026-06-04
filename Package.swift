@@ -36,7 +36,7 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-finite-primitives.git", branch: "main"),
         // W2 mesh: resolve memory against the W2 worktree (Memory.Contiguous conforms Span.Protocol).
         // Path-dep identity is the directory basename `swift-memory-primitives`.
-        .package(path: "../swift-memory-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-affine-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-range-primitives.git", branch: "main"),
