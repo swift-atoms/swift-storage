@@ -42,9 +42,12 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-range-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-bit-vector-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
-        // W2 neutral substrate packages (canonical sibling paths).
-        .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
+        // W2 neutral substrate packages.
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
+        // Storage/memory split — HOLD path-deps (publication-gate flip to url; the
+        // .split-wt canonical-basename mesh carries the arc branches):
+        .package(path: "../swift-store-primitives"),
+        .package(path: "../swift-memory-heap-primitives"),
     ],
     targets: [
 
@@ -62,12 +65,14 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Initialization (enum + ops)
+        // MARK: - Initialization (SHIM — the ledger relocated to Store.Initialization,
+        // storage-memory-split.md §2; this target keeps the import + spelling stable)
         .target(
             name: "Storage Initialization Primitives",
             dependencies: [
                 "Storage Primitive",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
             ]
         ),
 
@@ -89,7 +94,8 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Protocol (discipline contract)
+        // MARK: - Protocol (discipline contract — post-split: the pure marker refinement
+        // of Store.Tracked.Protocol; consumer-visible requirement set unchanged)
         .target(
             name: "Storage Protocol Primitives",
             dependencies: [
@@ -97,6 +103,7 @@ let package = Package(
                 "Storage Initialization Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
             ]
         ),
 
