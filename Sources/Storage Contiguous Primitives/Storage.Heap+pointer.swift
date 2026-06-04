@@ -10,38 +10,31 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Memory_Heap_Primitives
 public import Storage_Primitive
 
-// MARK: - Fundamental Slot Access (Heap)
+// MARK: - Pinned pointer escape hatches (forwarders to the leaf)
 
-extension Storage.Heap where Element: ~Copyable {
+extension Storage.Contiguous where Element: ~Copyable, Substrate == Memory.Heap<Element> {
     /// Returns a mutable pointer to the element at the given physical slot.
     ///
-    /// This is the primitive address computation for heap storage. It delegates
-    /// to the backing buffer's `withUnsafeMutablePointerToElements`; all other
-    /// slot access methods delegate to this. Witnesses the `pointer(at:)`
-    /// requirement of `Storage.`Protocol``.
+    /// The documented escape hatch ([MEM-SAFE-015]), forwarded to the leaf.
+    /// See `Memory.Heap.pointer(at:)`.
     ///
-    /// - Parameter slot: The physical slot coordinate.
-    /// - Returns: A mutable pointer to the element.
     /// - Warning: The caller must ensure the slot is valid and within capacity.
     @unsafe
     @inlinable
     public func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
-        unsafe _buffer.withUnsafeMutablePointerToElements {
-            unsafe $0 + Index<Element>.Offset(fromZero: slot)
-        }
+        unsafe _substrate.pointer(at: slot)
     }
 
     /// Returns an immutable pointer to the element at the given physical slot.
     ///
-    /// - Parameter slot: The physical slot coordinate.
-    /// - Returns: An immutable pointer to the element.
     /// - Warning: The caller must ensure the slot is valid and within capacity.
     @unsafe
     @inlinable
     @_disfavoredOverload
     public func pointer(at slot: Index<Element>) -> UnsafePointer<Element> {
-        unsafe UnsafePointer(pointer(at: slot))
+        unsafe _substrate.pointer(at: slot)
     }
 }

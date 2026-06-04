@@ -11,5 +11,4 @@
 
 @_exported public import Index_Primitives
 @_exported public import Storage_Primitive
-@_exported public import Store_Protocol_Primitives
-@_exported public import Store_Tracked_Primitives
+@_exported public import Store_Initialization_Primitives

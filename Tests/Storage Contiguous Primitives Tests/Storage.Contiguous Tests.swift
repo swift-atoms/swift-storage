@@ -9,20 +9,20 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Storage_Flat_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Heap_Primitives
 import Storage_Primitives_Test_Support
 import Testing
 
-@Suite("Storage.Flat Tests")
-struct StorageFlatTests {
+@Suite("Storage.Contiguous Tests")
+struct StorageContiguousTests {
 
     // MARK: - Construction
 
     @Test
     func `lifts a heap substrate and forwards capacity`() throws {
         let capacity: Index<Int>.Count = 4
-        let flat = Storage<Int>.Flat(Storage<Int>.Heap.create(minimumCapacity: capacity))
+        let flat = Storage<Int>.Contiguous(Storage<Int>.Heap.create(minimumCapacity: capacity))
         #expect(flat.capacity >= Index<Int>.Count(4))
     }
 
@@ -30,7 +30,7 @@ struct StorageFlatTests {
 
     @Test
     func `initialize, read, mutate, move round-trips through the substrate`() throws {
-        var flat = Storage<Int>.Flat(Storage<Int>.Heap.create(minimumCapacity: 4))
+        var flat = Storage<Int>.Contiguous(Storage<Int>.Heap.create(minimumCapacity: 4))
 
         flat.initialize(at: 0, to: 7)
         #expect(flat[0] == 7)
@@ -46,7 +46,7 @@ struct StorageFlatTests {
 
     @Test
     func `participates as a generic Storage.Protocol conformer`() throws {
-        var flat = Storage<Int>.Flat(Storage<Int>.Heap.create(minimumCapacity: 4))
+        var flat = Storage<Int>.Contiguous(Storage<Int>.Heap.create(minimumCapacity: 4))
         Self.fill(&flat, count: 3, value: 5)
         #expect(Self.sum(flat, count: 3) == 15)
         #expect(flat.move(at: 0) == 5)
@@ -87,7 +87,7 @@ struct StorageFlatTests {
         // tracked API before lifting, then read through the forwarded span.
         var heap = Storage<Int>.Heap.create(minimumCapacity: 4)
         _ = try heap.initialize.next(to: 11)
-        let flat = Storage<Int>.Flat(heap)
+        let flat = Storage<Int>.Contiguous(heap)
         #expect(flat.span.count == 1)
         #expect(flat.span[0] == 11)
     }

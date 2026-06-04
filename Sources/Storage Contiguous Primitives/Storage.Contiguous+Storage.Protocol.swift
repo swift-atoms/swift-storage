@@ -14,10 +14,11 @@ public import Storage_Initialization_Primitives
 public import Storage_Primitive
 public import Storage_Protocol_Primitives
 public import Store_Protocol_Primitives
+public import Store_Tracked_Primitives
 
 // MARK: - Storage.Protocol Witnesses (forwarded to the substrate)
 
-extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
+extension Storage.Contiguous where Element: ~Copyable, Substrate: ~Copyable {
     /// Total slot capacity — the substrate's capacity, unchanged.
     @inlinable
     public var capacity: Index<Element>.Count {
@@ -67,23 +68,36 @@ extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
     }
 }
 
-// MARK: - Storage.Protocol `initialization` Witness (ASK-1 (b′) lift)
+// MARK: - The ledger forwarding (substrate-forwarding witness — the parked
+// A2-addendum design, realized by the storage/memory split)
 
-extension Storage.Flat where Element: ~Copyable, Substrate: ~Copyable {
-    /// EXPLICIT `.empty` SEMANTICS (the supervisor-sanctioned shape for a
-    /// Flat over an UNTRACKED substrate): the composed `Store.`Protocol``
-    /// substrate carries no initialization tracking and Flat itself arms no
-    /// teardown (conditionally Copyable ⇒ no deinit).
+extension Storage.Contiguous where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {
+    /// The substrate's own ledger, forwarded.
     ///
-    /// Reads vend `.empty`; sets do not arm cleanup. Disciplines over Flat
-    /// own their occupancy (exactly the Buffer-tier contract).
+    /// Available exactly when the substrate TRACKS (`Store.Tracked.`Protocol``):
+    /// the truth lives at the leaf — its backing's teardown honors what is
+    /// written here. The discipline stores NO ledger of its own (and carries no
+    /// `deinit` — the `bd04f32` wall is respected by construction).
+    ///
+    /// The former unconditional `.empty` inert witness is DELETED
+    /// (storage-memory-split.md §4, seat-ratified): a Contiguous over an
+    /// untracked substrate is `Store.`Protocol``-only and cannot enter
+    /// `S: Storage.`Protocol`` dense disciplines, whose ledger-sync teardown
+    /// contract an untracked substrate cannot honor — the silent-leak path is
+    /// now unrepresentable.
     @inlinable
     public var initialization: Storage<Element>.Initialization {
-        get { .empty }
-        set {}
+        get { _substrate.initialization }
+        set { _substrate.initialization = newValue }
     }
 }
 
-// MARK: - Storage.Protocol Conformance
+// MARK: - The layered conditional conformances
+//   Store.Protocol          — unconditional (any substrate)
+//   Store.Tracked.Protocol  — where the substrate tracks
+//   Storage.Protocol        — where the substrate tracks (the single-region marker;
+//                             the dense-discipline gate)
 
-extension Storage.Flat: Storage.`Protocol` where Element: ~Copyable, Substrate: ~Copyable {}
+extension Storage.Contiguous: Store.`Protocol` where Element: ~Copyable, Substrate: ~Copyable {}
+extension Storage.Contiguous: Store.Tracked.`Protocol` where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {}
+extension Storage.Contiguous: Storage<Element>.`Protocol` where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {}

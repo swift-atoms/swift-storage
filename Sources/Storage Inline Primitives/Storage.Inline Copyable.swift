@@ -74,10 +74,10 @@ extension Storage.Inline where Element: Copyable {
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ range: Swift.Range<Index<Element>>,
-        _ body: (Span<Element>) throws(E) -> R
+        _ body: (Swift.Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         return try body(
-            unsafe Span(
+            unsafe Swift.Span(
                 _unsafeStart: pointer(at: range.lowerBound),
                 count: range.count
             )
@@ -100,9 +100,9 @@ extension Storage.Inline where Element: Copyable {
     @inlinable
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ range: Swift.Range<Index<Element>>,
-        _ body: (inout MutableSpan<Element>) throws(E) -> R
+        _ body: (inout Swift.MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
-        var span = unsafe MutableSpan(
+        var span = unsafe Swift.MutableSpan(
             _unsafeStart: _mutablePointer(at: range.lowerBound),
             count: range.count
         )

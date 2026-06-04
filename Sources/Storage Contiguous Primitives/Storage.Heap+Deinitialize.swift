@@ -13,11 +13,12 @@ public import Index_Primitives
 internal import Property_Primitives
 public import Storage_Accessor_Primitives
 public import Storage_Initialization_Primitives
+public import Memory_Heap_Primitives
 public import Storage_Primitive
 
 // MARK: - Deinitialize Accessor
 
-extension Storage.Heap where Element: ~Copyable {
+extension Storage.Contiguous where Element: ~Copyable, Substrate == Memory.Heap<Element> {
     /// Accessor for tracked deinitialize operations.
     ///
     /// Provides `.deinitialize.all()` for safe cleanup.
@@ -41,7 +42,7 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-extension Storage.Heap where Element: Copyable {
+extension Storage.Contiguous where Element: Copyable, Substrate == Memory.Heap<Element> {
     /// Copy-on-write accessor for tracked deinitialize operations.
     ///
     /// Triggers `ensureUnique()` before yielding the mutator so a value-copied

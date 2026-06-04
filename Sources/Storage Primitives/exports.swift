@@ -13,9 +13,9 @@
 // Users import Storage_Primitives and get everything.
 
 @_exported public import Storage_Accessor_Primitives
+@_exported public import Storage_Contiguous_Primitives
 @_exported public import Storage_Error_Primitives
 @_exported public import Storage_Field_Primitives
-@_exported public import Storage_Flat_Primitives
 @_exported public import Storage_Heap_Primitives
 @_exported public import Storage_Initialization_Primitives
 @_exported public import Storage_Inline_Primitives

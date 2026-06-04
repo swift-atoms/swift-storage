@@ -16,11 +16,11 @@ public import Store_Protocol_Primitives
 
 // MARK: - Span.Protocol (conditional — substrate-provided contiguity)
 
-extension Storage.Flat: Span.`Protocol` where Element: ~Copyable, Substrate: ~Copyable, Substrate: Span.`Protocol` {
+extension Storage.Contiguous: Span.`Protocol` where Element: ~Copyable, Substrate: ~Copyable, Substrate: Span.`Protocol` {
     /// A borrowed view of the substrate's contiguous region.
     ///
     /// Available exactly when the substrate itself vends a span —
-    /// `Storage.Flat` adds no contiguity of its own; it forwards the
+    /// `Storage.Contiguous` adds no contiguity of its own; it forwards the
     /// substrate's. The result is lifetime-bound to this storage
     /// (`@_lifetime(borrow self)`).
     @inlinable
