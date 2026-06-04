@@ -11,6 +11,7 @@
 
 public import Index_Primitives
 public import Memory_Heap_Primitives
+public import Storage_Inline_Primitives
 public import Storage_Primitive
 
 extension Storage.Small where Element: ~Copyable {
@@ -21,29 +22,22 @@ extension Storage.Small where Element: ~Copyable {
     /// reassign the whole `self`. Reassigning the field alone would be a partial
     /// reinitialization of a consumed `self` (rejected by the borrow checker).
     @inlinable
-    init(_storage: consuming _Representation, count: Int) {
+    init(_storage: consuming _Representation) {
         self._storage = _storage
-        self._count = count
     }
 
-    /// The number of initialized elements.
-    @inlinable
-    public var count: Index<Element>.Count {
-        Index<Element>.Count(UInt(_count))
-    }
-
-    /// The total slot capacity currently available: `inlineCapacity` while inline, or the
-    /// heap arm's capacity once spilled. Capacity is DYNAMIC — the spill is internal to the
-    /// substrate, so a fixed-`inlineCapacity` `Small` still grows unboundedly via the heap arm.
+    /// The total slot capacity currently available — DYNAMIC: the inline arm's fixed
+    /// capacity while inline, or the heap arm's capacity once spilled. The spill is
+    /// substrate-internal, so a fixed-`inlineCapacity` `Small` still grows unboundedly.
     ///
-    /// Witnesses `Store.Protocol`'s `capacity` requirement.
+    /// Witnesses `Store.Protocol`'s `capacity` requirement by delegating to the active arm.
     @inlinable
     public var capacity: Index<Element>.Count {
         switch _storage {
-        case .inline:
-            Index<Element>.Count(UInt(inlineCapacity))
-        case .heap(let heap):
-            heap.capacity
+        case .inline(let arm):
+            arm.capacity
+        case .heap(let arm):
+            arm.capacity
         }
     }
 

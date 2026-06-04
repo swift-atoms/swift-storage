@@ -144,7 +144,7 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; lifts INV-INLINE-004a via Optional-slot inline arm)
+        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; ~Copyable, enum {Storage.Inline; Memory.Heap})
         .target(
             name: "Storage Small Primitives",
             dependencies: [
@@ -154,6 +154,7 @@ let package = Package(
                 "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
                 "Storage Heap Primitives",
+                "Storage Inline Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
