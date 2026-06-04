@@ -124,7 +124,7 @@ extension Storage.Heap where Element: ~Copyable {
 
 // MARK: - Span.Protocol Conformance
 
-extension Storage.Heap: Span.`Protocol` {
+extension Storage.Heap: Span.`Protocol` where Element: ~Copyable {
     /// Unsafe read access for C interop with unannotated APIs.
     ///
     /// Provides raw pointer access to initialized elements for C functions
