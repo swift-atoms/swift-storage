@@ -43,8 +43,8 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-bit-vector-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
         // W2 neutral substrate packages (canonical sibling paths).
-        .package(path: "../swift-store-primitives"),
-        .package(path: "../swift-span-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
     ],
     targets: [
 
