@@ -44,10 +44,9 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
         // W2 neutral substrate packages.
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
-        // Storage/memory split — HOLD path-deps (publication-gate flip to url; the
-        // .split-wt canonical-basename mesh carries the arc branches):
-        .package(path: "../swift-store-primitives"),
-        .package(path: "../swift-memory-heap-primitives"),
+        // Storage/memory split.
+        .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
     ],
     targets: [
 
