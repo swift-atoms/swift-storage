@@ -13,11 +13,12 @@ public import Index_Primitives
 internal import Property_Primitives
 public import Storage_Accessor_Primitives
 public import Storage_Initialization_Primitives
+public import Memory_Heap_Primitives
 public import Storage_Primitive
 
 // MARK: - Copy Accessor
 
-extension Storage.Heap where Element: Copyable {
+extension Storage.Contiguous where Element: Copyable, Substrate == Memory.Heap<Element> {
     /// Accessor for copy operations.
     ///
     /// Provides bulk copy of initialized elements between storages.

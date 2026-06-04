@@ -115,15 +115,9 @@ let package = Package(
                 "Storage Error Primitives",
                 "Storage Initialization Primitives",
                 "Storage Accessor Primitives",
-                "Storage Protocol Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
-                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                "Storage Contiguous Primitives",
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
         ),
 
@@ -161,6 +155,10 @@ let package = Package(
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
+                "Storage Accessor Primitives",
+                "Storage Error Primitives",
             ]
         ),
 

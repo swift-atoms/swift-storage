@@ -14,11 +14,12 @@ internal import Property_Primitives
 public import Storage_Accessor_Primitives
 public import Storage_Error_Primitives
 public import Storage_Initialization_Primitives
+public import Memory_Heap_Primitives
 public import Storage_Primitive
 
 // MARK: - Move Accessor
 
-extension Storage.Heap where Element: ~Copyable {
+extension Storage.Contiguous where Element: ~Copyable, Substrate == Memory.Heap<Element> {
     /// Accessor for tracked move operations.
     ///
     /// Provides `.move.last()` for linear discipline.
@@ -42,7 +43,7 @@ extension Storage.Heap where Element: ~Copyable {
     }
 }
 
-extension Storage.Heap where Element: Copyable {
+extension Storage.Contiguous where Element: Copyable, Substrate == Memory.Heap<Element> {
     /// Copy-on-write accessor for tracked move operations.
     ///
     /// Triggers `ensureUnique()` before yielding the mutator so a value-copied
