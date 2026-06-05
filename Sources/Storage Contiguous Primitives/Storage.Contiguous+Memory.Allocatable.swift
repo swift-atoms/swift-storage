@@ -49,3 +49,11 @@ where Element: ~Copyable, Substrate: Memory.Allocatable.`Protocol`, Substrate: ~
         _substrate.moveInitialize(range: range, into: &destination._substrate, at: destinationOffset)
     }
 }
+
+// MARK: - Conformance (conditional — where the substrate allocates)
+//
+// `Storage.Contiguous` IS allocatable exactly when its substrate is. The growable buffer
+// disciplines gate their grow surface on `S: Memory.Allocatable.`Protocol``; an Inline-backed
+// `Storage.Contiguous<Memory.Inline>` honestly does NOT conform (fixed capacity → unrepresentable grow).
+extension Storage.Contiguous: Memory.Allocatable.`Protocol`
+where Element: ~Copyable, Substrate: Memory.Allocatable.`Protocol`, Substrate: ~Copyable {}
