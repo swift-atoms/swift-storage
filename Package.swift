@@ -22,7 +22,6 @@ let package = Package(
 
         // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
         .library(name: "Storage Heap Primitives", targets: ["Storage Heap Primitives"]),
-        .library(name: "Storage Small Primitives", targets: ["Storage Small Primitives"]),
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
         // MARK: - Umbrella
@@ -122,29 +121,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; ~Copyable, enum {Memory.Inline; Memory.Heap})
-        .target(
-            name: "Storage Small Primitives",
-            dependencies: [
-                "Storage Primitive",
-                "Storage Error Primitives",
-                "Storage Initialization Primitives",
-                "Storage Accessor Primitives",
-                "Storage Protocol Primitives",
-                "Storage Heap Primitives",
-                .product(name: "Memory Inline Primitives", package: "swift-memory-inline-primitives"),
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
-                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
-                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-            ]
-        ),
-
         // MARK: - Contiguous (substrate-lifting storage discipline; the #2 Flat rename — storage-memory-split.md)
         .target(
             name: "Storage Contiguous Primitives",
@@ -206,15 +182,6 @@ let package = Package(
             dependencies: [
                 "Storage Heap Primitives",
                 "Storage Primitives Test Support",
-            ]
-        ),
-        .testTarget(
-            name: "Storage Small Primitives Tests",
-            dependencies: [
-                "Storage Small Primitives",
-                "Storage Heap Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
             ]
         ),
         .testTarget(
