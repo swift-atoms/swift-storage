@@ -125,6 +125,7 @@ let package = Package(
         .target(
             name: "Storage Contiguous Primitives",
             dependencies: [
+                .product(name: "Finite Bounded Primitives", package: "swift-finite-primitives"),
                 "Storage Primitive",
                 "Storage Protocol Primitives",
                 "Storage Initialization Primitives",
