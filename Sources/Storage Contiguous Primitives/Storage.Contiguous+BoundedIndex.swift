@@ -36,4 +36,11 @@ extension Storage.Contiguous where Element: ~Copyable, Substrate: ~Copyable {
     public mutating func move<let capacity: Int>(at slot: Index<Element>.Bounded<capacity>) -> Element {
         move(at: Index<Element>(slot))
     }
+
+    /// Deinitializes the slot at the given bounded index — move-and-discard over the Store seam
+    /// (`deinitialize` is not on the neutral 4-op seam; `move` + drop is the equivalent).
+    @inlinable
+    public mutating func deinitialize<let capacity: Int>(at slot: Index<Element>.Bounded<capacity>) {
+        _ = move(at: Index<Element>(slot))
+    }
 }
