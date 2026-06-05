@@ -37,4 +37,22 @@ extension __StoreCreatableProtocol where Self: ~Copyable {
             moved = moved.add.saturating(.one)
         }
     }
+
+    /// Element-wise wrap-around relocation: each element of `range` moves to
+    /// `destinationOffset + (i - range.lowerBound)`. Built on the neutral seam;
+    /// contiguous stores override with a bulk path.
+    @inlinable
+    public mutating func moveInitialize(
+        range: Swift.Range<Index<Element>>,
+        into destination: inout Self,
+        at destinationOffset: Index<Element>
+    ) {
+        var source = range.lowerBound
+        var dest = destinationOffset
+        while source < range.upperBound {
+            destination.initialize(at: dest, to: move(at: source))
+            source += .one
+            dest += .one
+        }
+    }
 }

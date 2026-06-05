@@ -33,4 +33,13 @@ where Element: ~Copyable, Substrate == Memory.Heap<Element> {
         let start: Index<Element> = .zero
         move(range: start..<count.map(Ordinal.init), to: destination)
     }
+
+    @inlinable
+    public mutating func moveInitialize(
+        range: Swift.Range<Index<Element>>,
+        into destination: inout Self,
+        at destinationOffset: Index<Element>
+    ) {
+        move(range: range, to: destination, at: destinationOffset)
+    }
 }
