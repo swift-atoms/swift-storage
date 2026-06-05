@@ -104,6 +104,7 @@ let package = Package(
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
             ]
         ),
 
@@ -158,6 +159,7 @@ let package = Package(
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
@@ -176,6 +178,7 @@ let package = Package(
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),

@@ -43,10 +43,11 @@ extension Storage.Small where Element: ~Copyable {
 
     /// Whether storage has spilled from the inline arm to the heap arm.
     ///
-    /// An implementation detail of the inline⊕heap strategy — `package` so tests and
-    /// in-package disciplines can assert spill behavior without exposing it to consumers.
+    /// Spill-state is a substrate-local property: only `Storage.Small` has a spill concept,
+    /// so it lives here, never on the neutral `Storage.Protocol` seam. `public` so consumers of
+    /// the inline⊕heap substrate (and the buffers composed over it) can query spill behavior.
     @inlinable
-    package var isSpilled: Bool {
+    public var isSpilled: Bool {
         switch _storage {
         case .inline: false
         case .heap: true
