@@ -13,7 +13,7 @@ public import Index_Primitives
 public import Memory_Heap_Primitives
 public import Span_Protocol_Primitives
 public import Storage_Initialization_Primitives
-public import Storage_Inline_Primitives
+public import Memory_Inline_Primitives
 public import Storage_Primitive
 
 // MARK: - Span / MutableSpan (~Copyable) — dispatch to the active arm

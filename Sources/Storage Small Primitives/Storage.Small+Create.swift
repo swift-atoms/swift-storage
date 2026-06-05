@@ -11,7 +11,7 @@
 
 public import Index_Primitives
 public import Memory_Heap_Primitives
-public import Storage_Inline_Primitives
+public import Memory_Inline_Primitives
 public import Storage_Primitive
 
 extension Storage.Small where Element: ~Copyable {
@@ -23,7 +23,7 @@ extension Storage.Small where Element: ~Copyable {
     @inlinable
     public static func create(minimumCapacity: Index<Element>.Count) -> Self {
         if minimumCapacity <= Index<Element>.Count(UInt(inlineCapacity)) {
-            Self(_storage: .inline(Storage<Element>.Inline<inlineCapacity>()))
+            Self(_storage: .inline(Memory.Inline<Element, inlineCapacity>()))
         } else {
             Self(_storage: .heap(Memory.Heap<Element>.create(minimumCapacity: minimumCapacity)))
         }

@@ -22,7 +22,6 @@ let package = Package(
 
         // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
         .library(name: "Storage Heap Primitives", targets: ["Storage Heap Primitives"]),
-        .library(name: "Storage Inline Primitives", targets: ["Storage Inline Primitives"]),
         .library(name: "Storage Small Primitives", targets: ["Storage Small Primitives"]),
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
@@ -48,6 +47,7 @@ let package = Package(
         // Storage/memory split.
         .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-inline-primitives.git", branch: "main"),
     ],
     targets: [
 
@@ -122,30 +122,7 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Inline (canonical inline-backed storage form)
-        .target(
-            name: "Storage Inline Primitives",
-            dependencies: [
-                "Storage Primitive",
-                "Storage Error Primitives",
-                "Storage Initialization Primitives",
-                "Storage Accessor Primitives",
-                "Storage Protocol Primitives",
-                "Storage Heap Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Finite Bounded Primitives", package: "swift-finite-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Contiguous Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
-                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Range Primitives", package: "swift-range-primitives"),
-                .product(name: "Bit Vector Static Primitives", package: "swift-bit-vector-primitives"),
-            ]
-        ),
-
-        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; ~Copyable, enum {Storage.Inline; Memory.Heap})
+        // MARK: - Small (hybrid inline⊕heap substrate; #5 — storage-small-substrate.md; ~Copyable, enum {Memory.Inline; Memory.Heap})
         .target(
             name: "Storage Small Primitives",
             dependencies: [
@@ -155,7 +132,7 @@ let package = Package(
                 "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
                 "Storage Heap Primitives",
-                "Storage Inline Primitives",
+                .product(name: "Memory Inline Primitives", package: "swift-memory-inline-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
@@ -198,7 +175,6 @@ let package = Package(
                 "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
                 "Storage Heap Primitives",
-                "Storage Inline Primitives",
                 "Storage Contiguous Primitives",
             ]
         ),
@@ -233,19 +209,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "Storage Inline Primitives Tests",
-            dependencies: [
-                "Storage Inline Primitives",
-                "Storage Heap Primitives",
-                "Storage Primitives Test Support",
-                .product(name: "Finite Bounded Primitives", package: "swift-finite-primitives"),
-            ]
-        ),
-        .testTarget(
             name: "Storage Small Primitives Tests",
             dependencies: [
                 "Storage Small Primitives",
-                "Storage Inline Primitives",
                 "Storage Heap Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),

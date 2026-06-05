@@ -12,7 +12,7 @@
 public import Index_Primitives
 public import Memory_Heap_Primitives
 public import Store_Initialization_Primitives
-public import Storage_Inline_Primitives
+public import Memory_Inline_Primitives
 public import Storage_Primitive
 public import Storage_Protocol_Primitives
 

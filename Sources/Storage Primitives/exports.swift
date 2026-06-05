@@ -18,6 +18,5 @@
 @_exported public import Storage_Field_Primitives
 @_exported public import Storage_Heap_Primitives
 @_exported public import Storage_Initialization_Primitives
-@_exported public import Storage_Inline_Primitives
 @_exported public import Storage_Primitive
 @_exported public import Storage_Protocol_Primitives

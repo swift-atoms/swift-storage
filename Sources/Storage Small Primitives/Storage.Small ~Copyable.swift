@@ -11,7 +11,7 @@
 
 public import Index_Primitives
 public import Memory_Heap_Primitives
-public import Storage_Inline_Primitives
+public import Memory_Inline_Primitives
 public import Storage_Primitive
 
 extension Storage.Small where Element: ~Copyable {

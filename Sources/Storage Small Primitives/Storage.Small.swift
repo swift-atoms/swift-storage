@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Memory_Heap_Primitives
-public import Storage_Inline_Primitives
+public import Memory_Inline_Primitives
 public import Storage_Primitive
 
 extension Storage where Element: ~Copyable {
@@ -32,8 +32,8 @@ extension Storage where Element: ~Copyable {
     /// so `Storage.Small` is the per-container generalization of the buffer-tier
     /// `Buffer.{Linear,Ring}.Small._Representation` shape relocated down to the storage tier:
     ///
-    /// - `inline`: `Storage<Element>.Inline<inlineCapacity>` — fixed-capacity inline storage
-    ///   (`@_rawLayout` + a per-slot initialization bitvector).
+    /// - `inline`: `Memory.Inline<Element, inlineCapacity>` — fixed-capacity inline storage
+    ///   (`@_rawLayout` + a `Store.Initialization` ledger), the inline twin of `Memory.Heap`.
     /// - `heap`: `Memory.Heap<Element>` — the tower's class-backed leaf, reused as the spill
     ///   target; it owns its own allocation and cleanup.
     ///
@@ -52,8 +52,8 @@ extension Storage where Element: ~Copyable {
         @frozen
         @usableFromInline
         enum _Representation: ~Copyable {
-            /// Inline arm: the proven `@_rawLayout` + bitvector fixed-capacity store.
-            case inline(Storage<Element>.Inline<inlineCapacity>)
+            /// Inline arm: the `@_rawLayout` + `Store.Initialization`-ledger fixed-capacity leaf.
+            case inline(Memory.Inline<Element, inlineCapacity>)
             /// Heap arm: the tower's class-backed `Memory.Heap` leaf (the spill target).
             case heap(Memory.Heap<Element>)
         }
@@ -64,7 +64,7 @@ extension Storage where Element: ~Copyable {
         /// Creates empty inline storage.
         @inlinable
         public init() {
-            _storage = .inline(Storage<Element>.Inline<inlineCapacity>())
+            _storage = .inline(Memory.Inline<Element, inlineCapacity>())
         }
     }
 }
