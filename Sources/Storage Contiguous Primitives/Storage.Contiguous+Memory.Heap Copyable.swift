@@ -13,32 +13,13 @@ public import Index_Primitives
 public import Memory_Heap_Primitives
 public import Storage_Primitive
 
-// MARK: - Copy-on-Write (Copyable elements; pinned forwarders to the leaf)
+// MARK: - Span access (Copyable elements; heap-pinned forwarders to the leaf)
+//
+// CoW (`isUnique` / `ensureUnique`) is the generic Memory.Unique forwarder in
+// `Storage.Contiguous+Memory.Unique.swift`; the span accessors below stay pinned to the
+// heap leaf because they reach `Memory.Heap`'s pointer surface directly.
 
 extension Storage.Contiguous where Element: Copyable, Substrate == Memory.Heap<Element> {
-    /// Whether this storage is the sole owner of its backing buffer.
-    ///
-    /// Forwarded to the leaf's `isKnownUniquelyReferenced` probe. See
-    /// `Memory.Heap.isUnique`.
-    @inlinable
-    public var isUnique: Bool {
-        mutating get { _substrate.isUnique }
-    }
-
-    /// Ensures this storage is the sole owner of its backing buffer,
-    /// deep-copying the initialized elements when shared.
-    ///
-    /// Forwarded to the leaf's occupancy-aware CoW primitive (the ledger and
-    /// the elements copy together, leaf-side — including disjoint `.two` ring
-    /// layouts at their original slots). See `Memory.Heap.ensureUnique()`.
-    ///
-    /// - Returns: `true` if a copy was made to restore uniqueness.
-    @inlinable
-    @discardableResult
-    public mutating func ensureUnique() -> Bool {
-        _substrate.ensureUnique()
-    }
-
     /// Provides read-only access to elements in the specified slot range.
     ///
     /// See `Memory.Heap.withSpan(_:_:)`.
