@@ -5,18 +5,18 @@ import PackageDescription
 //
 // Proves that a `some Storage.`Protocol`` generic specializes to ZERO
 // witness-table dispatch through the value-type-façade conformer
-// `Storage.Heap` (a ~Copyable struct over a private ManagedBuffer-subclass
+// `Storage.Contiguous<Memory.Heap>` (a ~Copyable struct over a private ManagedBuffer-subclass
 // allocation), in release + cross-module. Closes [EXP-020] for Heap — the
 // wave-3 conformer added by the Opt-A façade restructure.
 //
 // Mirrors the methodology of the wave-1/2 `storage-protocol-sil-gate`
 // experiment in swift-storage-pool-primitives (Inline + Pool), but is placed in
-// swift-storage-primitives because that package owns Storage.Heap (highest-layer
+// swift-storage-primitives because that package owns Storage.Contiguous<Memory.Heap> (highest-layer
 // dep per [EXP-002c]). The pool experiment is NOT edited.
 //
 // Two targets give the cross-module boundary required by [EXP-017]:
 //   - StorageHeapProtocolGeneric : declares the generic `probe` function
-//   - storage-protocol-heap-sil-gate : main, calls it with a concrete Storage<Int>.Heap
+//   - storage-protocol-heap-sil-gate : main, calls it with a concrete Storage<Int>.Contiguous<Memory.Heap<Int>>
 
 let package = Package(
     name: "storage-protocol-heap-sil-gate",
