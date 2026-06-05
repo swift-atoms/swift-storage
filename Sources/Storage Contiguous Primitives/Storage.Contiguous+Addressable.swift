@@ -23,13 +23,9 @@ public import Storage_Primitive
 // heap-backed `Storage.Contiguous<Memory.Heap>` keeps its own pinned `pointer(at:)`
 // (`Storage.Heap+pointer.swift`), so the two are disjoint.
 
-/// A memory leaf that exposes a typed pointer escape hatch.
-public protocol __MemoryAddressableProtocol<Element>: ~Copyable {
-    associatedtype Element: ~Copyable
-    @unsafe func pointer(at slot: Index<Element>) -> UnsafeMutablePointer<Element>
-}
-
-extension Memory.Inline: __MemoryAddressableProtocol where Element: ~Copyable {}
+// `__MemoryAddressableProtocol` and `Memory.Inline`'s conformance live in
+// swift-memory-inline-primitives (the leaf's own module), so the conformance is visible wherever
+// `Memory.Inline` is imported.
 
 extension Storage.Contiguous
 where Element: ~Copyable, Substrate: __MemoryAddressableProtocol, Substrate: ~Copyable {

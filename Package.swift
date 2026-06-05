@@ -135,6 +135,7 @@ let package = Package(
                 .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+                .product(name: "Memory Inline Primitives", package: "swift-memory-inline-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
                 "Storage Accessor Primitives",
                 "Storage Error Primitives",
