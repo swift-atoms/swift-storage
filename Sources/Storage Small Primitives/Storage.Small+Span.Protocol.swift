@@ -71,6 +71,24 @@ extension Storage.Small where Element: ~Copyable {
             return unsafe _overrideLifetime(span, mutating: &self)
         }
     }
+
+    /// A mutable span over the first `count` elements (the caller is the count authority).
+    ///
+    /// The count-parameterized companion required by `Span.Mutable.`Protocol``; a growable
+    /// buffer passes its header count. Same arm-dispatch + lifetime re-anchor as the property.
+    @_lifetime(&self)
+    @inlinable
+    public mutating func mutableSpan(count: Index<Element>.Count) -> Swift.MutableSpan<Element> {
+        let start: UnsafeMutablePointer<Element>
+        switch _storage {
+        case .inline(let arm):
+            start = unsafe arm.pointer(at: .zero)
+        case .heap(let arm):
+            start = unsafe arm.pointer(at: .zero)
+        }
+        let span = unsafe Swift.MutableSpan(_unsafeStart: start, count: count)
+        return unsafe _overrideLifetime(span, mutating: &self)
+    }
 }
 
 // MARK: - Span.Protocol Conformance
