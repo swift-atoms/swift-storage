@@ -92,11 +92,17 @@ extension Storage.Contiguous where Element: ~Copyable, Substrate: Memory.Tracked
 }
 
 // MARK: - Conformance
-//   Store.Protocol — unconditional (any substrate). The `initialization` ledger
-//   above is a CONDITIONAL accessor (where Substrate: Memory.Tracked.`Protocol`),
-//   NOT a conformance: Storage.Contiguous forwards the leaf's ledger but does not
-//   itself carry the tracked-store marker (Cleave-5 D1-B — the marker narrows to
-//   the leaves). The dissolved Storage.Protocol single-region marker is gone:
-//   Storage.Contiguous<M> IS single-region by construction.
+//   Store.Protocol     — unconditional (any substrate; the 4-op seam).
+//   Memory.Tracked     — CONDITIONAL, only where the substrate tracks. This forwards
+//                        the leaf's ledger (the accessor above is the witness) so that
+//                        dual-plane disciplines (Storage.Split) and generic ledger-sync
+//                        can compose over a tracked Storage.Contiguous. An UNtracked
+//                        Storage.Contiguous does NOT conform — it cannot honor the
+//                        ledger-sync teardown contract, and the silent-leak path stays
+//                        unrepresentable (Cleave-5 D1-B: the marker narrows to leaves +
+//                        tracked compositions; it is NOT the universal Store.Tracked).
+//   The dissolved Storage.Protocol single-region marker is gone: Storage.Contiguous<M>
+//   IS single-region by construction.
 
 extension Storage.Contiguous: Store.`Protocol` where Element: ~Copyable, Substrate: ~Copyable {}
+extension Storage.Contiguous: Memory.Tracked.`Protocol` where Element: ~Copyable, Substrate: Memory.Tracked.`Protocol`, Substrate: ~Copyable {}
