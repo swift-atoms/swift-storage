@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Storage_Heap_Primitives
+import Memory_Heap_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Primitives_Test_Support
 import Testing
 
@@ -21,14 +23,14 @@ struct StorageHeapTests {
     @Test
     func `create storage with minimum capacity`() throws {
         let capacity: Index<Int>.Count = 10
-        let storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        let storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
         #expect(storage.capacity >= Index<Int>.Count(10))
         #expect(storage.isEmpty == true)
     }
 
     @Test
     func `create storage with zero capacity`() throws {
-        let storage = Storage<Int>.Heap.create(minimumCapacity: .zero)
+        let storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: .zero)
         _ = storage
     }
 
@@ -37,7 +39,7 @@ struct StorageHeapTests {
     @Test
     func `initialize and move single element using tracked API`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         let slot = try storage.initialize.next(to: 42)
         #expect(slot == .zero)
@@ -51,7 +53,7 @@ struct StorageHeapTests {
     @Test
     func `initialize multiple elements using tracked API`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<5 {
             let slot = try storage.initialize.next(to: i * 10)
@@ -72,7 +74,7 @@ struct StorageHeapTests {
     @Test
     func `pointer returns correct address`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         // Initialize several elements to reach slot 3
         for _ in 0..<4 {
@@ -90,7 +92,7 @@ struct StorageHeapTests {
     @Test
     func `pointer allows read access`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         try storage.initialize.next(to: 77)
 
@@ -106,7 +108,7 @@ struct StorageHeapTests {
     @Test
     func `deinitialize at single slot`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         try storage.initialize.next(to: 42)
         storage.deinitialize.all()
@@ -116,7 +118,7 @@ struct StorageHeapTests {
     @Test
     func `deinitialize range of elements`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<5 {
             try storage.initialize.next(to: i)
@@ -137,7 +139,7 @@ struct StorageHeapTests {
 
         do {
             let capacity: Index<Tracker>.Count = 10
-            var storage = Storage<Tracker>.Heap.create(minimumCapacity: capacity)
+            var storage = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: capacity)
 
             for _ in 0..<5 {
                 try storage.initialize.next(to: Tracker())
@@ -162,7 +164,7 @@ struct StorageHeapTests {
         unsafe Tracker.deinitCount = 0
 
         let capacity: Index<Tracker>.Count = 10
-        var storage = Storage<Tracker>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: capacity)
 
         // Use low-level API throughout to test partial range deinitialize
         var slot: Index<Tracker> = .zero
@@ -191,8 +193,8 @@ struct StorageHeapTests {
     @Test
     func `move range to new storage`() throws {
         let capacity: Index<Int>.Count = 10
-        var source = Storage<Int>.Heap.create(minimumCapacity: capacity)
-        var destination = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var source = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
+        var destination = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<3 {
             try source.initialize.next(to: (i + 1) * 100)
@@ -216,7 +218,7 @@ struct StorageHeapTests {
     @Test
     func `copy creates independent storage`() throws {
         let capacity: Index<Int>.Count = 10
-        var original = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var original = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<4 {
             try original.initialize.next(to: i * 5)
@@ -240,7 +242,7 @@ struct StorageHeapTests {
     @Test
     func `copy empty storage`() throws {
         let capacity: Index<Int>.Count = 10
-        var original = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var original = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
         let copied = original.copy()
         #expect(copied.initialization.isEmpty == true)
     }
@@ -248,8 +250,8 @@ struct StorageHeapTests {
     @Test
     func `copy to new storage`() throws {
         let capacity: Index<Int>.Count = 10
-        var source = Storage<Int>.Heap.create(minimumCapacity: capacity)
-        var destination = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var source = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
+        var destination = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<4 {
             try source.initialize.next(to: i * 3)
@@ -275,8 +277,8 @@ struct StorageHeapTests {
     @Test
     func `copy empty storage does nothing`() throws {
         let capacity: Index<Int>.Count = 10
-        var source = Storage<Int>.Heap.create(minimumCapacity: capacity)
-        let destination = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var source = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
+        let destination = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         source.copy(to: destination)
     }
@@ -284,8 +286,8 @@ struct StorageHeapTests {
     @Test
     func `copy range to new storage`() throws {
         let capacity: Index<Int>.Count = 10
-        var source = Storage<Int>.Heap.create(minimumCapacity: capacity)
-        var destination = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var source = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
+        var destination = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<5 {
             try source.initialize.next(to: i * 7)
@@ -320,7 +322,7 @@ struct StorageHeapTests {
 
         do {
             let capacity: Index<Tracker>.Count = 5
-            var storage = Storage<Tracker>.Heap.create(minimumCapacity: capacity)
+            var storage = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: capacity)
 
             for _ in 0..<3 {
                 try storage.initialize.next(to: Tracker())
@@ -336,7 +338,7 @@ struct StorageHeapTests {
     @Test
     func `withSpan provides read access`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<5 {
             try storage.initialize.next(to: i * 2)
@@ -358,7 +360,7 @@ struct StorageHeapTests {
     @Test
     func `pointer returns UnsafeMutablePointer`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         try storage.initialize.next(to: 42)
 
@@ -372,7 +374,7 @@ struct StorageHeapTests {
     @Test
     func `immutable pointer returns UnsafePointer`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         try storage.initialize.next(to: 42)
 
@@ -388,7 +390,7 @@ struct StorageHeapTests {
     @Test
     func `isEmpty reflects initialization state`() throws {
         let capacity: Index<Int>.Count = 10
-        var storage = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         #expect(storage.isEmpty == true)
 
@@ -403,7 +405,7 @@ struct StorageHeapTests {
 
     @Test
     func `initialize beyond capacity throws capacityExceeded`() throws {
-        var storage = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(2))
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(2))
 
         // ManagedBuffer may allocate more than minimumCapacity, so fill to actual capacity
         let capacity = Int(bitPattern: storage.capacity)
@@ -418,7 +420,7 @@ struct StorageHeapTests {
 
     @Test
     func `move from empty throws empty`() {
-        var storage = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(4))
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(4))
         #expect(throws: Storage<Int>.Error.empty) {
             try storage.move.last()
         }
@@ -426,7 +428,7 @@ struct StorageHeapTests {
 
     @Test
     func `move last correctly decrements count`() throws {
-        var storage = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(4))
+        var storage = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(4))
 
         try storage.initialize.next(to: 10)
         try storage.initialize.next(to: 20)

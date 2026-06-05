@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Finite_Bounded_Primitives
+import Memory_Heap_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Heap_Primitives
 import Storage_Inline_Primitives
 import Storage_Primitives_Test_Support
@@ -407,7 +409,7 @@ struct StorageInlineInvariantTests {
 
             unsafe Tracker.deinitOrder = []
 
-            var heap = Storage<Tracker>.Heap.create(minimumCapacity: 8)
+            var heap = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: 8)
 
             // Initialize two disjoint ranges: [0,2) and [5,7)
             heap.initialize(to: Tracker(0), at: 0)
@@ -441,7 +443,7 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-006a: move to heap linearizes to destination 0 to count`() {
             var inline = Storage<Int>.Inline<8>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
 
             // Initialize at non-zero slots
             inline.initialize(to: 100, at: 2)
@@ -465,7 +467,7 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-006b: copy to heap linearizes to destination 0 to count`() {
             var inline = Storage<Int>.Inline<8>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
 
             // Initialize at non-zero slots
             inline.initialize(to: 10, at: 3)
@@ -499,7 +501,7 @@ struct StorageInlineInvariantTests {
             unsafe Tracker.instances = 0
 
             var inline = Storage<Tracker>.Inline<4>()
-            var heap = Storage<Tracker>.Heap.create(minimumCapacity: 4)
+            var heap = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: 4)
 
             inline.initialize(to: Tracker(), at: 0)
             inline.initialize(to: Tracker(), at: 1)
@@ -527,7 +529,7 @@ struct StorageInlineInvariantTests {
         @Test
         func `INV-INLINE-006d: copy preserves source slots`() {
             var inline = Storage<Int>.Inline<4>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 4)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 4)
 
             inline.initialize(to: 42, at: 0)
             inline.initialize(to: 84, at: 1)
@@ -552,7 +554,7 @@ struct StorageInlineInvariantTests {
         @Test
         func `empty range operations are no-ops`() {
             var inline = Storage<Int>.Inline<4>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 4)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 4)
 
             let emptyRange: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
 

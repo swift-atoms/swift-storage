@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Finite_Bounded_Primitives
+import Memory_Heap_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Accessor_Primitives
 import Storage_Error_Primitives
 import Storage_Heap_Primitives
@@ -157,7 +159,7 @@ struct StorageInlineTrackedTests {
             try inline.initialize.next(to: i * 5)
         }
 
-        var heap = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(8))
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(8))
         inline.copy(to: heap)
         heap.initialization = .linear(count: Index<Int>.Count(4))
 
@@ -177,7 +179,7 @@ struct StorageInlineTrackedTests {
     @Test
     func `copy empty to heap is no-op`() {
         let inline = Storage<Int>.Inline<8>()
-        var heap = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(8))
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(8))
 
         inline.copy(to: heap)
         #expect(heap.initialization.isEmpty == true)

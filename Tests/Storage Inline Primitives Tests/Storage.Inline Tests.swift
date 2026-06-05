@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Finite_Bounded_Primitives
+import Memory_Heap_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Accessor_Primitives
 import Storage_Error_Primitives
 import Storage_Heap_Primitives
@@ -220,7 +222,7 @@ struct StorageInlineTests {
     func `move range to heap storage`() {
         var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        var heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<4 {
             inline.initialize(to: (i + 1) * 100, at: .init(integerLiteral: UInt(i)))
@@ -249,7 +251,7 @@ struct StorageInlineTests {
     func `move empty range to heap storage`() {
         var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        var heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         let range: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
         inline.move(range: range, to: heap)
@@ -261,7 +263,7 @@ struct StorageInlineTests {
     func `copy range to heap storage`() {
         var inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        var heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         for i in 0..<4 {
             inline.initialize(to: i * 5, at: .init(integerLiteral: UInt(i)))
@@ -294,7 +296,7 @@ struct StorageInlineTests {
     func `copy empty range to heap storage`() {
         let inline = Storage<Int>.Inline<8>()
         let capacity: Index<Int>.Count = 8
-        var heap = Storage<Int>.Heap.create(minimumCapacity: capacity)
+        var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: capacity)
 
         let range: Swift.Range<Index<Int>> = Index<Int>.zero..<Index<Int>.zero
         inline.copy(range: range, to: heap)

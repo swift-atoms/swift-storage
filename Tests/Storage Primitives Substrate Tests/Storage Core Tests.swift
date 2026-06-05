@@ -28,7 +28,7 @@ struct StorageCoreTests {
 
     @Test
     func `Storage Heap type exists`() throws {
-        let _: Storage<Int>.Heap.Type = Storage<Int>.Heap.self
+        let _: Storage<Int>.Contiguous<Memory.Heap<Int>>.Type = Storage<Int>.Contiguous<Memory.Heap<Int>>.self
     }
 
     @Test
@@ -56,7 +56,7 @@ struct StorageCoreTests {
     @Test
     func `Heap leaf Header type exists`() throws {
         // Post-split: the header (and its ledger) live on the Memory.Heap LEAF —
-        // Storage<E>.Heap is the Contiguous<Memory.Heap<E>> typealias and the
+        // Storage<E>.Contiguous<Memory.Heap<E>> is the Contiguous<Memory.Heap<E>> typealias and the
         // discipline carries no header of its own (storage-memory-split.md §3).
         let _: Memory.Heap<Int>.Header.Type = Memory.Heap<Int>.Header.self
     }

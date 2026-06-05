@@ -14,9 +14,9 @@ import Storage_Primitives_Test_Support
 import Testing
 
 /// Copy-on-write value-semantics tests for the conditionally-`Copyable`
-/// `Storage.Heap` (the stdlib `Array` model — wave 4).
+/// `Storage.Contiguous<Memory.Heap>` (the stdlib `Array` model — wave 4).
 ///
-/// `Storage.Heap` is `Copyable` when `Element: Copyable`; a value-copy shares the
+/// `Storage.Contiguous<Memory.Heap>` is `Copyable` when `Element: Copyable`; a value-copy shares the
 /// backing `Buffer` (a class) shallowly, and internal copy-on-write restores value
 /// semantics: the first mutation of a shared Heap copies the initialized elements
 /// into a fresh buffer, leaving the other copy untouched.
@@ -32,7 +32,7 @@ struct StorageHeapCoWTests {
     /// before the move.
     @Test
     func `value copy then mutate copy leaves original unchanged`() throws {
-        var a = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(8))
+        var a = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(8))
         try a.initialize.next(to: 42)
         #expect(a.initialization.count == Index<Int>.Count(1))
 
@@ -58,7 +58,7 @@ struct StorageHeapCoWTests {
     /// In-place slot mutation on a copy (via append) must not perturb the original.
     @Test
     func `appending to a copy does not grow the original`() throws {
-        var a = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(8))
+        var a = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(8))
         try a.initialize.next(to: 100)
 
         var b = a
@@ -88,7 +88,7 @@ struct StorageHeapCoWTests {
     /// a fresh, unique buffer.
     @Test
     func `plain copy is deferred; copy happens on mutation`() throws {
-        var a = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(8))
+        var a = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(8))
         try a.initialize.next(to: 7)
 
         // Before any copy, `a` solely owns its buffer.
@@ -116,7 +116,7 @@ struct StorageHeapCoWTests {
     /// exactly once when a shared buffer is made unique.
     @Test
     func `ensureUnique reports whether a copy was made`() throws {
-        var a = Storage<Int>.Heap.create(minimumCapacity: Index<Int>.Count(4))
+        var a = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: Index<Int>.Count(4))
         try a.initialize.next(to: 1)
 
         // Sole owner — no copy needed.
@@ -153,7 +153,7 @@ struct StorageHeapCoWTests {
         unsafe Tracker.deinitCount = 0
 
         do {
-            var a = Storage<Tracker>.Heap.create(minimumCapacity: Index<Tracker>.Count(4))
+            var a = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: Index<Tracker>.Count(4))
             try a.initialize.next(to: Tracker(id: 1))
 
             var b = a

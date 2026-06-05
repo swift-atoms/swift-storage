@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 import Finite_Bounded_Primitives
+import Memory_Heap_Primitives
+import Storage_Contiguous_Primitives
 import Storage_Heap_Primitives
 import Storage_Inline_Primitives
 import Storage_Primitives_Test_Support
@@ -416,7 +418,7 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `move entire capacity to heap`() {
             var inline = Storage<Int>.Inline<8>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
 
             // Fill completely
             for i: Index<Int>.Bounded<8> in [0, 1, 2, 3, 4, 5, 6, 7] {
@@ -441,7 +443,7 @@ struct StorageInlineEdgeCaseTests {
         @Test
         func `move single element from last slot`() {
             var inline = Storage<Int>.Inline<8>()
-            var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+            var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
 
             inline.initialize(to: 999, at: 7)
             #expect(inline.initialization.count == 1)
@@ -469,7 +471,7 @@ struct StorageInlineEdgeCaseTests {
             unsafe Tracker.instances = 0
 
             var inline = Storage<Tracker>.Inline<4>()
-            var heap = Storage<Tracker>.Heap.create(minimumCapacity: 4)
+            var heap = Storage<Tracker>.Contiguous<Memory.Heap<Tracker>>.create(minimumCapacity: 4)
 
             inline.initialize(to: Tracker(100), at: 0)
             inline.initialize(to: Tracker(200), at: 1)
