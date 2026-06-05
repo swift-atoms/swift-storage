@@ -94,3 +94,10 @@ extension Storage.Small: Span.`Protocol` where Element: ~Copyable {
         }
     }
 }
+
+// MARK: - Span.Mutable.Protocol Conformance
+
+/// `Storage.Small` vends `var mutableSpan` (above), so it is a mutable-span store —
+/// the requirement a growable `Buffer.Linear`/`Buffer.Ring` forwards through for
+/// `mutableSpan()` over an arbitrary substrate.
+extension Storage.Small: Span.Mutable.`Protocol` where Element: ~Copyable {}
