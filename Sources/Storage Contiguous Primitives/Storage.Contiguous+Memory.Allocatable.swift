@@ -10,20 +10,20 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Memory_Allocatable_Primitives
 public import Storage_Primitive
-public import Store_Creatable_Primitives
 
-// MARK: - Store.Creatable.Protocol conformance (generic — any creatable leaf)
+// MARK: - Memory.Allocatable forwarding (conditional — where the substrate allocates)
 //
-// The discipline-side creatable conformance for `Storage.Contiguous` over ANY creatable leaf
-// (e.g. `Memory.Small`): `create` delegates the sized-allocation DECISION to the leaf; the
-// relocation forwards through the leaf's neutral-seam relocation — the discipline owns the MOVE
-// (it has the count; it forwards with it). The heap-backed `Storage.Contiguous<Memory.Heap>` keeps
-// its specialized bulk conformance (`Storage.Contiguous+Store.Creatable.Protocol.swift`);
-// `Memory.Heap` itself is not `Store.Creatable`, so the two conformances are disjoint.
+// `Storage.Contiguous` forwards sized-allocation and relocation to its substrate leaf when the
+// leaf is `Memory.Allocatable.`Protocol`` (Memory.Heap bulk, Memory.Small element-wise — each
+// witnessed statically by the concrete leaf, no override). These are CONDITIONAL forwarding
+// methods, NOT a conformance: the buffer disciplines reach them via
+// `where S == Storage.Contiguous<M>, M: Memory.Allocatable.`Protocol``. The discipline owns the
+// MOVE (it has the count); the leaf's ledger is synced by the caller.
 
-extension Storage.Contiguous: Store.Creatable.`Protocol`
-where Element: ~Copyable, Substrate: Store.Creatable.`Protocol`, Substrate: ~Copyable {
+extension Storage.Contiguous
+where Element: ~Copyable, Substrate: Memory.Allocatable.`Protocol`, Substrate: ~Copyable {
 
     /// Allocates a `Storage.Contiguous` sized for at least `minimumCapacity` by delegating the
     /// allocation DECISION to the substrate leaf, then lifting it into the contiguous discipline.

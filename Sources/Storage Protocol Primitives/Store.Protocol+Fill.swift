@@ -20,7 +20,7 @@ public import Store_Protocol_Primitives
 // replicates a value into uninitialized slots, so it requires `Element: Copyable`
 // (a `~Copyable` element cannot be copied into multiple slots).
 
-extension __StorageProtocol where Self: ~Copyable, Element: Copyable {
+extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
     /// Initializes every slot in `range` to a copy of `element`.
     ///

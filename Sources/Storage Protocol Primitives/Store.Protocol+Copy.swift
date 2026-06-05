@@ -21,7 +21,7 @@ public import Store_Protocol_Primitives
 // stay initialized) and read via the `subscript` getter, the destination's slots
 // are filled via `initialize(at:to:)`. Built only on the typed primitives.
 
-extension __StorageProtocol where Self: ~Copyable, Element: Copyable {
+extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
     /// Copies the elements in `[0, count)` of `self` into the same slots of `destination`.
     ///
@@ -35,7 +35,7 @@ extension __StorageProtocol where Self: ~Copyable, Element: Copyable {
     ///   capacity; the corresponding slots of `destination` are uninitialized and
     ///   within `destination.capacity`.
     @inlinable
-    public func copy<Destination: __StorageProtocol & ~Copyable>(
+    public func copy<Destination: __StoreProtocol & ~Copyable>(
         to destination: inout Destination,
         count: Index<Element>.Count? = nil
     ) where Destination.Element == Element {

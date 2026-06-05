@@ -25,7 +25,7 @@ public import Store_Protocol_Primitives
 //   protocol exposes only `capacity`; a caller tracking a logical count below
 //   capacity iterates its own live range instead.
 
-extension __StorageProtocol where Self: ~Copyable {
+extension __StoreProtocol where Self: ~Copyable {
 
     /// Calls `body` with a borrow of each element in `[0, capacity)`, in order.
     ///
@@ -90,7 +90,7 @@ extension __StorageProtocol where Self: ~Copyable {
     }
 }
 
-extension __StorageProtocol where Self: ~Copyable, Element: Equatable {
+extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
 
     /// Returns `true` if any element in `[0, capacity)` equals `element`.
     ///

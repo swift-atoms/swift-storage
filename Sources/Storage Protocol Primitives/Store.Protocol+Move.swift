@@ -22,7 +22,7 @@ public import Store_Protocol_Primitives
 // element-wise (correct for `~Copyable`); a bulk `BitwiseCopyable` path is
 // deferred to a later benchmark (plan §2 / §10) and intentionally NOT added here.
 
-extension __StorageProtocol where Self: ~Copyable {
+extension __StoreProtocol where Self: ~Copyable {
 
     /// Exchanges the initialized elements at `i` and `j` in place.
     ///

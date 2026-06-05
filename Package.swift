@@ -21,7 +21,6 @@ let package = Package(
         .library(name: "Storage Protocol Primitives", targets: ["Storage Protocol Primitives"]),
 
         // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
-        .library(name: "Storage Heap Primitives", targets: ["Storage Heap Primitives"]),
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
         // MARK: - Umbrella
@@ -93,8 +92,8 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Protocol (discipline contract — post-split: the pure marker refinement
-        // of Store.Tracked.Protocol; consumer-visible requirement set unchanged)
+        // MARK: - Protocol (Cleave-5: marker dissolved; this target now hosts the
+        // single-region lifecycle derivations as `extension Store.Protocol` — pure 4-op seam)
         .target(
             name: "Storage Protocol Primitives",
             dependencies: [
@@ -102,22 +101,6 @@ let package = Package(
                 "Storage Initialization Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
-            ]
-        ),
-
-        // MARK: - Heap (canonical heap-backed storage form)
-        .target(
-            name: "Storage Heap Primitives",
-            dependencies: [
-                "Storage Primitive",
-                "Storage Error Primitives",
-                "Storage Initialization Primitives",
-                "Storage Accessor Primitives",
-                "Storage Contiguous Primitives",
-                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
             ]
         ),
 
@@ -131,8 +114,8 @@ let package = Package(
                 "Storage Initialization Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Tracked Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Creatable Primitives", package: "swift-store-primitives"),
+                .product(name: "Memory Tracked Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Allocatable Primitives", package: "swift-memory-primitives"),
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Memory Inline Primitives", package: "swift-memory-inline-primitives"),
@@ -152,7 +135,6 @@ let package = Package(
                 "Storage Field Primitives",
                 "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
-                "Storage Heap Primitives",
                 "Storage Contiguous Primitives",
             ]
         ),
@@ -182,7 +164,7 @@ let package = Package(
         .testTarget(
             name: "Storage Heap Primitives Tests",
             dependencies: [
-                "Storage Heap Primitives",
+                "Storage Contiguous Primitives",
                 "Storage Primitives Test Support",
             ]
         ),
@@ -197,7 +179,6 @@ let package = Package(
             name: "Storage Contiguous Primitives Tests",
             dependencies: [
                 "Storage Contiguous Primitives",
-                "Storage Heap Primitives",
                 "Storage Primitives Test Support",
             ]
         ),

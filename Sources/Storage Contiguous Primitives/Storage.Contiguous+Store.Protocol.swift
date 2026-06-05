@@ -10,13 +10,12 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Memory_Tracked_Primitives
 public import Storage_Initialization_Primitives
 public import Storage_Primitive
-public import Storage_Protocol_Primitives
 public import Store_Protocol_Primitives
-public import Store_Tracked_Primitives
 
-// MARK: - Storage.Protocol Witnesses (forwarded to the substrate)
+// MARK: - Store.Protocol Witnesses (forwarded to the substrate)
 
 extension Storage.Contiguous where Element: ~Copyable, Substrate: ~Copyable {
     /// Total slot capacity — the substrate's capacity, unchanged.
@@ -71,10 +70,10 @@ extension Storage.Contiguous where Element: ~Copyable, Substrate: ~Copyable {
 // MARK: - The ledger forwarding (substrate-forwarding witness — the parked
 // A2-addendum design, realized by the storage/memory split)
 
-extension Storage.Contiguous where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {
+extension Storage.Contiguous where Element: ~Copyable, Substrate: Memory.Tracked.`Protocol`, Substrate: ~Copyable {
     /// The substrate's own ledger, forwarded.
     ///
-    /// Available exactly when the substrate TRACKS (`Store.Tracked.`Protocol``):
+    /// Available exactly when the substrate TRACKS (`Memory.Tracked.`Protocol``):
     /// the truth lives at the leaf — its backing's teardown honors what is
     /// written here. The discipline stores NO ledger of its own (and carries no
     /// `deinit` — the `bd04f32` wall is respected by construction).
@@ -92,12 +91,12 @@ extension Storage.Contiguous where Element: ~Copyable, Substrate: Store.Tracked.
     }
 }
 
-// MARK: - The layered conditional conformances
-//   Store.Protocol          — unconditional (any substrate)
-//   Store.Tracked.Protocol  — where the substrate tracks
-//   Storage.Protocol        — where the substrate tracks (the single-region marker;
-//                             the dense-discipline gate)
+// MARK: - Conformance
+//   Store.Protocol — unconditional (any substrate). The `initialization` ledger
+//   above is a CONDITIONAL accessor (where Substrate: Memory.Tracked.`Protocol`),
+//   NOT a conformance: Storage.Contiguous forwards the leaf's ledger but does not
+//   itself carry the tracked-store marker (Cleave-5 D1-B — the marker narrows to
+//   the leaves). The dissolved Storage.Protocol single-region marker is gone:
+//   Storage.Contiguous<M> IS single-region by construction.
 
 extension Storage.Contiguous: Store.`Protocol` where Element: ~Copyable, Substrate: ~Copyable {}
-extension Storage.Contiguous: Store.Tracked.`Protocol` where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {}
-extension Storage.Contiguous: Storage<Element>.`Protocol` where Element: ~Copyable, Substrate: Store.Tracked.`Protocol`, Substrate: ~Copyable {}

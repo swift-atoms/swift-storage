@@ -17,13 +17,13 @@ public import Store_Protocol_Primitives
 // MARK: - Generic deinitialize derivations
 
 // Written ONCE over any single-region `Storage.`Protocol`` conformer
-// (`__StorageProtocol` is the hoisted name per [API-IMPL-009]). The bodies build
+// (`__StoreProtocol` is the hoisted name per [API-IMPL-009]). The bodies build
 // only on the typed primitives `move(at:)` / `subscript` / `capacity` — never on
 // `pointer(at:)` — so they survive the de-pointer phase (plan §6) unchanged. Each
 // deinitialization is `move`-then-drop: moving an element out of its slot and
 // discarding it deinitializes the slot for a `~Copyable` element.
 
-extension __StorageProtocol where Self: ~Copyable {
+extension __StoreProtocol where Self: ~Copyable {
 
     /// Deinitializes the element at `slot`, leaving it uninitialized.
     ///
