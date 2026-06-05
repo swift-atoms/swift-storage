@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Memory_Heap_Primitives
+public import Storage_Contiguous_Primitives
 public import Storage_Heap_Primitives
 public import Storage_Initialization_Primitives
 public import Storage_Primitive
@@ -30,7 +32,7 @@ extension Storage.Inline where Element: Copyable {
     @inlinable
     public func copy(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage.Heap
+        to destination: borrowing Storage.Contiguous<Memory.Heap<Element>>
     ) {
         guard !range.isEmpty else { return }
         unsafe destination.pointer(at: .zero)
@@ -47,7 +49,7 @@ extension Storage.Inline where Element: Copyable {
     /// - Precondition: Storage must be using linear discipline (contiguous from zero).
     /// - Note: Caller must update destination's initialization state.
     @inlinable
-    public func copy(to destination: borrowing Storage.Heap) {
+    public func copy(to destination: borrowing Storage.Contiguous<Memory.Heap<Element>>) {
         let count = initialization.count
         guard count > .zero else { return }
         let range: Swift.Range<Index<Element>> = .zero..<count.map(Ordinal.init)

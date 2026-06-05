@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Index_Primitives
+public import Memory_Heap_Primitives
+public import Storage_Contiguous_Primitives
 internal import Property_Primitives
 public import Storage_Accessor_Primitives
 public import Storage_Initialization_Primitives
@@ -57,9 +59,9 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public func callAsFunction<Element: Copyable>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap,
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>,
         at offset: Index<Element>
-    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Heap {
+    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         guard !range.isEmpty else { return }
         unsafe destination.pointer(at: offset)
             .initialize(from: base.value.pointer(at: range.lowerBound), count: range.count)
@@ -75,8 +77,8 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public func callAsFunction<Element: Copyable>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap
-    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Heap {
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>
+    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         self(range: range, to: destination, at: .zero)
     }
 
@@ -86,10 +88,10 @@ extension Property.Inout where Base: ~Copyable {
     ///
     /// - Returns: A new storage instance with copied elements.
     @inlinable
-    public func callAsFunction<Element: Copyable>() -> Storage<Element>.Heap
-    where Tag == Storage<Element>.Copy, Base == Storage<Element>.Heap {
+    public func callAsFunction<Element: Copyable>() -> Storage<Element>.Contiguous<Memory.Heap<Element>>
+    where Tag == Storage<Element>.Copy, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         let count = base.value.initialization.count
-        let new = Storage<Element>.Heap.create(minimumCapacity: count)
+        let new = Storage<Element>.Contiguous<Memory.Heap<Element>>.create(minimumCapacity: count)
         new.initialization = .linear(count: count)
         self(to: new)
         return new
@@ -103,8 +105,8 @@ extension Property.Inout where Base: ~Copyable {
     /// - Precondition: Destination must have sufficient capacity.
     @inlinable
     public func callAsFunction<Element: Copyable>(
-        to destination: borrowing Storage<Element>.Heap
-    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Heap {
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>
+    ) where Tag == Storage<Element>.Copy, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         base.value.initialization.linearize { range, offset in
             self(range: range, to: destination, at: offset)
         }

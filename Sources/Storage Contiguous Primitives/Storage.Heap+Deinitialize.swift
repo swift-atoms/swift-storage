@@ -73,14 +73,14 @@ extension Property.Inout where Base: ~Copyable {
     /// (`.empty`, `.linear`, `.one`, `.two`) and resets to `.empty`.
     ///
     /// ```swift
-    /// var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+    /// var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
     /// heap.initialize.next(to: 1)
     /// heap.initialize.next(to: 2)
     /// heap.deinitialize.all()  // Elements deinitialized, state is now .empty
     /// ```
     @inlinable
     public mutating func all<Element: ~Copyable>()
-    where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
+    where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         base.value.initialization.forEach { range in
             guard !range.isEmpty else { return }
             unsafe base.value.pointer(at: range.lowerBound).deinitialize(count: range.count)
@@ -98,7 +98,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable>(
         range: Swift.Range<Index<Element>>
-    ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
+    ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         guard !range.isEmpty else { return }
         unsafe base.value.pointer(at: range.lowerBound).deinitialize(count: range.count)
     }
@@ -111,7 +111,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable>(
         at slot: Index<Element>
-    ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Heap {
+    ) where Tag == Storage<Element>.Deinitialize, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         unsafe base.value.pointer(at: slot).deinitialize(count: .one)
     }
 }

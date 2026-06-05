@@ -18,10 +18,10 @@ public import Storage_Primitive
 // The concrete mutable-span capability (#12b) on the COMPOSED type, relocated
 // by the storage/memory split: the leaf (`Memory.Heap`) carries its own
 // conformance; this pinned conditional conformance restores the capability to
-// `Storage<E>.Heap` (= `Contiguous<Memory.Heap<E>>`). Both witnesses are
+// `Storage<E>.Contiguous<Memory.Heap<E>>` (= `Contiguous<Memory.Heap<E>>`). Both witnesses are
 // present at this pin — `span` via the generic Substrate-vends-Span
 // conditional conformance, `mutableSpan` via the pinned forwarder
-// (Storage.Heap+Span.swift) — and the chain is concrete end-to-end, which is
+// (Storage.Contiguous<Memory.Heap<Element>>+Span.swift) — and the chain is concrete end-to-end, which is
 // what keeps it OUTSIDE the structural no-generic-`mutableSpan` wall (the
 // MutableSpan-never-a-generic-seam gate; a `Substrate: Span.Mutable`-generic
 // conformance would be exactly the walled form-G shape and is deliberately

@@ -105,7 +105,7 @@ extension Storage.Inline where Element: ~Copyable {
     /// requirement (the protocol member was removed; the surface is the typed
     /// `subscript`/`initialize`/`move`). The bounded overloads in
     /// `Storage.Inline ~Copyable.swift` carry a compile-time bound; this unbounded
-    /// form is the shared escape-hatch entry point alongside `Storage.Heap`.
+    /// form is the shared escape-hatch entry point alongside `Storage.Contiguous<Memory.Heap<Element>>`.
     ///
     /// - Note: Retained for the `Buffer.{Ring,Linear}.Small._modify` heap-spill
     ///   sites (blocked by the ~Copyable-enum-payload mutation language limitation),

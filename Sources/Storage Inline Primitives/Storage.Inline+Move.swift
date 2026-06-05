@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Bit_Vector_Static_Primitives
+public import Memory_Heap_Primitives
+public import Storage_Contiguous_Primitives
 public import Finite_Bounded_Primitives
 public import Index_Primitives
 internal import Property_Primitives
@@ -61,7 +63,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable, let count: Int>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap,
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>,
         at offset: Index<Element>
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<count> {
         guard !range.isEmpty else { return }
@@ -88,7 +90,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable, let count: Int>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>
     ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Inline<count> {
         self(range: range, to: destination, at: .zero)
     }

@@ -79,7 +79,7 @@ extension Property.Inout where Base: ~Copyable {
     public mutating func callAsFunction<Element: ~Copyable>(
         to element: consuming Element,
         at slot: Index<Element>
-    ) where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Heap {
+    ) where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         unsafe base.value.pointer(at: slot).initialize(to: element)
     }
 }
@@ -94,7 +94,7 @@ extension Property.Inout where Base: ~Copyable {
     /// automatically.
     ///
     /// ```swift
-    /// var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+    /// var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
     /// try heap.initialize.next(to: 1)  // Stored at slot 0
     /// try heap.initialize.next(to: 2)  // Stored at slot 1
     /// ```
@@ -107,7 +107,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     @discardableResult
     public mutating func next<Element: ~Copyable>(to element: consuming Element) throws(Storage<Element>.Error) -> Index<Element>
-    where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Heap {
+    where Tag == Storage<Element>.Initialize, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         let currentCount = base.value.initialization.count
         let slot = currentCount.map(Ordinal.init)
         guard slot < base.value.capacity else { throw .capacityExceeded }

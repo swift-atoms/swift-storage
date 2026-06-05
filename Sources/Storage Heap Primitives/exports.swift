@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 // The storage/memory split SHIM (storage-memory-split.md, seat-ratified
-// 2026-06-04): `Storage<E>.Heap` is now the typealias
+// 2026-06-04): `Storage<E>.Contiguous<Memory.Heap<E>>` is now the typealias
 // `Storage<E>.Contiguous<Memory.Heap<E>>` (declared in Storage Contiguous
 // Primitives); the heap MECHANICS live in swift-memory-heap-primitives.
 // This target keeps `import Storage_Heap_Primitives` source-stable by

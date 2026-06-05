@@ -16,7 +16,7 @@ public import Storage_Primitive
 
 // MARK: - Pinned heap-composition surface (~Copyable)
 //
-// The fused Storage.Heap's concrete surface, re-homed as pinned forwarders on
+// The fused Storage.Contiguous<Memory.Heap<Element>>'s concrete surface, re-homed as pinned forwarders on
 // the composed type. `capacity`, the element seam, and `initialization` come
 // GENERICALLY from Storage.Contiguous (+ the Tracked-conditional witness);
 // only the leaf-concrete members need the pin.
@@ -47,12 +47,12 @@ extension Storage.Contiguous where Element: ~Copyable, Substrate == Memory.Heap<
     /// The initialization ledger — pinned NONMUTATING shadow for the heap
     /// composition.
     ///
-    /// The fused `Storage.Heap`'s setter was `nonmutating` (it writes through
+    /// The fused `Storage.Contiguous<Memory.Heap<Element>>`'s setter was `nonmutating` (it writes through
     /// the backing class reference), so `let`-bound storages could arm the
     /// ledger. The generic Tracked-conditional witness must be `mutating`
     /// (a generic substrate's setter is); this more-constrained shadow
     /// restores the fused type's mutability posture at every concrete
-    /// `Storage<E>.Heap` site — overload resolution prefers it — while the
+    /// `Storage<E>.Contiguous<Memory.Heap<E>>` site — overload resolution prefers it — while the
     /// generic witness continues to serve `S: Storage.`Protocol`` contexts
     /// (where the leaf's own nonmutating setter makes the mutating call
     /// equally sound).

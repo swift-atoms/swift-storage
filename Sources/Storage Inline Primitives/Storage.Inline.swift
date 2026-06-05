@@ -24,7 +24,7 @@ extension Storage where Element: ~Copyable {
     /// ## Capacity Constraint
     ///
     /// `Storage.Inline` supports capacities from 0 to 256. For larger capacities,
-    /// use `Storage.Heap` instead.
+    /// use `Storage.Contiguous<Memory.Heap<Element>>` instead.
     ///
     /// ## Layout
     ///
@@ -116,7 +116,7 @@ extension Storage where Element: ~Copyable {
         /// - Precondition: `count` must be in range `0...256`.
         @inlinable
         public init() {
-            precondition(count <= 256, "Storage.Inline capacity must be ≤256; use Storage.Heap for larger capacities")
+            precondition(count <= 256, "Storage.Inline capacity must be ≤256; use Storage.Contiguous<Memory.Heap<Element>> for larger capacities")
             _slots = Bit.Vector.Static<4>()
             _storage = _Raw()
         }

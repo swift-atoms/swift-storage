@@ -63,7 +63,7 @@ extension Storage where Element: ~Copyable {
 // MARK: - Conditional Copyable (NEW — the storage/memory split)
 
 /// `Storage.Contiguous` is `Copyable` exactly when its substrate is — so the
-/// composed `Storage<E>.Heap` (= `Contiguous<Memory.Heap<E>>`) keeps the fused
+/// composed `Storage<E>.Contiguous<Memory.Heap<E>>` (= `Contiguous<Memory.Heap<E>>`) keeps the fused
 /// type's `Copyable where Element: Copyable` law through the leaf's own
 /// conditional Copyability. Same-file per [COPY-FIX-004]. No `deinit` anywhere
 /// on this type — conditionally-Copyable generic structs cannot carry one (the

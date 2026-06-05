@@ -78,7 +78,7 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable>(
         at slot: Index<Element>
-    ) -> Element where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
+    ) -> Element where Tag == Storage<Element>.Move, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         return unsafe base.value.pointer(at: slot).move()
     }
 
@@ -98,9 +98,9 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap,
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>,
         at offset: Index<Element>
-    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
+    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         guard !range.isEmpty else { return }
         unsafe destination.pointer(at: offset)
             .move.initialize(from: base.value.pointer(at: range.lowerBound), count: range.count)
@@ -120,8 +120,8 @@ extension Property.Inout where Base: ~Copyable {
     @inlinable
     public mutating func callAsFunction<Element: ~Copyable>(
         range: Swift.Range<Index<Element>>,
-        to destination: borrowing Storage<Element>.Heap
-    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
+        to destination: borrowing Storage<Element>.Contiguous<Memory.Heap<Element>>
+    ) where Tag == Storage<Element>.Move, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         self(range: range, to: destination, at: .zero)
     }
 
@@ -131,7 +131,7 @@ extension Property.Inout where Base: ~Copyable {
     /// from the end. The initialization state is updated automatically.
     ///
     /// ```swift
-    /// var heap = Storage<Int>.Heap.create(minimumCapacity: 8)
+    /// var heap = Storage<Int>.Contiguous<Memory.Heap<Int>>.create(minimumCapacity: 8)
     /// try heap.initialize.next(to: 1)
     /// try heap.initialize.next(to: 2)
     /// let last = try heap.move.last()  // Returns 2, count becomes 1
@@ -141,7 +141,7 @@ extension Property.Inout where Base: ~Copyable {
     /// - Throws: ``Storage/Error/empty`` if storage has no initialized elements.
     @inlinable
     public mutating func last<Element: ~Copyable>() throws(Storage<Element>.Error) -> Element
-    where Tag == Storage<Element>.Move, Base == Storage<Element>.Heap {
+    where Tag == Storage<Element>.Move, Base == Storage<Element>.Contiguous<Memory.Heap<Element>> {
         let currentCount = base.value.initialization.count
         guard currentCount > .zero else { throw .empty }
         let newCount = currentCount.subtract.saturating(.one)
