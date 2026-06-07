@@ -19,7 +19,6 @@
 /// | Lift any tracked element store into the Storage tier | `Storage.Contiguous<M>` | **Substrate-forwarding** — the ledger is the substrate's own; `Storage.`Protocol`` exactly when `M: Store.Tracked.`Protocol`` |
 /// | Stack-allocated, fixed capacity ≤256 | `Storage.Inline` | **Auto-tracked** — per-slot bit-vector tracking; consumer responsible for cleanup |
 /// | Dual-array with consumer-defined metadata | `Storage.Split` | **Metadata-driven** — no tracking; consumer interprets lane metadata to determine element validity |
-/// | Pool allocation with per-slot reuse | `Storage.Pool` | **Bitmap-tracked** — per-slot bit-vector tracking with automatic cleanup in `deinit` |
 ///
 /// `Storage.Contiguous<Memory.Heap<Element>>` is, post the storage/memory split, the composition of the
 /// `Storage.Contiguous` discipline over the `Memory.Heap` allocation-strategy
