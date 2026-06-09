@@ -20,8 +20,11 @@ public import Store_Initialization_Primitives
 
 // MARK: - Storage.Contiguous (the dense column) — declared via the cross-module nested-product
 // pattern (6.3.2 mechanic #1: the explicit `where Allocation: ~Copyable` keeps `Allocation`
-// non-`Copyable`; the namespace's `& Memory.Region` bound is inherited). The struct + its deinit
-// oracle live in THIS module so the rich extensions reach the stored properties directly.
+// non-`Copyable`). The struct + its deinit oracle live in THIS module so the rich extensions reach
+// the stored properties directly. The typed base is **cached** (reference SHAPE) — read once under a
+// `Memory.Region` (or pool) constraint at construction — so the deinit oracle needs no capability
+// bound on the carrier, leaving `Storage<Allocation: ~Copyable>` free to also carry `Generational`
+// over a `Pool` (whose `capacity` is a slot count, so it cannot conform `Memory.Region`).
 
 extension Storage where Allocation: ~Copyable {
     /// Contiguous single-plane typed storage — the dense column of the tower.
@@ -38,6 +41,12 @@ extension Storage where Allocation: ~Copyable {
         @usableFromInline
         internal var allocation: Allocation
 
+        /// The cached typed base — the **allocator-raw-slot → Storage-typed-Index** lift, read once at
+        /// construction (the allocation's base is stable for its lifetime). Caching keeps the deinit
+        /// oracle free of a capability bound on the carrier.
+        @usableFromInline
+        internal var _base: UnsafeMutablePointer<Element>
+
         /// Total slot capacity in `Element` units.
         @usableFromInline
         internal var _capacity: Index<Element>.Count
@@ -46,14 +55,16 @@ extension Storage where Allocation: ~Copyable {
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
 
-        /// Adopts an allocation as `capacity` typed slots with the given initialization ledger.
+        /// Designated initializer — adopts an allocation and its already-resolved typed `base`.
         @inlinable
         public init(
             allocation: consuming Allocation,
+            base: UnsafeMutablePointer<Element>,
             capacity: Index<Element>.Count,
             initialization: Store.Initialization<Element> = .empty
         ) {
             self.allocation = allocation
+            self._base = base
             self._capacity = capacity
             self._initialization = initialization
         }
@@ -65,23 +76,31 @@ extension Storage where Allocation: ~Copyable {
         deinit {
             _initialization.forEach { range in
                 guard !range.isEmpty else { return }
-                let base = unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
-                unsafe (base + Index<Element>.Offset(fromZero: range.lowerBound)).deinitialize(count: range.count)
+                unsafe (_base + Index<Element>.Offset(fromZero: range.lowerBound))
+                    .deinitialize(count: range.count)
             }
         }
     }
 }
 
-// MARK: - Typed base / slot pointer (the allocator-raw-bytes → Storage-typed lift)
+// MARK: - Region-backed construction (resolves + caches the typed base)
+
+extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
+    /// Adopts a `Memory.Region` allocation as `capacity` typed slots, resolving its base once.
+    @inlinable
+    public init(
+        allocation: consuming Allocation,
+        capacity: Index<Element>.Count,
+        initialization: Store.Initialization<Element> = .empty
+    ) {
+        let base = unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
+        self.init(allocation: allocation, base: base, capacity: capacity, initialization: initialization)
+    }
+}
+
+// MARK: - Typed slot pointer
 
 extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
-    /// The typed base pointer — Storage lifts the allocation's raw bytes (`Memory.Region.base`) into a
-    /// `UnsafeMutablePointer<Element>`. This is the **allocator-raw-slot → Storage-typed-Index** lift.
-    @inlinable
-    internal var _base: UnsafeMutablePointer<Element> {
-        unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
-    }
-
     /// The typed pointer to a physical slot.
     @inlinable
     internal func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {

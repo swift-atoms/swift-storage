@@ -50,10 +50,7 @@ let package = Package(
         // primary body (6.3.2 mechanic #1: the nested deinit-bearing product is declared here).
         .target(
             name: "Storage Primitive",
-            dependencies: [
-                .product(name: "Memory Primitive", package: "swift-memory-primitives"),
-                .product(name: "Memory Region Primitives", package: "swift-memory-primitives"),
-            ]
+            dependencies: []
         ),
 
         // MARK: - Protocol (Cleave-5: marker dissolved; hosts the single-region lifecycle

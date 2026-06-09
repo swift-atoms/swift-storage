@@ -9,16 +9,20 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Memory_Primitive
-public import Memory_Region_Primitives
-
 /// The Storage tier of the five-layer tower (Memory → Allocator → **Storage** → Buffer → ADT).
 ///
 /// `Storage` is the carrier generic over the **`Allocation`** it sits on — an element-free raw byte
-/// region (`Memory.Allocator<Memory.Heap>.System`, `Memory.Allocator<Memory.Inline<n>>.System`, a
-/// `Pool`, …). **Typing begins here**: the allocation below is element-free; the nested storage
-/// disciplines lift its raw bytes into typed `Index<Element>` slots, hold the `Store.Initialization`
-/// ledger, and own the **deinit oracle** that destroys the live elements before the bytes are freed.
+/// region or slot allocator (`Memory.Allocator<Memory.Heap>.System`,
+/// `Memory.Allocator<Memory.Heap>.Pool`, …). **Typing begins here**: the allocation below is
+/// element-free; the nested storage disciplines lift its raw bytes into typed `Index<Element>` slots,
+/// hold the `Store.Initialization` ledger, and own the **deinit oracle** that destroys the live
+/// elements before the bytes are freed.
+///
+/// The carrier is bound only `~Copyable` (the reference SHAPE) — **not** `& Memory.Region` — so a
+/// slot allocator such as `Memory.Allocator<…>.Pool` (whose `capacity` means *slot count*, not byte
+/// capacity, and therefore cannot conform `Memory.Region`) is a valid `Allocation`. Each product
+/// adds its own capability constraint on its own extensions (`Memory.Region` for `Contiguous`, the
+/// pool slot API for `Generational`) and caches the typed base it reads there.
 ///
 /// The concrete storage disciplines are nested products, each Allocation-dependent and declared via
 /// the cross-module nested-product pattern (`extension Storage where Allocation: ~Copyable { … }`,
@@ -33,4 +37,4 @@ public import Memory_Region_Primitives
 /// `Storage Protocol Primitives` derivations), NOT under this generic carrier — nesting an
 /// Allocation-independent type here would make it phantom-generic over `Allocation` (the W1
 /// release-optimizer wall).
-public struct Storage<Allocation: ~Copyable & Memory.Region>: ~Copyable {}
+public struct Storage<Allocation: ~Copyable>: ~Copyable {}
