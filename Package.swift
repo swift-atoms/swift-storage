@@ -21,6 +21,9 @@ let package = Package(
         // MARK: - Canonical storage forms
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
+        // MARK: - Inline column (Store.Inline — Allocation-independent, on the Store namespace)
+        .library(name: "Store Inline Primitives", targets: ["Store Inline Primitives"]),
+
         // MARK: - Umbrella
         .library(name: "Storage Primitives", targets: ["Storage Primitives"]),
 
@@ -85,6 +88,19 @@ let package = Package(
             ]
         ),
 
+        // MARK: - Inline column (Store.Inline — fixed-capacity inline typed storage)
+        .target(
+            name: "Store Inline Primitives",
+            dependencies: [
+                .product(name: "Store Primitive", package: "swift-store-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Affine Primitives Standard Library Integration", package: "swift-affine-primitives"),
+                .product(name: "Ordinal Primitives Standard Library Integration", package: "swift-ordinal-primitives"),
+            ]
+        ),
+
         // MARK: - Umbrella
         .target(
             name: "Storage Primitives",
@@ -92,6 +108,7 @@ let package = Package(
                 "Storage Primitive",
                 "Storage Protocol Primitives",
                 "Storage Contiguous Primitives",
+                "Store Inline Primitives",
             ]
         ),
 
@@ -111,6 +128,12 @@ let package = Package(
             dependencies: [
                 "Storage Contiguous Primitives",
                 "Storage Primitives Test Support",
+            ]
+        ),
+        .testTarget(
+            name: "Store Inline Primitives Tests",
+            dependencies: [
+                "Store Inline Primitives",
             ]
         ),
     ],
