@@ -75,6 +75,42 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
             yield output
         }
     }
+
+    /// Invokes `body` with an `OutputSpan` over the uninitialized TAIL WINDOW
+    /// `[count, count + addingCapacity)` — the budgeted append seam: the span's `capacity` is
+    /// exactly `addingCapacity`, `isFull` fires when the budget is exhausted, and on both normal
+    /// and throwing exit the appended elements are committed into the ledger
+    /// (`.linear(count: count + appended)`).
+    ///
+    /// This is the windowed counterpart of the whole-region `outputSpan` accessor (the prior
+    /// `Memory.Heap.withOutputSpan(addingCapacity:)` contract, restored at the Storage tier):
+    /// a growable discipline (`Buffer.Linear`) grows first, then offers its initializer exactly
+    /// the budget it promised. The window MUST fit — the caller has already ensured capacity.
+    @inlinable
+    public mutating func withOutputSpan<R: ~Copyable, Failure: Swift.Error>(
+        addingCapacity budget: Index<Element>.Count,
+        _ body: (inout Swift.OutputSpan<Element>) throws(Failure) -> R
+    ) throws(Failure) -> R {
+        let frontier = Int(bitPattern: count)
+        let window = Int(bitPattern: budget)
+        precondition(
+            frontier + window <= Int(bitPattern: _capacity),
+            "Storage.Contiguous.withOutputSpan(addingCapacity:): window exceeds capacity"
+        )
+        let start = unsafe _base + frontier
+        var output = unsafe Swift.OutputSpan(
+            buffer: unsafe UnsafeMutableBufferPointer(start: start, count: window),
+            initializedCount: 0
+        )
+        defer {
+            let committed = unsafe output.finalize(
+                for: unsafe UnsafeMutableBufferPointer(start: start, count: window)
+            )
+            output = Swift.OutputSpan()
+            _initialization = .linear(count: Index<Element>.Count(UInt(frontier + committed)))
+        }
+        return try body(&output)
+    }
 }
 
 // MARK: - Span.`Protocol` / Span.Mutable.`Protocol` conformances

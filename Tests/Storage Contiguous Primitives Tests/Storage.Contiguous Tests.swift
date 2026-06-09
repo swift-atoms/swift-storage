@@ -125,6 +125,58 @@ struct StorageContiguousTests {
     }
 
     @Test
+    func withOutputSpanWindowsTheTailExactly() {
+        Probe.reset()
+        var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
+        s.initialize(at: 0, to: Item(1, value: 10))
+        var seenCapacity = -1
+        var seenIsFull = false
+        s.withOutputSpan(addingCapacity: Index<Item>.Count(2)) { span in
+            seenCapacity = span.capacity                // the budget, not the whole region
+            span.append(Item(2, value: 20))
+            span.append(Item(3, value: 30))
+            seenIsFull = span.isFull                    // budget exhausted
+        }
+        let cnt = s.count, v1 = s[1].value, v2 = s[2].value
+        #expect(seenCapacity == 2)
+        #expect(seenIsFull)
+        #expect(cnt == Index<Item>.Count(3))            // frontier + committed
+        #expect(v1 == 20)
+        #expect(v2 == 30)
+
+        var zeroCapacity = -1
+        var zeroIsFull = false
+        s.withOutputSpan(addingCapacity: .zero) { span in
+            zeroCapacity = span.capacity
+            zeroIsFull = span.isFull
+        }
+        let cntAfterZero = s.count
+        #expect(zeroCapacity == 0)
+        #expect(zeroIsFull)
+        #expect(cntAfterZero == Index<Item>.Count(3))
+    }
+
+    @Test
+    func withOutputSpanCommitsPartialAppendsOnThrow() {
+        Probe.reset()
+        enum Deliberate: Swift.Error { case thrown }
+        var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
+        var didThrow = false
+        do {
+            try s.withOutputSpan(addingCapacity: Index<Item>.Count(3)) { (span) throws(Deliberate) in
+                span.append(Item(1, value: 10))
+                throw Deliberate.thrown
+            }
+        } catch {
+            didThrow = true                             // expected — the append must still commit
+        }
+        let cnt = s.count, v0 = s[0].value
+        #expect(didThrow)
+        #expect(cnt == Index<Item>.Count(1))
+        #expect(v0 == 10)
+    }
+
+    @Test
     func teardownDestroysLivePrefixOnce() {
         Probe.reset()
         do {
