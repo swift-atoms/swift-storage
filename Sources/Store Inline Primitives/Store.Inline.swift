@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Store_Primitive
-public import Index_Primitives
+import Index_Primitives
 public import Store_Initialization_Primitives
 
 extension Store {

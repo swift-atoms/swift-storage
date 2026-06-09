@@ -102,10 +102,11 @@ struct StorageContiguousTests {
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.initialize(at: 0, to: Item(1, value: 10))
         s.initialize(at: 1, to: Item(2, value: 20))
-        var ms = s.mutableSpan
-        ms[0].value = 111
-        ms[1].bump()
-        _ = consume ms
+        do {
+            let ms = s.mutableSpan
+            ms[0].value = 111
+            ms[1].bump()
+        }
         let v0 = s[0].value, v1 = s[1].value
         #expect(v0 == 111)
         #expect(v1 == 21)

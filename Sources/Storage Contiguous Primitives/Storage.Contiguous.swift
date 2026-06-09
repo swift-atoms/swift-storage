@@ -35,6 +35,17 @@ extension Storage where Allocation: ~Copyable {
     /// conditional `Copyable where Element: Copyable` becomes the explicit `copy()` below; conditional
     /// `Sendable` is preserved (`@unchecked Sendable`). `Element` enters here because the allocation
     /// below is element-free (Body Authority clause 1).
+    ///
+    /// ## Safety Invariant
+    ///
+    /// Pointer-backed value type (`@safe` absorber per [MEM-SAFE-020]; disclosure per
+    /// [MEM-SAFE-025c]). `_base` is resolved ONCE from the owned allocation's stable region and
+    /// never outlives it: the struct is `~Copyable`, the allocation is a stored field, and the
+    /// deinit oracle destroys exactly the ledger-tracked live slots before the allocation frees
+    /// the bytes. Every typed access goes through the seam/span surfaces, which bound slots by
+    /// `_capacity`/the ledger; the raw-base designated init is the one adoption point and demands
+    /// an already-resolved base for this allocation.
+    @safe
     public struct Contiguous<Element: ~Copyable>: ~Copyable {
         /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>.System`). Owns the bytes;
         /// its own `deinit` frees the region after the oracle has destroyed the live elements.
@@ -64,7 +75,7 @@ extension Storage where Allocation: ~Copyable {
             initialization: Store.Initialization<Element> = .empty
         ) {
             self.allocation = allocation
-            self._base = base
+            unsafe self._base = base
             self._capacity = capacity
             self._initialization = initialization
         }
@@ -94,7 +105,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         initialization: Store.Initialization<Element> = .empty
     ) {
         let base = unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
-        self.init(allocation: allocation, base: base, capacity: capacity, initialization: initialization)
+        unsafe self.init(allocation: allocation, base: base, capacity: capacity, initialization: initialization)
     }
 }
 

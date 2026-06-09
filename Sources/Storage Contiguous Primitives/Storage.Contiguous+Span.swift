@@ -15,8 +15,8 @@
 // constraint is honored: Span / OutputSpan live around the Storage seam, never below the allocator.
 
 public import Index_Primitives
-public import Memory_Primitives_Standard_Library_Integration
 public import Store_Initialization_Primitives
+public import Span_Protocol_Primitives
 
 extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
     /// Safe, bounds-checked read access over the initialized prefix `[0, count)`.
@@ -74,5 +74,26 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
             }
             yield output
         }
+    }
+}
+
+// MARK: - Span.`Protocol` / Span.Mutable.`Protocol` conformances
+//
+// The Storage tier conforms the span capability protocols (the W2 deferral, realized for the W3
+// buffer consumer): the read `span` and the mutable `mutableSpan` properties above witness directly,
+// and the count-parameterized `mutableSpan(count:)` is the seam a growable discipline
+// (`Buffer.Linear`/`.Ring`) uses to vend a span bounded by its OWN header count rather than the
+// storage's tracked count (a count-method forwards through a constrained generic; the property does
+// not — Span.Mutable.`Protocol`'s structural gate).
+
+extension Storage.Contiguous: Span.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {}
+
+extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {
+    /// A mutable span over the first `count` initialized elements.
+    @_lifetime(&self)
+    @inlinable
+    public mutating func mutableSpan(count: Index<Element>.Count) -> Swift.MutableSpan<Element> {
+        let span = unsafe Swift.MutableSpan(_unsafeStart: _base, count: Int(bitPattern: count))
+        return unsafe _overrideLifetime(span, mutating: &self)
     }
 }
