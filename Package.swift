@@ -32,13 +32,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-primitives/swift-index-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-finite-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-affine-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-ordinal-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-range-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-bit-vector-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
         // Storage/memory split + the W2 allocator tier (element-free allocations).
         .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
