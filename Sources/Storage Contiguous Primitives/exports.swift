@@ -9,10 +9,12 @@
 //
 // ===----------------------------------------------------------------------===//
 
+// Re-export the namespace + the element-free allocator/heap tier + the seam/ledger, so a consumer
+// spelling `Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<Element>` gets every token by
+// importing this one module.
+
 @_exported public import Storage_Primitive
-@_exported public import Storage_Protocol_Primitives
 @_exported public import Store_Protocol_Primitives
+@_exported public import Store_Initialization_Primitives
+@_exported public import Memory_Allocator_Primitive
 @_exported public import Memory_Heap_Primitives
-@_exported public import Memory_Tracked_Primitives
-@_exported public import Memory_Allocatable_Primitives
-@_exported public import Memory_Unique_Primitives

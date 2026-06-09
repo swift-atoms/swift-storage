@@ -9,63 +9,148 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Storage_Initialization_Primitives
-public import Storage_Primitive
-public import Store_Protocol_Primitives
+public import Memory_Primitive
+public import Memory_Region_Primitives
+public import Memory_Address_Primitives
+public import Memory_Alignment_Primitives
+public import Memory_Allocator_Primitive
+public import Memory_Heap_Primitives
+public import Index_Primitives
+public import Store_Initialization_Primitives
 
-extension Storage where Element: ~Copyable {
-    /// Contiguous storage lifting an element-store substrate into the Storage tier.
+// MARK: - Storage.Contiguous (the dense column) — declared via the cross-module nested-product
+// pattern (6.3.2 mechanic #1: the explicit `where Allocation: ~Copyable` keeps `Allocation`
+// non-`Copyable`; the namespace's `& Memory.Region` bound is inherited). The struct + its deinit
+// oracle live in THIS module so the rich extensions reach the stored properties directly.
+
+extension Storage where Allocation: ~Copyable {
+    /// Contiguous single-plane typed storage — the dense column of the tower.
     ///
-    /// `Storage.Contiguous` is the trivial single-plane storage of the substitution
-    /// tower: it composes ONE element-store substrate (`Store.`Protocol``) and
-    /// forwards the four element-store operations to it unchanged. Its value is
-    /// positional — it lifts any substrate (a Memory-tier typed lens such as
-    /// `Memory.Contiguous`, or another store) into a `Storage.`Protocol``
-    /// conformer that the Buffer tier composes generically, without the
-    /// substrate having to know the Storage tier exists.
-    ///
-    /// ## Substitution tower position
-    ///
-    /// ```
-    /// Buffer.Ring<S>               (occupancy discipline)
-    ///     └─ S = Storage.Contiguous<M>   (typed slots, single contiguous plane)
-    ///            └─ M              (owned region: Memory-tier typed lens)
-    /// ```
-    ///
-    /// The generic cross-module mutate seam is element-level
-    /// (`Store.`Protocol``, CLCPM §12) — never `MutableSpan`, which cannot
-    /// cross a generic module boundary.
-    ///
-    /// ## Ownership
-    ///
-    /// `Storage.Contiguous` owns its substrate (`consuming` at init); the substrate's
-    /// own `deinit` releases the underlying region. Element lifecycle remains
-    /// the consumer's responsibility, exactly as on the substrate itself.
-    ///
-    /// - SeeAlso: ``Storage/Split``, the dual-plane (lane + element) sibling.
-    public struct Contiguous<Substrate: Store.`Protocol` & ~Copyable>: ~Copyable
-    where Substrate.Element == Element {
-        /// The composed element-store substrate.
+    /// Owns the typed slot work, the `Store.Initialization` ledger, and the **deinit oracle**. Per
+    /// spike Q2 the struct is **unconditionally `~Copyable`**, so it can legally carry the `deinit`
+    /// (the `bd04f32` conditionally-Copyable-deinit wall does not apply). The prior shape's
+    /// conditional `Copyable where Element: Copyable` becomes the explicit `copy()` below; conditional
+    /// `Sendable` is preserved (`@unchecked Sendable`). `Element` enters here because the allocation
+    /// below is element-free (Body Authority clause 1).
+    public struct Contiguous<Element: ~Copyable>: ~Copyable {
+        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>.System`). Owns the bytes;
+        /// its own `deinit` frees the region after the oracle has destroyed the live elements.
         @usableFromInline
-        internal var _substrate: Substrate
+        internal var allocation: Allocation
 
-        /// Creates flat storage over the given substrate.
-        ///
-        /// - Parameter substrate: The element store providing the slots;
-        ///   ownership transfers to the flat storage.
+        /// Total slot capacity in `Element` units.
+        @usableFromInline
+        internal var _capacity: Index<Element>.Count
+
+        /// The initialization ledger. The deinit oracle destroys exactly these slots.
+        @usableFromInline
+        internal var _initialization: Store.Initialization<Element>
+
+        /// Adopts an allocation as `capacity` typed slots with the given initialization ledger.
         @inlinable
-        public init(_ substrate: consuming Substrate) {
-            self._substrate = substrate
+        public init(
+            allocation: consuming Allocation,
+            capacity: Index<Element>.Count,
+            initialization: Store.Initialization<Element> = .empty
+        ) {
+            self.allocation = allocation
+            self._capacity = capacity
+            self._initialization = initialization
+        }
+
+        /// **The deinit oracle.** Destroys exactly the live elements per the ledger (`forEach` over the
+        /// initialized ranges — the prior `Memory.Heap.Buffer.deinit` re-homed); THEN the `allocation`
+        /// field is destroyed, freeing the raw bytes. The two-phase order is automatic and correct:
+        /// the bytes are raw, so freeing them never touches the already-deinitialized elements.
+        deinit {
+            _initialization.forEach { range in
+                guard !range.isEmpty else { return }
+                let base = unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
+                unsafe (base + Index<Element>.Offset(fromZero: range.lowerBound)).deinitialize(count: range.count)
+            }
         }
     }
 }
 
-// MARK: - Conditional Copyable (NEW — the storage/memory split)
+// MARK: - Typed base / slot pointer (the allocator-raw-bytes → Storage-typed lift)
 
-/// `Storage.Contiguous` is `Copyable` exactly when its substrate is — so the
-/// composed `Storage<E>.Contiguous<Memory.Heap<E>>` (= `Contiguous<Memory.Heap<E>>`) keeps the fused
-/// type's `Copyable where Element: Copyable` law through the leaf's own
-/// conditional Copyability. Same-file per [COPY-FIX-004]. No `deinit` anywhere
-/// on this type — conditionally-Copyable generic structs cannot carry one (the
-/// `bd04f32` wall); cleanup belongs to the leaf's class.
-extension Storage.Contiguous: Copyable where Element: ~Copyable, Substrate: Copyable {}
+extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+    /// The typed base pointer — Storage lifts the allocation's raw bytes (`Memory.Region.base`) into a
+    /// `UnsafeMutablePointer<Element>`. This is the **allocator-raw-slot → Storage-typed-Index** lift.
+    @inlinable
+    internal var _base: UnsafeMutablePointer<Element> {
+        unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
+    }
+
+    /// The typed pointer to a physical slot.
+    @inlinable
+    internal func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+        unsafe _base + Index<Element>.Offset(fromZero: slot)
+    }
+}
+
+// MARK: - Properties
+
+extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+    /// Total slot capacity.
+    @inlinable
+    public var capacity: Index<Element>.Count { _capacity }
+
+    /// Live occupancy — the ledger's initialized count (what the oracle will destroy).
+    @inlinable
+    public var count: Index<Element>.Count { _initialization.count }
+
+    /// Whether no slots are initialized.
+    @inlinable
+    public var isEmpty: Bool { _initialization.isEmpty }
+
+    /// The initialization ledger — settable so a composing discipline (`Buffer.Linear`) can bulk-sync
+    /// it. The deinit oracle honors whatever is written here.
+    @inlinable
+    public var initialization: Store.Initialization<Element> {
+        get { _initialization }
+        set { _initialization = newValue }
+    }
+}
+
+// MARK: - Heap-backed construction (the dense column)
+
+extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.System, Element: ~Copyable {
+    /// Creates contiguous storage over a fresh `Memory.Heap` passthrough allocation sized for
+    /// `minimumCapacity` `Element` slots (`capacity * stride(Element)` bytes at `alignof(Element)`).
+    @inlinable
+    public static func create(minimumCapacity: Index<Element>.Count) -> Self {
+        let capacityInBytes = Int(bitPattern: minimumCapacity) * MemoryLayout<Element>.stride
+        let byteCount = Memory.Address.Count(UInt(capacityInBytes))
+        // WHY: alignof(Element) is always a positive power of two, so the validating
+        // `Memory.Alignment` initializer never throws here.
+        // swift-format-ignore: NeverUseForceTry
+        // swiftlint:disable:next force_try
+        let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)
+        let system = Memory.Allocator<Memory.Heap>.System(byteCount: byteCount, alignment: alignment)
+        return Self(allocation: system, capacity: minimumCapacity)
+    }
+}
+
+// MARK: - Explicit copy (the Q2 transformation of the prior conditional Copyable)
+
+extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.System, Element: Copyable {
+    /// Explicit deep copy. A Model-2 storage (unconditionally `~Copyable`, deinit oracle) cannot
+    /// auto-derive `Copyable` (a type with a `deinit` is noncopyable), so the prior conditional
+    /// `Copyable where Element: Copyable` is preserved as an explicit op: allocate a fresh region and
+    /// copy the live prefix `[0, count)`.
+    @inlinable
+    public borrowing func copy() -> Self {
+        var out = Self.create(minimumCapacity: _capacity)
+        let n = count
+        if n > .zero {
+            unsafe out._base.initialize(from: _base, count: Int(bitPattern: n))
+            out._initialization = .linear(count: n)
+        }
+        return out
+    }
+}
+
+// MARK: - Sendable
+
+extension Storage.Contiguous: @unchecked Sendable where Allocation: ~Copyable & Sendable, Element: Sendable {}

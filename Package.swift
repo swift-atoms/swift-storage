@@ -12,15 +12,13 @@ let package = Package(
         .visionOS(.v26)
     ],
     products: [
-        // MARK: - Namespace + sub-namespace targets (per [MOD-031])
+        // MARK: - Namespace (hosts the Storage<Allocation> carrier + the Contiguous primary body)
         .library(name: "Storage Primitive", targets: ["Storage Primitive"]),
-        .library(name: "Storage Error Primitives", targets: ["Storage Error Primitives"]),
-        .library(name: "Storage Initialization Primitives", targets: ["Storage Initialization Primitives"]),
-        .library(name: "Storage Field Primitives", targets: ["Storage Field Primitives"]),
-        .library(name: "Storage Accessor Primitives", targets: ["Storage Accessor Primitives"]),
+
+        // MARK: - Seam derivations (generic algorithms over the convenience Store.Protocol seam)
         .library(name: "Storage Protocol Primitives", targets: ["Storage Protocol Primitives"]),
 
-        // MARK: - Canonical storage forms (retained per Cohort II precedent; cf. Memory.Inline)
+        // MARK: - Canonical storage forms
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
         // MARK: - Umbrella
@@ -32,97 +30,61 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swift-primitives/swift-index-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-finite-primitives.git", branch: "main"),
-        // W2 mesh: resolve memory against the W2 worktree (Memory.Contiguous conforms Span.Protocol).
-        // Path-dep identity is the directory basename `swift-memory-primitives`.
         .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-affine-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-ordinal-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-range-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-bit-vector-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
-        // W2 neutral substrate packages.
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
-        // Storage/memory split.
+        // Storage/memory split + the W2 allocator tier (element-free allocations).
         .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-inline-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-allocation-primitives.git", branch: "main"),
     ],
     targets: [
 
-        // MARK: - Namespace (per [MOD-017])
+        // MARK: - Namespace (per [MOD-017]) — the generic Storage<Allocation> carrier + Contiguous
+        // primary body (6.3.2 mechanic #1: the nested deinit-bearing product is declared here).
         .target(
             name: "Storage Primitive",
-            dependencies: []
-        ),
-
-        // MARK: - Error
-        .target(
-            name: "Storage Error Primitives",
             dependencies: [
-                "Storage Primitive",
+                .product(name: "Memory Primitive", package: "swift-memory-primitives"),
+                .product(name: "Memory Region Primitives", package: "swift-memory-primitives"),
             ]
         ),
 
-        // MARK: - Initialization (SHIM — the ledger relocated to Store.Initialization,
-        // storage-memory-split.md §2; this target keeps the import + spelling stable)
+        // MARK: - Protocol (Cleave-5: marker dissolved; hosts the single-region lifecycle
+        // derivations as `extension Store.Protocol` — Allocation-independent, pure 4-op seam)
         .target(
-            name: "Storage Initialization Primitives",
+            name: "Storage Protocol Primitives",
             dependencies: [
-                "Storage Primitive",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
-            ]
-        ),
-
-        // MARK: - Field (layout truth)
-        .target(
-            name: "Storage Field Primitives",
-            dependencies: [
-                "Storage Primitive",
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
                 .product(name: "Affine Primitives", package: "swift-affine-primitives"),
             ]
         ),
 
-        // MARK: - Accessor tags
-        .target(
-            name: "Storage Accessor Primitives",
-            dependencies: [
-                "Storage Primitive",
-            ]
-        ),
-
-        // MARK: - Protocol (Cleave-5: marker dissolved; this target now hosts the
-        // single-region lifecycle derivations as `extension Store.Protocol` — pure 4-op seam)
-        .target(
-            name: "Storage Protocol Primitives",
-            dependencies: [
-                "Storage Primitive",
-                "Storage Initialization Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-            ]
-        ),
-
-        // MARK: - Contiguous (substrate-lifting storage discipline; the #2 Flat rename — storage-memory-split.md)
+        // MARK: - Contiguous (the dense column — Storage<Allocation>.Contiguous<Element>)
         .target(
             name: "Storage Contiguous Primitives",
             dependencies: [
-                .product(name: "Finite Bounded Primitives", package: "swift-finite-primitives"),
                 "Storage Primitive",
-                "Storage Protocol Primitives",
-                "Storage Initialization Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Memory Tracked Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Allocatable Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Unique Primitives", package: "swift-memory-primitives"),
-                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                .product(name: "Memory Primitive", package: "swift-memory-primitives"),
+                .product(name: "Memory Region Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
+                .product(name: "Memory Allocator Primitive", package: "swift-memory-allocation-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
-                .product(name: "Memory Inline Primitives", package: "swift-memory-inline-primitives"),
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                "Storage Accessor Primitives",
-                "Storage Error Primitives",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                .product(name: "Affine Primitives Standard Library Integration", package: "swift-affine-primitives"),
+                .product(name: "Ordinal Primitives Standard Library Integration", package: "swift-ordinal-primitives"),
             ]
         ),
 
@@ -131,10 +93,6 @@ let package = Package(
             name: "Storage Primitives",
             dependencies: [
                 "Storage Primitive",
-                "Storage Error Primitives",
-                "Storage Initialization Primitives",
-                "Storage Field Primitives",
-                "Storage Accessor Primitives",
                 "Storage Protocol Primitives",
                 "Storage Contiguous Primitives",
             ]
@@ -151,31 +109,6 @@ let package = Package(
         ),
 
         // MARK: - Tests
-        .testTarget(
-            name: "Storage Primitives Substrate Tests",
-            dependencies: [
-                "Storage Primitive",
-                "Storage Error Primitives",
-                "Storage Initialization Primitives",
-                "Storage Field Primitives",
-                "Storage Accessor Primitives",
-                "Storage Primitives Test Support",
-            ]
-        ),
-        .testTarget(
-            name: "Storage Heap Primitives Tests",
-            dependencies: [
-                "Storage Contiguous Primitives",
-                "Storage Primitives Test Support",
-            ]
-        ),
-        .testTarget(
-            name: "Storage Primitives Tests",
-            dependencies: [
-                "Storage Primitives",
-                "Storage Primitives Test Support",
-            ]
-        ),
         .testTarget(
             name: "Storage Contiguous Primitives Tests",
             dependencies: [

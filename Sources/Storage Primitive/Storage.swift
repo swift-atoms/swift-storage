@@ -9,20 +9,28 @@
 //
 // ===----------------------------------------------------------------------===//
 
-/// Namespace for storage primitives.
+public import Memory_Primitive
+public import Memory_Region_Primitives
+
+/// The Storage tier of the five-layer tower (Memory → Allocator → **Storage** → Buffer → ADT).
 ///
-/// `Storage` provides storage disciplines with different lifecycle contracts:
+/// `Storage` is the carrier generic over the **`Allocation`** it sits on — an element-free raw byte
+/// region (`Memory.Allocator<Memory.Heap>.System`, `Memory.Allocator<Memory.Inline<n>>.System`, a
+/// `Pool`, …). **Typing begins here**: the allocation below is element-free; the nested storage
+/// disciplines lift its raw bytes into typed `Index<Element>` slots, hold the `Store.Initialization`
+/// ledger, and own the **deinit oracle** that destroys the live elements before the bytes are freed.
 ///
-/// | Need | Choose | Lifecycle |
-/// |------|--------|-----------|
-/// | Automatic cleanup, contiguous elements | `Storage.Contiguous<Memory.Heap<Element>>` (= `Storage.Contiguous<Memory.Heap<E>>`) | **Tracked** — the `Store.Initialization` ledger lives in the leaf's backing class, whose `deinit` is the cleanup oracle |
-/// | Lift any tracked element store into the Storage tier | `Storage.Contiguous<M>` | **Substrate-forwarding** — the ledger is the substrate's own; `Storage.`Protocol`` exactly when `M: Store.Tracked.`Protocol`` |
-/// | Stack-allocated, fixed capacity ≤256 | `Storage.Inline` | **Auto-tracked** — per-slot bit-vector tracking; consumer responsible for cleanup |
-/// | Dual-array with consumer-defined metadata | `Storage.Split` | **Metadata-driven** — no tracking; consumer interprets lane metadata to determine element validity |
+/// The concrete storage disciplines are nested products, each Allocation-dependent and declared via
+/// the cross-module nested-product pattern (`extension Storage where Allocation: ~Copyable { … }`,
+/// 6.3.2 mechanic #1 — the explicit `~Copyable` clause keeps `Allocation` non-`Copyable`):
+/// - `Storage.Contiguous<Element>` — single-plane dense storage (`swift-storage-primitives`).
+/// - `Storage.Generational<Element>` — sparse generational storage over a stable-slot allocation
+///   (`swift-storage-arena-primitives`).
+/// - `Storage.Split<…>` — dual-plane lane + element storage (`swift-storage-split-primitives`).
 ///
-/// `Storage.Contiguous<Memory.Heap<Element>>` is, post the storage/memory split, the composition of the
-/// `Storage.Contiguous` discipline over the `Memory.Heap` allocation-strategy
-/// leaf (`swift-memory-heap-primitives`); the spelling is a typealias and every
-/// fused-era use compiles unchanged. Each discipline is its own sibling package
-/// or sub-namespace target; see `Storage Primitives Scope.md`.
-public enum Storage<Element: ~Copyable> {}
+/// Allocation-INDEPENDENT support (the `Store.Protocol` seam, the `Store.Initialization` ledger, the
+/// generic seam algorithms) lives in non-generic homes (`swift-store-primitives` / the
+/// `Storage Protocol Primitives` derivations), NOT under this generic carrier — nesting an
+/// Allocation-independent type here would make it phantom-generic over `Allocation` (the W1
+/// release-optimizer wall).
+public struct Storage<Allocation: ~Copyable & Memory.Region>: ~Copyable {}
