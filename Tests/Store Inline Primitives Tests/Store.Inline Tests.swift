@@ -78,4 +78,43 @@ struct StoreInlineTests {
         let ds = Probe.destroyedSorted
         #expect(ds == [1, 2, 3])
     }
+
+    @Test
+    func moveOnlyElementsRideTheSeam() {
+        // The ASK-I restoration (ratified 2026-06-10): the seam surface was silently
+        // `Element: Copyable`-only via bare extensions; move-only elements are the
+        // declaration's promise and must ride initialize/subscript/move + the oracle.
+        Probe2.reset()
+        do {
+            var s = Store.Inline<MoveOnly, 4>()
+            s.initialize(at: 0, to: MoveOnly(id: 1))
+            s.initialize(at: 1, to: MoveOnly(id: 2))
+            let borrowedID = s[0].id
+            #expect(borrowedID == 1)
+            let cnt = s.count
+            #expect(cnt == Index<MoveOnly>.Count(2))
+            let moved = s.move(at: 1)
+            let movedID = moved.id
+            #expect(movedID == 2)
+            _ = consume moved
+            let mid = Probe2.destroyedSorted
+            #expect(mid == [2])
+        }   // the oracle destroys the remaining live prefix slot
+        let ds = Probe2.destroyedSorted
+        #expect(ds == [1, 2])
+    }
+}
+
+private struct MoveOnly: ~Copyable {
+    let id: Int
+    deinit { Probe2.recordDestroy(id) }
+}
+
+/// Separate recorder (per-suite isolation discipline; `MoveOnly` is used only by the
+/// move-only test but a distinct recorder keeps the destruction streams independent).
+private enum Probe2 {
+    nonisolated(unsafe) static var _destroyed: [Int] = []
+    static func reset() { unsafe _destroyed = [] }
+    static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }
+    static var destroyedSorted: [Int] { unsafe _destroyed.sorted() }
 }

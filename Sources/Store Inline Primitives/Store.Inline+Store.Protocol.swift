@@ -17,7 +17,7 @@ import Ordinal_Primitives_Standard_Library_Integration
 
 // MARK: - In-place base (per-op, never cached — the inline bytes move with the value)
 
-extension Store.Inline {
+extension Store.Inline where Element: ~Copyable {
     /// The typed base for reading — recomputed within the caller's borrow of `self`; never cached.
     @inlinable
     internal func _readBase() -> UnsafePointer<Element> {
@@ -37,7 +37,7 @@ extension Store.Inline {
 
 // MARK: - Properties
 
-extension Store.Inline {
+extension Store.Inline where Element: ~Copyable {
     /// Fixed inline capacity — the value-generic `n`.
     @inlinable
     public var capacity: Index<Element>.Count { Index<Element>.Count(UInt(n)) }
@@ -60,7 +60,7 @@ extension Store.Inline {
 
 // MARK: - Store.Protocol seam (the 4 ops, over the in-place inline bytes)
 
-extension Store.Inline {
+extension Store.Inline where Element: ~Copyable {
     /// Reads or writes the initialized element at a physical slot (witnesses `subscript`).
     @inlinable
     public subscript(slot: Index<Element>) -> Element {
@@ -94,4 +94,9 @@ extension Store.Inline {
 
 // MARK: - Conformance (the 4-op convenience seam)
 
-extension Store.Inline: Store.`Protocol` {}
+// The four `where Element: ~Copyable` clauses in this file are the ASK-I fix (ratified
+// 2026-06-10, REPORT-ADT-families-spike-findings.md F-6): the original bare extensions
+// implicitly constrained the whole seam surface — conformance included — to
+// `Element: Copyable` (the extension-implies-Copyable rule), silently excluding the
+// move-only elements the declaration promises.
+extension Store.Inline: Store.`Protocol` where Element: ~Copyable {}
