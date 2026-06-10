@@ -34,6 +34,7 @@ extension Store {
     /// property so the `@_rawLayout` storage (which MUST be LAST) is not misclassified as trivial and
     /// its `deinit` skipped across a package boundary. Unconditionally `~Copyable` so the deinit oracle
     /// is legal; conditional `Copyable` becomes the explicit `copy()`.
+    @frozen
     public struct Inline<Element: ~Copyable, let n: Int>: ~Copyable {
         /// `[MEM-SAFE-027]` — forces non-trivial destruction so `deinit` is not skipped cross-package.
         /// MUST precede the `@_rawLayout` storage. Always `nil`.

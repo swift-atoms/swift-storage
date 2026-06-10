@@ -46,6 +46,7 @@ extension Storage where Allocation: ~Copyable {
     /// `_capacity`/the ledger; the raw-base designated init is the one adoption point and demands
     /// an already-resolved base for this allocation.
     @safe
+    @frozen
     public struct Contiguous<Element: ~Copyable>: ~Copyable {
         /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>.System`). Owns the bytes;
         /// its own `deinit` frees the region after the oracle has destroyed the live elements.
