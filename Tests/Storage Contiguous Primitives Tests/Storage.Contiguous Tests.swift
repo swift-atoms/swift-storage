@@ -205,3 +205,29 @@ struct StorageContiguousTests {
         #expect(src0 == 99)                             // deep copy: original mutation does not leak
     }
 }
+
+// MARK: - Sendable surface (the W2-F1 regression lock)
+
+/// Move-only Sendable element — exercises the `~Copyable` suppression on the
+/// Sendable clause (arc-1 finding W2-F1: the bare `Element: Sendable` spelling
+/// implicitly required `Copyable`, silently excluding move-only elements;
+/// REPORT-arc-shared-soundness-W2 §2, fix principal-ratified 2026-06-11).
+private struct MoveOnlyElement: ~Copyable, Sendable {
+    let id: Int
+    init(_ id: Int) { self.id = id }
+}
+
+private func requireSendable<T: Sendable & ~Copyable>(_ value: borrowing T) {}
+
+@Suite
+struct StorageContiguousSendableTests {
+
+    @Test
+    func `sendable admits move-only elements (W2-F1 regression)`() {
+        let moveOnly = DenseStorage<MoveOnlyElement>.create(minimumCapacity: Index<MoveOnlyElement>.Count(1))
+        requireSendable(moveOnly)
+        let copyable = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(1))
+        requireSendable(copyable)
+        #expect(Bool(true))
+    }
+}

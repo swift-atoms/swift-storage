@@ -184,4 +184,9 @@ extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.S
 
 // MARK: - Sendable
 
-extension Storage.Contiguous: @unchecked Sendable where Allocation: ~Copyable & Sendable, Element: Sendable {}
+/// `Element: ~Copyable & Sendable` — the suppression is load-bearing: a bare
+/// `Element: Sendable` clause implicitly requires `Element: Copyable`, silently
+/// excluding move-only elements from every Sendable chain above this tier
+/// (arc-1 finding W2-F1, REPORT-arc-shared-soundness-W2 §2; fix
+/// principal-ratified 2026-06-11).
+extension Storage.Contiguous: @unchecked Sendable where Allocation: ~Copyable & Sendable, Element: ~Copyable & Sendable {}
