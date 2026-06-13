@@ -133,4 +133,3 @@ extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: ~Copyabl
         return unsafe _overrideLifetime(span, mutating: &self)
     }
 }
-

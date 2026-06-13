@@ -163,7 +163,7 @@ struct StorageContiguousTests {
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         var didThrow = false
         do {
-            try s.withOutputSpan(addingCapacity: Index<Item>.Count(3)) { (span) throws(Deliberate) in
+            try s.withOutputSpan(addingCapacity: Index<Item>.Count(3)) { span throws(Deliberate) in
                 span.append(Item(1, value: 10))
                 throw Deliberate.thrown
             }
