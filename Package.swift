@@ -12,6 +12,15 @@ let package = Package(
         .visionOS(.v26)
     ],
     products: [
+        // MARK: - Seam namespace + protocol (consolidated from swift-store-primitives per [DS-027].3)
+        // The seam protocol target is kept MINIMAL (index-only deps) so seam-only consumers compile
+        // against the protocol alone.
+        .library(name: "Store Primitive", targets: ["Store Primitive"]),
+        .library(name: "Store Protocol Primitives", targets: ["Store Protocol Primitives"]),
+        .library(name: "Store Initialization Primitives", targets: ["Store Initialization Primitives"]),
+        .library(name: "Store Ledgered Primitives", targets: ["Store Ledgered Primitives"]),
+        .library(name: "Store Primitives", targets: ["Store Primitives"]),
+
         // MARK: - Namespace (hosts the Storage<Allocation> carrier + the Contiguous primary body)
         .library(name: "Storage Primitive", targets: ["Storage Primitive"]),
 
@@ -28,6 +37,7 @@ let package = Package(
         .library(name: "Storage Primitives", targets: ["Storage Primitives"]),
 
         // MARK: - Test Support
+        .library(name: "Store Primitives Test Support", targets: ["Store Primitives Test Support"]),
         .library(name: "Storage Primitives Test Support", targets: ["Storage Primitives Test Support"]),
     ],
     dependencies: [
@@ -36,12 +46,61 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-affine-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-ordinal-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
-        // Storage/memory split + the W2 allocator tier (element-free allocations).
-        .package(url: "https://github.com/swift-primitives/swift-store-primitives.git", branch: "main"),
+        // The W2 allocator tier (element-free allocations). The store seam was consolidated INTO this
+        // package per [DS-027].3 — no external swift-store-primitives dependency.
         .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-allocation-primitives.git", branch: "main"),
     ],
     targets: [
+
+        // MARK: - Store seam (consolidated from swift-store-primitives per [DS-027].3)
+
+        // MARK: Namespace (per [MOD-017])
+        .target(
+            name: "Store Primitive",
+            dependencies: []
+        ),
+
+        // MARK: Protocol (the neutral element-store capability seam) — MINIMAL: index-only deps,
+        // so seam-only consumers compile against the protocol alone.
+        .target(
+            name: "Store Protocol Primitives",
+            dependencies: [
+                "Store Primitive",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+            ]
+        ),
+
+        // MARK: Initialization (the uninit↔init ledger vocabulary)
+        .target(
+            name: "Store Initialization Primitives",
+            dependencies: [
+                "Store Primitive",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+            ]
+        ),
+
+        // MARK: Ledgered (the settable-ledger refinement beside the seam — ASK-A, ratified 2026-06-10)
+        .target(
+            name: "Store Ledgered Primitives",
+            dependencies: [
+                "Store Primitive",
+                "Store Protocol Primitives",
+                "Store Initialization Primitives",
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
+            ]
+        ),
+
+        // MARK: Umbrella (store seam)
+        .target(
+            name: "Store Primitives",
+            dependencies: [
+                "Store Primitive",
+                "Store Protocol Primitives",
+                "Store Initialization Primitives",
+                "Store Ledgered Primitives",
+            ]
+        ),
 
         // MARK: - Namespace (per [MOD-017]) — the generic Storage<Allocation> carrier + Contiguous
         // primary body (6.3.2 mechanic #1: the nested deinit-bearing product is declared here).
@@ -56,7 +115,7 @@ let package = Package(
             name: "Storage Protocol Primitives",
             dependencies: [
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
+                "Store Protocol Primitives",
                 .product(name: "Affine Primitives", package: "swift-affine-primitives"),
             ]
         ),
@@ -74,9 +133,9 @@ let package = Package(
                 .product(name: "Memory Allocator Primitive", package: "swift-memory-allocation-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
-                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Ledgered Primitives", package: "swift-store-primitives"),
+                "Store Initialization Primitives",
+                "Store Protocol Primitives",
+                "Store Ledgered Primitives",
                 .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
                 .product(name: "Affine Primitives Standard Library Integration", package: "swift-affine-primitives"),
                 .product(name: "Ordinal Primitives Standard Library Integration", package: "swift-ordinal-primitives"),
@@ -87,10 +146,10 @@ let package = Package(
         .target(
             name: "Store Inline Primitives",
             dependencies: [
-                .product(name: "Store Primitive", package: "swift-store-primitives"),
-                .product(name: "Store Protocol Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Initialization Primitives", package: "swift-store-primitives"),
-                .product(name: "Store Ledgered Primitives", package: "swift-store-primitives"),
+                "Store Primitive",
+                "Store Protocol Primitives",
+                "Store Initialization Primitives",
+                "Store Ledgered Primitives",
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Affine Primitives Standard Library Integration", package: "swift-affine-primitives"),
                 .product(name: "Ordinal Primitives Standard Library Integration", package: "swift-ordinal-primitives"),
@@ -110,6 +169,14 @@ let package = Package(
 
         // MARK: - Test Support
         .target(
+            name: "Store Primitives Test Support",
+            dependencies: [
+                "Store Primitives",
+                .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
+            ],
+            path: "Tests/Store Support"
+        ),
+        .target(
             name: "Storage Primitives Test Support",
             dependencies: [
                 "Storage Primitives",
@@ -119,6 +186,13 @@ let package = Package(
         ),
 
         // MARK: - Tests
+        .testTarget(
+            name: "Store Primitives Tests",
+            dependencies: [
+                "Store Primitives",
+                "Store Primitives Test Support",
+            ]
+        ),
         .testTarget(
             name: "Storage Contiguous Primitives Tests",
             dependencies: [
