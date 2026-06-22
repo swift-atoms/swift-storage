@@ -14,6 +14,7 @@ public import Memory_Region_Primitives
 public import Memory_Address_Primitives
 public import Memory_Alignment_Primitives
 public import Memory_Allocator_Primitive
+public import Memory_Allocator_Protocol_Primitives
 public import Memory_Heap_Primitives
 public import Index_Primitives
 public import Store_Initialization_Primitives
@@ -144,13 +145,23 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
     }
 }
 
-// MARK: - Heap-backed construction (the dense column)
+// MARK: - Growth-backed construction (the dense column — generic over the fresh-allocation capability)
 
-extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, Element: ~Copyable {
-    /// Creates contiguous storage over a fresh `Memory.Heap` passthrough allocation sized for
-    /// `minimumCapacity` `Element` slots (`capacity * stride(Element)` bytes at `alignof(Element)`).
+extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+    /// Creates contiguous storage over a fresh passthrough allocation sized for `minimumCapacity`
+    /// `Element` slots (`capacity * stride(Element)` bytes at `alignof(Element)`).
+    ///
+    /// Generic over the **fresh byte-construction** capability `Memory.Growable`: the backing
+    /// `Resource` is allocated through `Resource(byteCount:alignment:)` and wrapped as a passthrough
+    /// `Memory.Allocator<Resource>`. This is what lets one `create` body serve `Memory.Heap` (heap
+    /// allocation) AND `Memory.Small` (the inline⊕heap spill is the `Memory.Growable` init) uniformly,
+    /// at compile-time type-selection. A growable column over the fixed `Memory.Inline` is correctly
+    /// **unrepresentable** — `Memory.Inline` does not conform `Memory.Growable`, so this `create` does
+    /// not exist for `Allocation == Memory.Allocator<Memory.Inline<n>>` (it fails to compile).
     @inlinable
-    public static func create(minimumCapacity: Index<Element>.Count) -> Self {
+    public static func create<Resource: Memory.Growable & ~Copyable>(
+        minimumCapacity: Index<Element>.Count
+    ) -> Self where Allocation == Memory.Allocator<Resource> {
         let capacityInBytes = Int(bitPattern: minimumCapacity) * MemoryLayout<Element>.stride
         let byteCount = Memory.Address.Count(UInt(capacityInBytes))
         // WHY: alignof(Element) is always a positive power of two, so the validating
@@ -158,8 +169,8 @@ extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, 
         // swift-format-ignore: NeverUseForceTry
         // swiftlint:disable:next force_try
         let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)
-        let system = Memory.Allocator<Memory.Heap>(byteCount: byteCount, alignment: alignment)
-        return Self(allocation: system, capacity: minimumCapacity)
+        let allocation = Memory.Allocator(Resource(byteCount: byteCount, alignment: alignment))
+        return Self(allocation: allocation, capacity: minimumCapacity)
     }
 }
 

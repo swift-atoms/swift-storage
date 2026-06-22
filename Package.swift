@@ -131,6 +131,7 @@ let package = Package(
                 .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
                 .product(name: "Memory Primitives Standard Library Integration", package: "swift-memory-primitives"),
                 .product(name: "Memory Allocator Primitive", package: "swift-memory-allocation-primitives"),
+                .product(name: "Memory Allocator Protocol Primitives", package: "swift-memory-allocation-primitives"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 "Store Initialization Primitives",
