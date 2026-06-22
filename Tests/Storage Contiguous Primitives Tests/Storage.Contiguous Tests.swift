@@ -26,7 +26,7 @@ import Testing
 
 /// The canonical dense storage spelling: contiguous typed slots over a heap passthrough allocation.
 private typealias DenseStorage<Element: ~Copyable> =
-    Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<Element>
+    Storage<Memory.Allocator<Memory.Heap>>.Contiguous<Element>
 
 /// A class element whose `deinit` records its id — lets a test observe the deinit oracle.
 private final class Item: @unchecked Sendable {
