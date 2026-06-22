@@ -12,7 +12,7 @@
 /// The Storage tier of the five-layer tower (Memory → Allocator → **Storage** → Buffer → ADT).
 ///
 /// `Storage` is the carrier generic over the **`Allocation`** it sits on — an element-free raw byte
-/// region or slot allocator (`Memory.Allocator<Memory.Heap>.System`,
+/// region or slot allocator (`Memory.Allocator<Memory.Heap>`,
 /// `Memory.Allocator<Memory.Heap>.Pool`, …). **Typing begins here**: the allocation below is
 /// element-free; the nested storage disciplines lift its raw bytes into typed `Index<Element>` slots,
 /// hold the `Store.Initialization` ledger, and own the **deinit oracle** that destroys the live

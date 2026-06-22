@@ -119,7 +119,7 @@ extension Store {
     /// foundational layer. A protocol extension *is* a generic constraint, so the
     /// real axis is *load-bearing vs deletable*, not protocol-vs-concrete. The
     /// five-layer tower composes over **concrete** nested storage types
-    /// (`Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<Element>`); this
+    /// (`Storage<Memory.Allocator<Memory.Heap>>.Contiguous<Element>`); this
     /// seam exists only to share generic algorithms across them, and the cross-module
     /// `_read` / `_modify` subscript witnesses specialize to zero `witness_method`
     /// dispatch through a multi-deep concrete tower either way (verified on Apple

@@ -48,7 +48,7 @@ extension Storage where Allocation: ~Copyable {
     @safe
     @frozen
     public struct Contiguous<Element: ~Copyable>: ~Copyable {
-        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>.System`). Owns the bytes;
+        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>`). Owns the bytes;
         /// its own `deinit` frees the region after the oracle has destroyed the live elements.
         @usableFromInline
         internal var allocation: Allocation
@@ -146,7 +146,7 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
 
 // MARK: - Heap-backed construction (the dense column)
 
-extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.System, Element: ~Copyable {
+extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, Element: ~Copyable {
     /// Creates contiguous storage over a fresh `Memory.Heap` passthrough allocation sized for
     /// `minimumCapacity` `Element` slots (`capacity * stride(Element)` bytes at `alignof(Element)`).
     @inlinable
@@ -158,14 +158,14 @@ extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.S
         // swift-format-ignore: NeverUseForceTry
         // swiftlint:disable:next force_try
         let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)
-        let system = Memory.Allocator<Memory.Heap>.System(byteCount: byteCount, alignment: alignment)
+        let system = Memory.Allocator<Memory.Heap>(byteCount: byteCount, alignment: alignment)
         return Self(allocation: system, capacity: minimumCapacity)
     }
 }
 
 // MARK: - Explicit copy (the Q2 transformation of the prior conditional Copyable)
 
-extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>.System, Element: Copyable {
+extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, Element: Copyable {
     /// Explicit deep copy. A Model-2 storage (unconditionally `~Copyable`, deinit oracle) cannot
     /// auto-derive `Copyable` (a type with a `deinit` is noncopyable), so the prior conditional
     /// `Copyable where Element: Copyable` is preserved as an explicit op: allocate a fresh region and
