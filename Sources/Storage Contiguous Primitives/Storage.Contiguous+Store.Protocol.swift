@@ -16,10 +16,11 @@
 public import Index_Primitives
 public import Store_Protocol_Primitives
 public import Store_Initialization_Primitives
+public import Memory_Region_Primitives
 import Affine_Primitives_Standard_Library_Integration
 import Ordinal_Primitives_Standard_Library_Integration
 
-extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// Reads or writes the initialized element at a physical slot (witnesses `subscript(slot:)`).
     @inlinable
     public subscript(slot: Index<Element>) -> Element {
@@ -54,4 +55,4 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
 
 // MARK: - Conformance (the 4-op convenience seam — `capacity` in Storage.Contiguous.swift)
 
-extension Storage.Contiguous: Store.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {}
+extension Storage.Contiguous: Store.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}

@@ -17,8 +17,9 @@
 public import Index_Primitives
 public import Store_Initialization_Primitives
 public import Span_Protocol_Primitives
+public import Memory_Region_Primitives
 
-extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// Safe, bounds-checked read access over the initialized prefix `[0, count)`.
     @inlinable
     public var span: Swift.Span<Element> {
@@ -122,9 +123,9 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
 // storage's tracked count (a count-method forwards through a constrained generic; the property does
 // not — Span.Mutable.`Protocol`'s structural gate).
 
-extension Storage.Contiguous: Span.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {}
+extension Storage.Contiguous: Span.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
 
-extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {
+extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// A mutable span over the first `count` initialized elements.
     @_lifetime(&self)
     @inlinable

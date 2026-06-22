@@ -22,12 +22,15 @@ public import Store_Initialization_Primitives
 // MARK: - Storage.Contiguous (the dense column) — declared via the cross-module nested-product
 // pattern (6.3.2 mechanic #1: the explicit `where Allocation: ~Copyable` keeps `Allocation`
 // non-`Copyable`). The struct + its deinit oracle live in THIS module so the rich extensions reach
-// the stored properties directly. The typed base is **cached** (reference SHAPE) — read once under a
-// `Memory.Region` (or pool) constraint at construction — so the deinit oracle needs no capability
-// bound on the carrier, leaving `Storage<Allocation: ~Copyable>` free to also carry `Generational`
-// over a `Pool` (whose `capacity` is a slot count, so it cannot conform `Memory.Region`).
+// the stored properties directly. The typed base is **derived per access** from the owned
+// allocation's LIVE region (the ratified R-12 hybrid, [MEM-SPAN-005]) — never a stored cache. A
+// cached base on the generic `Allocation: ~Copyable` carrier would dangle the moment an
+// inline-backed resource (`Memory.Inline`/`Memory.Small`'s inline arm) moves its bytes WITH the
+// value ([MEM-SAFE-029]: no generic address caching). The deinit oracle therefore needs no
+// capability bound on the carrier, leaving `Storage<Allocation: ~Copyable>` free to also carry
+// `Generational` over a `Pool` (whose `capacity` is a slot count, so it cannot conform `Memory.Region`).
 
-extension Storage where Allocation: ~Copyable {
+extension Storage where Allocation: Memory.Region & ~Copyable {
     /// Contiguous single-plane typed storage — the dense column of the tower.
     ///
     /// Owns the typed slot work, the `Store.Initialization` ledger, and the **deinit oracle**. Per
@@ -40,25 +43,22 @@ extension Storage where Allocation: ~Copyable {
     /// ## Safety Invariant
     ///
     /// Pointer-backed value type (`@safe` absorber per [MEM-SAFE-020]; disclosure per
-    /// [MEM-SAFE-025c]). `_base` is resolved ONCE from the owned allocation's stable region and
-    /// never outlives it: the struct is `~Copyable`, the allocation is a stored field, and the
-    /// deinit oracle destroys exactly the ledger-tracked live slots before the allocation frees
-    /// the bytes. Every typed access goes through the seam/span surfaces, which bound slots by
-    /// `_capacity`/the ledger; the raw-base designated init is the one adoption point and demands
-    /// an already-resolved base for this allocation.
+    /// [MEM-SAFE-025c]). The typed base is NOT cached — it is derived per access (`_base`, below)
+    /// from the owned `allocation`'s region under the access's borrow of `self`, so it always
+    /// reflects the allocation's CURRENT byte location ([MEM-SAFE-029]: no generic address caching;
+    /// [MEM-SPAN-005] R-12: base derived per access). Because `self` is borrowed for the duration of
+    /// every span/slot access, the allocation cannot move while the derived pointer is live. The
+    /// deinit oracle destroys exactly the ledger-tracked live slots through the same per-access
+    /// derivation before the `allocation` field is destroyed and frees the bytes. Every typed access
+    /// goes through the seam/span surfaces, which bound slots by `_capacity`/the ledger.
     @safe
     @frozen
     public struct Contiguous<Element: ~Copyable>: ~Copyable {
         /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>`). Owns the bytes;
-        /// its own `deinit` frees the region after the oracle has destroyed the live elements.
+        /// its own `deinit` frees the region after the oracle has destroyed the live elements. The
+        /// typed base is derived from `allocation.base` per access — never stored.
         @usableFromInline
         internal var allocation: Allocation
-
-        /// The cached typed base — the **allocator-raw-slot → Storage-typed-Index** lift, read once at
-        /// construction (the allocation's base is stable for its lifetime). Caching keeps the deinit
-        /// oracle free of a capability bound on the carrier.
-        @usableFromInline
-        internal var _base: UnsafeMutablePointer<Element>
 
         /// Total slot capacity in `Element` units.
         @usableFromInline
@@ -68,16 +68,15 @@ extension Storage where Allocation: ~Copyable {
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
 
-        /// Designated initializer — adopts an allocation and its already-resolved typed `base`.
+        /// Designated initializer — adopts an allocation. The typed base is derived per access from
+        /// `allocation.base`, so no base is stored or passed.
         @inlinable
         public init(
             allocation: consuming Allocation,
-            base: UnsafeMutablePointer<Element>,
             capacity: Index<Element>.Count,
             initialization: Store.Initialization<Element> = .empty
         ) {
             self.allocation = allocation
-            unsafe self._base = base
             self._capacity = capacity
             self._initialization = initialization
         }
@@ -85,7 +84,9 @@ extension Storage where Allocation: ~Copyable {
         /// **The deinit oracle.** Destroys exactly the live elements per the ledger (`forEach` over the
         /// initialized ranges — the prior `Memory.Heap.Buffer.deinit` re-homed); THEN the `allocation`
         /// field is destroyed, freeing the raw bytes. The two-phase order is automatic and correct:
-        /// the bytes are raw, so freeing them never touches the already-deinitialized elements.
+        /// the bytes are raw, so freeing them never touches the already-deinitialized elements. The
+        /// base is derived per access here too — `self` is live throughout `deinit`, so the
+        /// allocation's bytes are at their final resting location.
         deinit {
             _initialization.forEach { range in
                 guard !range.isEmpty else { return }
@@ -96,25 +97,28 @@ extension Storage where Allocation: ~Copyable {
     }
 }
 
-// MARK: - Region-backed construction (resolves + caches the typed base)
+// MARK: - Typed base + slot pointer (derived per access from the LIVE allocation)
 
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
-    /// Adopts a `Memory.Region` allocation as `capacity` typed slots, resolving its base once.
+    /// The typed base of the allocation's region, derived PER ACCESS (never cached).
+    ///
+    /// The **allocator-raw-slot → Storage-typed-Index** lift: reads the allocation's current `base`
+    /// address and reinterprets it as `Element` slots. Derived afresh on every access under the
+    /// caller's borrow of `self`, so it reflects the allocation's CURRENT byte location — correct
+    /// even when the backing resource is inline (`Memory.Inline`/`Memory.Small` inline arm), whose
+    /// bytes move with the value ([MEM-SAFE-029]). Cheap: a `Memory.Address` bit-pattern read plus a
+    /// no-op `assumingMemoryBound` reinterpret, materially the same arithmetic the prior cache used —
+    /// only relocated from once-at-construction to per-access ([MEM-SPAN-005] R-12).
+    ///
+    /// `Memory.Region.base` is the per-access source (it STAYS — the allocator family also needs it);
+    /// the typed lift is performed HERE, at the Storage tier, honoring `Memory.Region`'s element-free
+    /// invariant ([MEM-SAFE-030]).
     @inlinable
-    public init(
-        allocation: consuming Allocation,
-        capacity: Index<Element>.Count,
-        initialization: Store.Initialization<Element> = .empty
-    ) {
-        let base = unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
-        unsafe self.init(allocation: allocation, base: base, capacity: capacity, initialization: initialization)
+    internal var _base: UnsafeMutablePointer<Element> {
+        unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
     }
-}
 
-// MARK: - Typed slot pointer
-
-extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
-    /// The typed pointer to a physical slot.
+    /// The typed pointer to a physical slot, off the per-access-derived base.
     @inlinable
     internal func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe _base + Index<Element>.Offset(fromZero: slot)

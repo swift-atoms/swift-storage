@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Store_Ledgered_Primitives
+public import Memory_Region_Primitives
 
 // MARK: - Store.Ledgered.Protocol (the settable-ledger refinement)
 
@@ -17,4 +18,4 @@ public import Store_Ledgered_Primitives
 /// (`Storage.Contiguous.swift` — "settable so a composing discipline can bulk-sync it");
 /// this conformance merely NAMES the capability so a discipline whose occupancy is not
 /// prefix-shaped (`Buffer.Ring`) can sync it generically (ASK-A, ratified 2026-06-10).
-extension Storage.Contiguous: Store.Ledgered.`Protocol` where Allocation: ~Copyable, Element: ~Copyable {}
+extension Storage.Contiguous: Store.Ledgered.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
