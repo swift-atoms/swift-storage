@@ -31,7 +31,7 @@
     {
       "file": "storage-contiguous-protocol-conformance.md",
       "displayName": "storage-contiguous-protocol-conformance",
-      "topic": "Memory.Contiguous.Protocol conformance",
+      "topic": "Span.Protocol conformance",
       "date": "",
       "status": "DECISION",
       "statusDetail": null,
@@ -240,7 +240,7 @@
     {
       "file": "storage-protocol-pointer-modernization.md",
       "displayName": "storage-protocol-pointer-modernization",
-      "topic": "Replacing UnsafeMutablePointer in Storage.Protocol's single primitive with modern Span types for the public surface. Recommends Option C (single borrowing mutableSpan(at:) access primitive; init/move/deinit sink to the memory tier; Buffer.Linear recomposes on Memory.Contiguous.Protocol + OutputSpan), with Option B (demoted @_spi raw primitive) as fallback if the borrowing-MutableSpan lifetime gate fails. Contingent on 3 feasibility gates. Tier 2.",
+      "topic": "Replacing UnsafeMutablePointer in Storage.Protocol's single primitive with modern Span types for the public surface. Recommends Option C (single borrowing mutableSpan(at:) access primitive; init/move/deinit sink to the memory tier; Buffer.Linear recomposes on Span.Protocol + OutputSpan), with Option B (demoted @_spi raw primitive) as fallback if the borrowing-MutableSpan lifetime gate fails. Contingent on 3 feasibility gates. Tier 2.",
       "date": "2026-06-02",
       "status": "RECOMMENDATION",
       "statusDetail": "Contingent on feasibility gates (borrowing->MutableSpan over ~Copyable; OutputSpan ~Copyable; zero-witness SIL re-pass). Keeps borrowing per principal constraint = retains @unsafe escape hatch, not the sound @_lifetime(&self) pattern.",
@@ -252,7 +252,7 @@
   "narrativeSections": [
     {
       "heading": "Key Architectural Decisions",
-      "body": "### @_rawLayout Migration (2026-02-05)\n\n`Storage.Inline` now uses `@_rawLayout(likeArrayOf: Element, count: capacity)` for automatic optimal layout:\n- **Before**: 64-byte fixed slots, physical slot \u2260 logical element\n- **After**: Element-sized slots, physical slot = logical element (1:1)\n\nThis enables Span access for Copyable elements and eliminates the slot/element distinction.\n\n### Storage Primitives\n\n\n`Heap` and `Inline` support `~Copyable` elements and conform to `Memory.Contiguous.Protocol` for Copyable elements. `Split` (see `split-storage-design.md` v3.0.0) is proposed for metadata-driven dual-array structures like hash table metadata+payload. Access is via field handles (`Storage.Field<Value>`); design converged via Claude-ChatGPT collaborative review.\n\n| Type | Placement | Lifetime | Layout | Init Tracking |\n|---|---|---|---|---|\n| `Storage.Heap` | Heap | ARC | Dense (element stride) | `Storage.Initialization` |\n| `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) | `Bit.Vector.Static` |\n| `Storage.Split<Lane>` (proposed) | Heap | ARC | Dual-lane `[Lane...][Element...]` | None (metadata-driven) |\n| `Storage.Pool` | Heap | ARC | Dense (element stride) | `Bit.Vector` (per-slot) |"
+      "body": "### @_rawLayout Migration (2026-02-05)\n\n`Storage.Inline` now uses `@_rawLayout(likeArrayOf: Element, count: capacity)` for automatic optimal layout:\n- **Before**: 64-byte fixed slots, physical slot \u2260 logical element\n- **After**: Element-sized slots, physical slot = logical element (1:1)\n\nThis enables Span access for Copyable elements and eliminates the slot/element distinction.\n\n### Storage Primitives\n\n\n`Heap` and `Inline` support `~Copyable` elements and conform to `Span.Protocol` for Copyable elements. `Split` (see `split-storage-design.md` v3.0.0) is proposed for metadata-driven dual-array structures like hash table metadata+payload. Access is via field handles (`Storage.Field<Value>`); design converged via Claude-ChatGPT collaborative review.\n\n| Type | Placement | Lifetime | Layout | Init Tracking |\n|---|---|---|---|---|\n| `Storage.Heap` | Heap | ARC | Dense (element stride) | `Storage.Initialization` |\n| `Storage.Inline<Element, capacity>` | Inline | Lexical | Dense (@_rawLayout) | `Bit.Vector.Static` |\n| `Storage.Split<Lane>` (proposed) | Heap | ARC | Dual-lane `[Lane...][Element...]` | None (metadata-driven) |\n| `Storage.Pool` | Heap | ARC | Dense (element stride) | `Bit.Vector` (per-slot) |"
     },
     {
       "heading": "Status Legend",

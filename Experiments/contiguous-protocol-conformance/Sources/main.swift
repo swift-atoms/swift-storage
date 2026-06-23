@@ -1,3 +1,9 @@
+// SUPERSEDED (2026-06-23): Memory.Contiguous was dissolved — its read-capability
+//   protocol is now Span.Protocol (the renamed/relocated Memory.Contiguous.Protocol).
+//   Storage.Heap / Storage.Inline conform to Span.Protocol today; the conformance
+//   feasibility confirmed below is preserved as the historical record. See
+//   swift-institute/Research/memory-contiguous-dissolution.md.
+//
 // MARK: - Memory.Contiguous.Protocol Conformance for Storage Types
 // Purpose: Verify that Storage.Heap and Storage.Inline can conform to
 //   Memory.Contiguous.Protocol using Swift 6.2 @lifetime annotations.

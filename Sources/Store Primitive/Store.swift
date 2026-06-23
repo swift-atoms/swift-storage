@@ -35,7 +35,7 @@
 /// |-------|------|-------------------------|
 /// | `Store.`Protocol`` (here) | Neutral element-store capability | The seam itself |
 /// | `Storage.`Protocol`` | Single-region, slot-addressed storage disciplines | **Refines** `Store.`Protocol`` (W2) |
-/// | `Memory.Contiguous` | Typed contiguous-memory access | **Conforms to** `Store.`Protocol`` (W2) |
+/// | `Storage.Contiguous` | Typed contiguous-memory access | **Conforms to** `Store.`Protocol`` (W2) |
 ///
 /// `Store.`Protocol`` is lifted *out* of `Storage.`Protocol``'s historical
 /// element-access requirements so that the seam lives in a substrate that neither

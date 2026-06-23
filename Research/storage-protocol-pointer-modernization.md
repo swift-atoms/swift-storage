@@ -1,5 +1,7 @@
 # Storage.Protocol Pointer Modernization: Replacing `UnsafeMutablePointer` with Modern Span Types
 
+> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+
 <!--
 ---
 version: 1.1.0

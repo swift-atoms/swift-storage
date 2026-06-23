@@ -100,7 +100,7 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 
 
 ## Related Packages
 
-- [`swift-memory-primitives`](https://github.com/swift-primitives/swift-memory-primitives) — `Memory.Address` / `Memory.Allocator` / `Memory.Contiguous`, the allocation and layout substrate `Storage.Heap` builds on.
+- [`swift-memory-primitives`](https://github.com/swift-primitives/swift-memory-primitives) — `Memory.Address` / `Memory.Allocator`, the allocation and layout substrate `Storage.Heap` builds on.
 - [`swift-index-primitives`](https://github.com/swift-primitives/swift-index-primitives) — `Index<Element>`, the typed slot positions.
 - [`swift-finite-primitives`](https://github.com/swift-primitives/swift-finite-primitives) — `Index.Bounded`, the capacity-bounded index `Storage.Inline` uses.
 - [`swift-property-primitives`](https://github.com/swift-primitives/swift-property-primitives) — `Property.Inout`, backing the fluent `initialize` / `move` accessors.
