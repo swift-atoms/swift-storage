@@ -1,6 +1,6 @@
 # Storage Primitives Modularization Review
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -76,7 +76,7 @@ Sub-questions:
 | Constraint | Source | Implication |
 |------------|--------|-------------|
 | `~Copyable` element support | Existing storage disciplines | Any new primitive MUST handle ~Copyable elements |
-| `BitwiseCopyable`-only is an acceptable narrower variant | `Memory.Contiguous`, `Storage.Split.Lane` precedent | A "trivial-only" untracked primitive is permissible |
+| `BitwiseCopyable`-only is an acceptable narrower variant | `Storage.Contiguous`, `Storage.Split.Lane` precedent | A "trivial-only" untracked primitive is permissible |
 | ManagedBuffer header must be Copyable | `ManagedBuffer.create(minimumCapacity:makingHeaderWith:)` returns Header by value | Atomics or other ~Copyable state cannot live in the header |
 | No `Foundation` dependency | `swift-primitives` rule | Any new primitive uses stdlib + sibling primitives only |
 | Existing four disciplines have downstream consumers | `swift-foundations` collections | Renaming or restructuring requires migration; *additive* changes preferred |
@@ -236,7 +236,7 @@ The corrected architectural framing is:
 
 | Layer | Role | Examples |
 |-------|------|----------|
-| Memory | Raw allocation, typed inline, read-only typed heap, byte buffers | `Memory.Inline`, `Memory.Contiguous`, `Memory.Buffer.Mutable`, `Memory.Aligned`, allocators |
+| Memory | Raw allocation, typed inline, byte buffers | `Memory.Inline`, `Memory.Buffer.Mutable`, `Memory.Aligned`, allocators |
 | **Storage** | **Sequential lifecycle disciplines shared across collection families** | `Heap`/`Inline`/`Split`/`Pool`/`Arena`/`Slab` |
 | Buffer | Mutation logic shared across collection families | `Buffer.Linear`/`Ring`/`Slab`/`Linked`/`Slots`/`Arena` |
 | Collection | User-facing API | `Array`, `Queue`, `Dictionary`, … |
@@ -289,10 +289,10 @@ backing today; replacing ManagedBuffer is its own ecosystem-wide effort.
 ### Trigger
 
 Cross-posted from `swift-foundations/swift-executors/Research/work-stealing-scheduler-design.md`
-which originally framed the absence as a "Memory.Contiguous.Mutable gap"
-at the Memory layer. Both framings (Memory-layer gap, Storage-layer
-modularization) were wrong-layer / wrong-question; the analysis above
-records why.
+which originally framed the absence as a mutable-typed-contiguous-memory gap
+(later succeeded by `Storage.Contiguous`) at the Memory layer. Both framings
+(Memory-layer gap, Storage-layer modularization) were wrong-layer /
+wrong-question; the analysis above records why.
 
 ## References
 

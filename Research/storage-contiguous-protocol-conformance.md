@@ -1,6 +1,6 @@
 # Storage Contiguous Protocol Conformance
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -14,9 +14,9 @@ status: DECISION
 
 ## Context
 
-`Memory.Contiguous.Protocol` (from swift-memory-primitives) defines a standard interface for types providing contiguous memory access.
+`Span.Protocol` defines a standard interface for types providing contiguous memory access.
 
-**Question**: Can `Storage.Heap` and `Storage.Inline<Element, capacity>` conform to `Memory.Contiguous.Protocol`?
+**Question**: Can `Storage.Heap` and `Storage.Inline<Element, capacity>` conform to `Span.Protocol`?
 
 **Trigger**: Architectural consistency—storage primitives should integrate with memory primitives' contiguous access protocol.
 
@@ -31,7 +31,7 @@ status: DECISION
 The protocol is **read-only by default**. Mutable access is type-specific.
 
 ```swift
-extension Memory.Contiguous {
+extension Span {
     public protocol `Protocol`: ~Copyable {
         associatedtype Element
 
@@ -55,8 +55,8 @@ extension Memory.Contiguous {
 
 | Type | Protocol Conformance | Mutable Access |
 |------|---------------------|----------------|
-| `Storage.Inline` | ✅ `Memory.Contiguous.Protocol` | `var mutableSpan` (struct can have `mutating get`) |
-| `Storage.Heap` | ✅ `Memory.Contiguous.Protocol` | `func withMutableSpan` (closure-based) |
+| `Storage.Inline` | ✅ `Span.Protocol` | `var mutableSpan` (struct can have `mutating get`) |
+| `Storage.Heap` | ✅ `Span.Protocol` | `func withMutableSpan` (closure-based) |
 
 ### Implementation Pattern
 
@@ -64,7 +64,7 @@ Swift 6.2 enables property-based Span access via `@_lifetime` + `_overrideLifeti
 
 ```swift
 // Storage.Inline - full property-based access
-extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
+extension Storage.Inline: Span.`Protocol` where Element: Copyable {
     var span: Span<Element> {
         @_lifetime(borrow self)
         borrowing get {
@@ -90,7 +90,7 @@ extension Storage.Inline: Memory.Contiguous.`Protocol` where Element: Copyable {
 }
 
 // Storage.Heap - span property + closure-based mutable
-extension Storage.Heap: Memory.Contiguous.`Protocol` where Element: Copyable {
+extension Storage.Heap: Span.`Protocol` where Element: Copyable {
     var span: Span<Element> {
         @_lifetime(borrow self)
         borrowing get {

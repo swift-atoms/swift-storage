@@ -1,6 +1,6 @@
 # Storage.Protocol Pointer Modernization: Replacing `UnsafeMutablePointer` with Modern Span Types
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -61,8 +61,8 @@ downstream consequences (buffer + tree + collection consumers).
    `pointer(at:)` is retained; the replacement must not force exclusive (`mutating`)
    access onto the access path.
 4. **No protocol refinement** — the contiguous capability stays the *independent,
-   already-existing* `Memory.Contiguous.Protocol` (composed via
-   `Storage.Protocol & Memory.Contiguous.Protocol`), **not** a new
+   already-existing* `Span.Protocol` (composed via
+   `Storage.Protocol & Span.Protocol`), **not** a new
    `__ContiguousStorageProtocol` refining the base.
 
 ## Question
@@ -163,7 +163,7 @@ their discipline and call that discipline's own `initialize` (e.g.
 below this protocol.
 
 **Consequence**: the transitions do **not** need to be protocol requirements.
-The one generic consumer can recompose on `Memory.Contiguous.Protocol` + the
+The one generic consumer can recompose on `Span.Protocol` + the
 already-adopted `OutputSpan`.
 
 ### Finding 4 — Any replacement must re-pass the zero-witness SIL gate
@@ -234,13 +234,13 @@ Derivations and placements:
   span, because `MutableSpan` asserts its whole extent is initialized — one
   known-initialized slot is well-formed; a from-slot-to-capacity span over
   possibly-uninitialized slots is not.
-- **contiguous bulk / C-interop** → the **independent** `Memory.Contiguous.Protocol`
+- **contiguous bulk / C-interop** → the **independent** `Span.Protocol`
   (`span` / `mutableSpan` over `0..<count`), composed as
-  `Storage.Protocol & Memory.Contiguous.Protocol` (constraint 4 — no refinement;
+  `Storage.Protocol & Span.Protocol` (constraint 4 — no refinement;
   this matches the existing `storage-contiguous-protocol-conformance.md` DECISION).
 - **`initialize` / `move` / `deinitialize`** → **not** protocol members. The one
   generic consumer (`Storage.Protocol+Linear.swift`) constrains
-  `where Self: Memory.Contiguous.Protocol` and drives append/remove via the
+  `where Self: Span.Protocol` and drives append/remove via the
   already-adopted **`OutputSpan`**. Sparse disciplines call their own backing's
   typed-slot init in the memory tier.
 
@@ -324,7 +324,7 @@ north-star resolves it by choosing three safe primitives over one unsafe one.
 Generic extensions over the base, written once: `deinitialize(at:)`,
 `deinitialize(range:)`, `swapAt`, `move(from:to:)`, `fill`, `clear`/`removeAll`,
 read-only `forEach`/`reduce`/`contains`, `copy(to:)` (`Element: Copyable`).
-Composed with the independent `Memory.Contiguous.Protocol` (Heap/Inline only):
+Composed with the independent `Span.Protocol` (Heap/Inline only):
 `span`/`mutableSpan` (sound `@_lifetime(borrow self)` / `@_lifetime(&self)`),
 `withUnsafeBufferPointer`/`withMutableSpan`, bulk frontier-init via `OutputSpan`,
 `moveInitialize`/range-copy between storages, `Sequence`/`Collection`. Four
@@ -418,7 +418,7 @@ is the only design that honors all four locked principal constraints
 simultaneously *and* is faithful to the protocol's deliberate single-primitive
 shape. It recognizes that init-state transitions were never truly the protocol's
 job — they are the memory tier's — and that the one generic consumer recomposes
-cleanly on the already-adopted `Memory.Contiguous.Protocol` + `OutputSpan`. The
+cleanly on the already-adopted `Span.Protocol` + `OutputSpan`. The
 residual `@unsafe` does not vanish (Finding 1 — it cannot, for random-slot init
 of `~Copyable`), but it relocates to the memory-arithmetic tier, off the
 `Storage.Protocol` public surface.
@@ -441,7 +441,7 @@ of `~Copyable`), but it relocates to the memory-arithmetic tier, off the
    6.3.2 ([RES-021]). Report results; if gate (1) fails, switch to Option B.
 2. On gate pass, draft the migration plan: protocol edit → 7 conformer rewrites
    (Heap, Inline, Arena, Slab, Pool, Arena.Inline, Pool.Inline) → recompose
-   `Storage.Protocol+Linear.swift` on `Memory.Contiguous.Protocol` + `OutputSpan`
+   `Storage.Protocol+Linear.swift` on `Span.Protocol` + `OutputSpan`
    → propagate to `Buffer.Linear` and downstream tree/collection consumers.
 3. Re-run the SIL gate (Finding 4) as the merge criterion.
 
@@ -463,7 +463,7 @@ attempted, preventing implementation thrashing across 7 conformers.
 - `yielding-vs-returning-lifetime-models.md` (Tier 2 RECOMMENDATION) — yielding
   (599 sites) vs returning (28 `_overrideLifetime` sites) model trade-offs;
   borrow/inout bindings as the simplifying watch-list feature.
-- `storage-contiguous-protocol-conformance.md` (DECISION) — `Memory.Contiguous.Protocol`
+- `storage-contiguous-protocol-conformance.md` (DECISION) — `Span.Protocol`
   as the independent contiguous contract (supports constraint 4, composition not
   refinement).
 - `inline-storage-read-pointer-escape.md` (DECISION) — closure-based pointer

@@ -1,6 +1,6 @@
 # Storage Contiguous API Design
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -12,10 +12,10 @@ status: DECISION
 
 ## Context
 
-With the addition of `Memory.Contiguous.Protocol` conformance to `Storage.Heap` and `Storage.Inline`, we now have overlapping APIs for contiguous memory access. This research determines the optimal API surface for "timeless infrastructure" quality.
+With the addition of `Span.Protocol` conformance to `Storage.Heap` and `Storage.Inline`, we now have overlapping APIs for contiguous memory access. This research determines the optimal API surface for "timeless infrastructure" quality.
 
 **Trigger**: API audit revealed potential redundancy between:
-- New `span` / `mutableSpan` property-based access (Memory.Contiguous.Protocol)
+- New `span` / `mutableSpan` property-based access (Span.Protocol)
 - Existing `withSpan(range:_:)` closure-based access
 - Various copy/move operations
 
@@ -84,7 +84,7 @@ Sub-questions:
 **API Surface**:
 
 ```swift
-// Memory.Contiguous.Protocol (read-only, linear)
+// Span.Protocol (read-only, linear)
 var span: Span<Element> { get }                    // 0..<count
 func withUnsafeBufferPointer(_:)                   // C interop
 
@@ -120,7 +120,7 @@ mutating func pointer(at:) -> UnsafeMutablePointer<Element>  // Single slot writ
 **API Surface**:
 
 ```swift
-// Memory.Contiguous.Protocol (linear initialization)
+// Span.Protocol (linear initialization)
 var span: Span<Element> { get }
 func withUnsafeBufferPointer(_:)
 
@@ -155,7 +155,7 @@ func pointer(at:)
 
 **Philosophy**: Separate concerns by layer. Protocol provides universal linear access. Range-based access uses closure pattern for safety.
 
-**Layer 1: Memory.Contiguous.Protocol (Universal Linear Access)**
+**Layer 1: Span.Protocol (Universal Linear Access)**
 
 ```swift
 public protocol `Protocol`: ~Copyable {
@@ -387,7 +387,7 @@ Initialization: .two(first: [0,3), second: [6,8))
 1. **Property vs closure is not redundancy** — properties for linear (0..<count), closures for arbitrary ranges
 2. **Safety completeness** — ring buffers should not need unsafe code for standard operations
 3. **~Copyable first-class** — primitives work for all element types; Span is Copyable overlay
-4. **Protocol alignment** — `Memory.Contiguous.Protocol` represents universal linear access
+4. **Protocol alignment** — `Span.Protocol` represents universal linear access
 
 ### Implemented Changes
 
@@ -402,7 +402,7 @@ Initialization: .two(first: [0,3), second: [6,8))
 - [x] **ADDED** `withMutableSpan(range:_:)` for Storage.Inline (struct, arbitrary range)
 
 **Keep**:
-- [x] `span` property (Memory.Contiguous.Protocol, linear)
+- [x] `span` property (Span.Protocol, linear)
 - [x] `mutableSpan` property (Storage.Inline) / `withMutableSpan(_:)` (Storage.Heap) — linear
 - [x] `withUnsafeBufferPointer`, `withUnsafeMutableBufferPointer` (C interop)
 - [x] `pointer(at:)` variants (low-level primitive, ~Copyable)
@@ -413,7 +413,7 @@ Initialization: .two(first: [0,3), second: [6,8))
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Layer 1: Memory.Contiguous.Protocol (Linear Read)       │
+│ Layer 1: Span.Protocol (Linear Read)                    │
 │   var span: Span<Element>                               │
 │   func withUnsafeBufferPointer(_:)                      │
 ├─────────────────────────────────────────────────────────┤
@@ -438,7 +438,7 @@ Initialization: .two(first: [0,3), second: [6,8))
 #### Storage.Heap
 
 ```swift
-// Layer 1: Memory.Contiguous.Protocol (Copyable)
+// Layer 1: Span.Protocol (Copyable)
 var span: Span<Element> { get }
 func withUnsafeBufferPointer<R, E>(_:) throws(E) -> R
 
@@ -470,7 +470,7 @@ func copy(range:to:)
 #### Storage.Inline<Element, capacity>
 
 ```swift
-// Layer 1: Memory.Contiguous.Protocol (Copyable)
+// Layer 1: Span.Protocol (Copyable)
 var span: Span<Element> { get }
 func withUnsafeBufferPointer<R, E>(_:) throws(E) -> R
 

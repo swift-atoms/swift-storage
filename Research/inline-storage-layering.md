@@ -1,6 +1,6 @@
 # Inline Storage Layering
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -108,9 +108,9 @@ struct CyclicIterator: ~Copyable {
 | Overhead for iterators | **Zero** (same size as Element) |
 | Overhead for buffers | **Unchanged** (Storage.Inline still has bitmap) |
 | Breaking change | Refactor Storage.Inline internals (API surface preserved) |
-| Naming | `Memory.Inline` parallels `Memory.Contiguous`, `Memory.Buffer` |
+| Naming | `Memory.Inline` parallels `Storage.Contiguous`, `Memory.Buffer` |
 | Dependency direction | Correct (storage depends on memory, not reverse) |
-| Existing precedent | `Memory.Contiguous<Element>` already provides typed owned memory |
+| Existing precedent | `Storage.Contiguous<Element>` already provides typed owned memory |
 | Implementation | Medium — new type + refactor Storage.Inline internals |
 
 ### Option B: Separate tracked and untracked variants within storage-primitives
@@ -208,7 +208,7 @@ This parallels existing layering:
 2. **Zero overhead**: Iterators use `Memory.Inline<Element, 1>` directly — 8 bytes for `Int`, no bitmap
 3. **Clean composition**: `Storage.Inline<N>` composes `Memory.Inline` + `Bit.Vector.Static<4>` (preserving its existing API)
 4. **Future-compatible**: When Swift gains computed value generics, `Storage.Inline` can shrink its bitmap independently
-5. **Parallels existing types**: `Memory.Contiguous<Element>` (heap) ↔ `Memory.Inline<Element, N>` (stack)
+5. **Parallels existing types**: `Storage.Contiguous<Element>` (heap) ↔ `Memory.Inline<Element, N>` (stack)
 
 ### Implementation Path
 
@@ -221,7 +221,7 @@ This parallels existing layering:
 
 1. **Naming**: Is `Memory.Inline<Element, capacity>` the right name? Alternatives: `Memory.Embedded`, `Memory.Fixed`. "Inline" is chosen because it describes where the memory lives (inline within the struct), paralleling "Contiguous" (which describes memory topology).
 2. **Index type**: Should `pointer(at:)` use `Index<Element>.Bounded<capacity>` (like Storage.Inline) or a simpler subscript? For capacity 1, a parameterless accessor may be cleaner.
-3. **Span access**: Should `Memory.Inline` provide a `span` property or `Memory.Contiguous.Protocol` conformance? Or leave that to composition?
+3. **Span access**: Should `Memory.Inline` provide a `span` property or `Span.Protocol` conformance? Or leave that to composition?
 
 ## Update (2026-02-26): Stored Property Alternative + Iterator Requirement
 

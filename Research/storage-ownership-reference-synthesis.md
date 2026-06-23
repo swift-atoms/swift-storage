@@ -1,6 +1,6 @@
 # Storage, Ownership, and Reference Primitives: Research Synthesis
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -403,7 +403,7 @@ Based on the first-principles research observation that `Storage.Ring` is access
 |----------|-------|--------|
 | storage-ownership-reference-synthesis | Master synthesis (this document) | DECISION |
 | storage-contiguous-api-design | Span API surface | DECISION |
-| storage-contiguous-protocol-conformance | Memory.Contiguous.Protocol conformance | DECISION |
+| storage-contiguous-protocol-conformance | Span.Protocol conformance | DECISION |
 | storage-inline-invariants | Complete invariant catalog | DECISION |
 | inline-slot-type-organization | @_rawLayout recommendation | RECOMMENDATION |
 | inline-storage-read-pointer-escape | Closure-based pointer access | DECISION |

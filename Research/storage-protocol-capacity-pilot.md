@@ -1,6 +1,6 @@
 # Storage.Protocol Capacity Pilot — Wave 1 Findings
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 **Status**: CONFIRMED (SIL gate PASS)
 **Date**: 2026-05-25
@@ -119,7 +119,7 @@ All existing public Heap API moved onto the struct and delegates to `_buffer`:
 - `create(minimumCapacity:)` — allocates the `Buffer` via `Buffer.create` + `unsafeDowncast`, wraps in `Storage.Heap(_buffer:)`.
 - `pointer(at:)` (the `Storage.\`Protocol\`` witness, mutable + `@_disfavoredOverload` immutable) — delegates to `_buffer.withUnsafeMutablePointerToElements`.
 - `capacity: Index<Element>.Count` (typed witness), `initialization` get/`nonmutating set`, `isEmpty` — delegate to `_buffer.capacity` / `_buffer.header`.
-- `span`, `withUnsafeBufferPointer` (the `Memory.Contiguous.\`Protocol\`` witness), `withMutableSpan`, `withUnsafeMutableBufferPointer` — delegate to `_buffer.header` + `pointer(at:)`.
+- `span`, `withUnsafeBufferPointer` (the `Span.Protocol` witness), `withMutableSpan`, `withUnsafeMutableBufferPointer` — delegate to `_buffer.header` + `pointer(at:)`.
 - The tracked accessors `initialize` / `move` / `deinitialize` (and the `Copyable` `copy`) — see the Property migration below.
 
 ### Property accessor migration: method-case → `Property.Inout`
