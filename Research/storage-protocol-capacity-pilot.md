@@ -1,7 +1,5 @@
 # Storage.Protocol Capacity Pilot — Wave 1 Findings
 
-> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
-
 **Status**: CONFIRMED (SIL gate PASS)
 **Date**: 2026-05-25
 **Toolchain**: Apple Swift 6.3.2 (default macOS toolchain), macOS 26 (arm64)

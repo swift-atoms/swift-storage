@@ -1,7 +1,5 @@
 # Inline Storage Layering
 
-> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
-
 <!--
 ---
 version: 1.0.0
