@@ -54,12 +54,6 @@ extension Storage where Allocation: Memory.Region & ~Copyable {
     @safe
     @frozen
     public struct Contiguous<Element: ~Copyable>: ~Copyable {
-        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>`). Owns the bytes;
-        /// its own `deinit` frees the region after the oracle has destroyed the live elements. The
-        /// typed base is derived from `allocation.base` per access — never stored.
-        @usableFromInline
-        internal var allocation: Allocation
-
         /// Total slot capacity in `Element` units.
         @usableFromInline
         internal var _capacity: Index<Element>.Count
@@ -67,6 +61,17 @@ extension Storage where Allocation: Memory.Region & ~Copyable {
         /// The initialization ledger. The deinit oracle destroys exactly these slots.
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
+
+        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>`). Owns the bytes;
+        /// its own `deinit` frees the region after the oracle has destroyed the live elements. The
+        /// typed base is derived from `allocation.base` per access — never stored.
+        ///
+        /// Declared LAST (evergreen): the dynamic (heap) allocation is the value's variable
+        /// resource and trails the `_capacity`/`_initialization` metadata that describes it.
+        /// Teardown is unaffected — the `deinit` body destroys the live elements before any
+        /// stored property is destroyed, so the allocation's bytes stay valid throughout.
+        @usableFromInline
+        internal var allocation: Allocation
 
         /// Designated initializer — adopts an allocation. The typed base is derived per access from
         /// `allocation.base`, so no base is stored or passed.
