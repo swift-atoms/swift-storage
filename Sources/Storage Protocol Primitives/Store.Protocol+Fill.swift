@@ -29,10 +29,10 @@ extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
     ///   - element: The value to copy into each slot.
     /// - Precondition: Every slot in `range` must be uninitialized and within capacity.
     @inlinable
-    public mutating func fill(range: Swift.Range<Index<Element>>, with element: Element) {
+    public mutating func fill(range: Swift.Range<Index<Element>>, with element: borrowing Element) {
         var slot = range.lowerBound
         while slot < range.upperBound {
-            initialize(at: slot, to: element)
+            initialize(at: slot, to: copy element)
             slot += .one
         }
     }
@@ -42,7 +42,7 @@ extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
     /// - Parameter element: The value to copy into each slot.
     /// - Precondition: Every slot in `[0, capacity)` must be uninitialized.
     @inlinable
-    public mutating func fill(with element: Element) {
+    public mutating func fill(with element: borrowing Element) {
         let upper: Index<Element> = capacity.map(Ordinal.init)
         fill(range: .zero..<upper, with: element)
     }

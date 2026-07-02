@@ -97,9 +97,10 @@ extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
     /// - Parameter element: The value to search for.
     /// - Returns: Whether the value is present.
     @inlinable
-    public func contains(_ element: Element) -> Bool {
+    public func contains(_ element: borrowing Element) -> Bool {
         // Equatable implies Copyable; the predicate is non-throwing, so the
         // generic `contains(where:)` specializes to `Failure == Never` — no `try`.
-        contains(where: { (candidate: Element) -> Bool in candidate == element })
+        let needle = copy element
+        return contains(where: { (candidate: borrowing Element) -> Bool in candidate == needle })
     }
 }
