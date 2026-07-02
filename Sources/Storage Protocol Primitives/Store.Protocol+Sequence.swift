@@ -98,11 +98,14 @@ extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
     /// - Returns: Whether the value is present.
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        // Open-coded rather than delegating to `contains(where:)`: routing
-        // the needle through the closure would require copying it, which
-        // over-constrains Element to Copyable. Equality compares borrows,
-        // so this stays exactly as wide as Equatable is on the toolchain
-        // (noncopyable-capable where Equatable is generalized).
+        // Open-coded rather than delegating to `contains(where:)`: on the
+        // 6.3 baseline the borrow checker treats closure capture of a
+        // `borrowing` parameter as a consume, so routing the needle through
+        // the predicate closure requires a copy — which over-constrains
+        // Element to Copyable. Equality compares borrows, so this stays
+        // exactly as wide as Equatable is on the toolchain (noncopyable-
+        // capable where Equatable is generalized). Fold back into
+        // `contains(where:)` once the baseline supports borrow captures.
         var slot: Index<Element> = .zero
         let upper: Index<Element> = capacity.map(Ordinal.init)
         while slot < upper {
