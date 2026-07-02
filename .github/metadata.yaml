@@ -1,6 +1,6 @@
 # .github/metadata.yaml
 # Triaged 2026-04-29 — anomaly-fix pass after wave-4 PR-branch triage didn't apply.
-description: "Storage types for Swift."
+description: "Manually-managed typed slot storage with explicit initialize/move/deinitialize lifecycle, in heap-backed and fixed-capacity inline forms, for Swift."
 topics:
   - primitives
   - storage
