@@ -90,7 +90,7 @@ extension __StoreProtocol where Self: ~Copyable {
     }
 }
 
-extension __StoreProtocol where Self: ~Copyable, Element: Equatable, Element: Copyable {
+extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
 
     /// Returns `true` if any element in `[0, capacity)` equals `element`.
     ///
@@ -98,11 +98,17 @@ extension __StoreProtocol where Self: ~Copyable, Element: Equatable, Element: Co
     /// - Returns: Whether the value is present.
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        // Element: Copyable is stated explicitly: on toolchains where
-        // Equatable is generalized to ~Copyable it no longer implies it.
-        // The predicate is non-throwing, so the generic `contains(where:)`
-        // specializes to `Failure == Never` — no `try`.
-        let needle = copy element
-        return contains(where: { (candidate: borrowing Element) -> Bool in candidate == needle })
+        // Open-coded rather than delegating to `contains(where:)`: routing
+        // the needle through the closure would require copying it, which
+        // over-constrains Element to Copyable. Equality compares borrows,
+        // so this stays exactly as wide as Equatable is on the toolchain
+        // (noncopyable-capable where Equatable is generalized).
+        var slot: Index<Element> = .zero
+        let upper: Index<Element> = capacity.map(Ordinal.init)
+        while slot < upper {
+            if self[slot] == element { return true }
+            slot += .one
+        }
+        return false
     }
 }
