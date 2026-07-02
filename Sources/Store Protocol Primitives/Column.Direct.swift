@@ -24,9 +24,9 @@
 /// to compile rather than dropping the axis without a diagnostic.
 ///
 /// It refines ``Store/`Protocol``` so `Element` is available in the axis-changing alias
-/// bodies with a single constraint, and it carries the capacity twin ``BoundedTwin`` — the
-/// column-PRESERVING `.Bounded` front-door alias maps through it (`__X<S.BoundedTwin>`,
-/// [DS-028] law 2), so `Bounded` composes order-insensitively with the other axes.
+/// bodies with a single constraint, and it carries the capacity-twin column ``Bounded`` — the
+/// column-PRESERVING `.Bounded` front-door alias maps through it (`__X<S.Bounded>`,
+/// [DS-028] law 2), so it composes order-insensitively with the other axes.
 ///
 /// A deletable convenience per [API-IMPL-023]; homed at the `Store.`Protocol`` seam tier —
 /// the tier both buffer disciplines and storage-direct columns can reach.
@@ -35,8 +35,8 @@ public protocol __ColumnDirect: __StoreProtocol, ~Copyable {
     /// The bounded (fixed-capacity) capacity-twin column for this direct column.
     ///
     /// The column-preserving `.Bounded` front-door alias maps through this ([DS-028] law 2):
-    /// `Buffer.Linear` declares `BoundedTwin = Buffer.Linear.Bounded`, `Buffer.Ring` declares
-    /// `BoundedTwin = Buffer.Ring.Bounded`. Every §5.1 product point — including the live
-    /// `Shared×Bounded` ring column — therefore has one correct, order-insensitive spelling.
-    associatedtype BoundedTwin: ~Copyable
+    /// `Buffer.Linear` and `Buffer.Ring` witness it by member-name inference with their own
+    /// nested `.Bounded` type. Every §5.1 product point — including the live `Shared×Bounded`
+    /// ring column — therefore has one correct, order-insensitive spelling.
+    associatedtype Bounded: ~Copyable
 }
