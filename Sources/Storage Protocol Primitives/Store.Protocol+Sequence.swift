@@ -90,7 +90,7 @@ extension __StoreProtocol where Self: ~Copyable {
     }
 }
 
-extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
+extension __StoreProtocol where Self: ~Copyable, Element: Equatable, Element: Copyable {
 
     /// Returns `true` if any element in `[0, capacity)` equals `element`.
     ///
@@ -98,8 +98,10 @@ extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
     /// - Returns: Whether the value is present.
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        // Equatable implies Copyable; the predicate is non-throwing, so the
-        // generic `contains(where:)` specializes to `Failure == Never` — no `try`.
+        // Element: Copyable is stated explicitly: on toolchains where
+        // Equatable is generalized to ~Copyable it no longer implies it.
+        // The predicate is non-throwing, so the generic `contains(where:)`
+        // specializes to `Failure == Never` — no `try`.
         let needle = copy element
         return contains(where: { (candidate: borrowing Element) -> Bool in candidate == needle })
     }
