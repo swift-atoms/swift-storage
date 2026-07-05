@@ -40,3 +40,22 @@ public protocol __ColumnDirect: __StoreProtocol, ~Copyable {
     /// ring column — therefore has one correct, order-insensitive spelling.
     associatedtype Bounded: ~Copyable
 }
+
+// MARK: - Namespace Typealias
+
+extension Store {
+    /// The seam-tier spelling of the DIRECT-column fence marker ([API-NAME-004], M4).
+    ///
+    /// `Store.Direct` vends the hoisted ``__ColumnDirect`` marker at the `Store.`Protocol``
+    /// seam tier — the tier both buffer disciplines and storage-direct columns can reach — so
+    /// that in-tower conformances and where-clauses bind `Store.Direct` rather than the
+    /// `__`-prefixed marker directly. No dunder token therefore ever appears in a public
+    /// conformance clause. It is DISTINCT from the consumer-facing ``Column/Direct`` vocabulary
+    /// spelling (declared in the column-vocabulary module): both alias the same marker, but
+    /// `Store.Direct` is the seam-tier binding the tower's own carriers use.
+    ///
+    /// This follows the same hoisted-protocol idiom as `Store.`Protocol`` ([PKG-NAME-006]).
+    /// The `Direct` marker is **load-bearing**, NOT a deletable convenience ([API-IMPL-023],
+    /// M4): it is the axis-drop fence the [DS-028] front-door alias laws depend on.
+    public typealias Direct = __ColumnDirect
+}
