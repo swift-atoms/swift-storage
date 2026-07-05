@@ -52,7 +52,7 @@ struct StoreLedgeredTests {
     @Test
     func `the refinement is a Store.Protocol (seam ops reachable through the bound)`() {
         var store = TwoSlot()
-        store.prepareForMutation()              // the defaulted gate rides along
+        store.unshare()              // the defaulted gate rides along
         store.initialize(at: Index<Int>(Ordinal(UInt(1))), to: 9)
         let read = store[Index<Int>(Ordinal(UInt(1)))]
         #expect(read == 9)

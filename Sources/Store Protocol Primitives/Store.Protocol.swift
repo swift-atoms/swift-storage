@@ -78,7 +78,7 @@ public protocol __StoreProtocol: ~Copyable {
     ///
     /// The seam's other operations remain the documented unchecked fast lane: a caller
     /// that has already gated (or is statically unique) may batch through them freely.
-    mutating func prepareForMutation()
+    mutating func unshare()
 }
 
 // MARK: - Default (statically-unique stores)
@@ -86,7 +86,7 @@ public protocol __StoreProtocol: ~Copyable {
 extension __StoreProtocol where Self: ~Copyable {
     /// Plain stores have no shared backing to restore; the gate is a no-op.
     @inlinable
-    public mutating func prepareForMutation() {}
+    public mutating func unshare() {}
 }
 
 // MARK: - Namespace Typealias
@@ -103,7 +103,7 @@ extension Store {
     ///
     /// ## The generic cross-module mutate seam
     ///
-    /// These four requirements — plus the defaulted `prepareForMutation()` gate —
+    /// These four requirements — plus the defaulted `unshare()` gate —
     /// are the **generic cross-module mutate seam**: the
     /// minimal set through which a generic function in one module can mutate a
     /// concrete element-addressed container declared in another module, with the
