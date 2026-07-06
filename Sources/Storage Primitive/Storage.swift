@@ -29,7 +29,7 @@
 /// 6.3.2 mechanic #1 — the explicit `~Copyable` clause keeps `Allocation` non-`Copyable`):
 /// - `Storage.Contiguous<Element>` — single-plane dense storage (`swift-storage-primitives`).
 /// - `Storage.Generational<Element>` — sparse generational storage over a stable-slot allocation
-///   (`swift-storage-arena-primitives`).
+///   (`swift-storage-generational-primitives`).
 /// - `Storage.Split<…>` — dual-plane lane + element storage (`swift-storage-split-primitives`).
 ///
 /// Allocation-INDEPENDENT support (the `Store.Protocol` seam, the `Store.Initialization` ledger, the
