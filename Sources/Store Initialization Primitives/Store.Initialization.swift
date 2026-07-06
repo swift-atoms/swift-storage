@@ -15,10 +15,10 @@ public import Store_Primitive
 extension Store {
     /// Describes which physical slots of an element store are initialized.
     ///
-    /// Tracked memory leaves (`Memory.Tracked.`Protocol`` conformers) vend this ledger,
-    /// and a tracked store's OWN teardown honors it — iterating these spans to
-    /// clean up exactly the initialized slots, regardless of the discipline
-    /// composed above.
+    /// `Store.Ledgered.`Protocol`` conformers vend this ledger via the settable
+    /// `initialization` requirement, and a ledgered store's OWN teardown honors it —
+    /// iterating these spans to clean up exactly the initialized slots, regardless of
+    /// the discipline composed above.
     ///
     /// ## Cases
     ///
