@@ -23,6 +23,10 @@ public import Store_Protocol_Primitives
 
 extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
+    // reason: `Destination: __StoreProtocol` is a generic-parameter CONSTRAINT —
+    // `Self` here would demand identity (Destination == Self), not conformance,
+    // changing the semantics (P1a sequence/comparison precedent).
+    // swiftlint:disable prefer_self_in_static_references
     /// Copies the elements in `[0, count)` of `self` into the same slots of `destination`.
     ///
     /// The source is left unchanged. `count` defaults to `self.capacity`; pass a
@@ -39,6 +43,7 @@ extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
         to destination: inout Destination,
         count: Index<Element>.Count? = nil
     ) where Destination.Element == Element {
+        // swiftlint:enable prefer_self_in_static_references
         let limit: Index<Element>.Count = count ?? capacity
         var slot: Index<Element> = .zero
         let upper: Index<Element> = limit.map(Ordinal.init)

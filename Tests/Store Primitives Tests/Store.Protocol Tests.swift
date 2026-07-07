@@ -15,8 +15,10 @@ import Testing
 
 // MARK: - Heap-backed conformer (Element = Int, a Copyable element)
 
-/// A minimal heap-backed `~Copyable` conformer of `Store.`Protocol`` used to
-/// exercise the four element-store requirements end-to-end. Storage is a raw
+/// A minimal heap-backed `~Copyable` conformer of the store protocol used to
+/// exercise the four element-store requirements end-to-end.
+///
+/// Storage is a raw
 /// `UnsafeMutablePointer<Element>` region of fixed `capacity`; the per-slot
 /// `_read` / `_modify` witnesses reach the element through the typed
 /// `Index<Element>` pointer subscript supplied by the affine standard-library
@@ -68,7 +70,9 @@ extension HeapStore: Store.`Protocol` {
 
 // MARK: - A move-only (~Copyable) element
 
-/// A move-only payload. Proves the element-store seam crosses for `~Copyable`
+/// A move-only payload.
+///
+/// Proves the element-store seam crosses for `~Copyable`
 /// elements: it can be `initialize`d into a slot, observed through the borrowing
 /// `_read` accessor, mutated through the exclusive `_modify` accessor, and
 /// `move`d back out — all without ever being copied.
@@ -133,7 +137,9 @@ extension HeapStoreNC: Store.`Protocol` where Element: ~Copyable {
 
 // MARK: - Generic functions over the capability (the cross-module mutate seam)
 
-/// A generic function constrained to `Store.`Protocol` & ~Copyable`. It mutates
+/// A generic function constrained to the store protocol plus `~Copyable`.
+///
+/// It mutates
 /// `store` purely through the protocol surface — proving the capability is usable
 /// generically without naming any concrete conformer. `Element == Int` so the body
 /// can fabricate values to write.
@@ -152,7 +158,9 @@ func roundTrip<S: Store.`Protocol` & ~Copyable>(
     return store.move(at: slot)
 }
 
-/// A generic function over a `~Copyable` element. Drives the same
+/// A generic function over a `~Copyable` element.
+///
+/// Drives the same
 /// initialize → _modify → move arc but never copies the element.
 func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
     _ store: inout S,

@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Store_Ledgered_Primitives
 public import Memory_Region_Primitives
+public import Store_Ledgered_Primitives
 
 // MARK: - Store.Ledgered.Protocol (the settable-ledger refinement)
 

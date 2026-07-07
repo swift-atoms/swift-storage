@@ -13,12 +13,12 @@
 // preserved). The subscript witnesses via `_read` / `_modify` over the typed pointer, which
 // specialize to zero `witness_method` through a concrete tower (verified on Apple Swift 6.3.2).
 
-public import Index_Primitives
-public import Store_Protocol_Primitives
-public import Store_Initialization_Primitives
-public import Memory_Region_Primitives
 import Affine_Primitives_Standard_Library_Integration
+public import Index_Primitives
+public import Memory_Region_Primitives
 import Ordinal_Primitives_Standard_Library_Integration
+public import Store_Initialization_Primitives
+public import Store_Protocol_Primitives
 
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// Reads or writes the initialized element at a physical slot (witnesses `subscript(slot:)`).

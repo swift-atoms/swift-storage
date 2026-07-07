@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Store_Initialization_Primitives
 public import Store_Primitive
 public import Store_Protocol_Primitives
-public import Store_Initialization_Primitives
 
 // MARK: - Store.Ledgered.Protocol (Hoisted as __StoreLedgeredProtocol)
 

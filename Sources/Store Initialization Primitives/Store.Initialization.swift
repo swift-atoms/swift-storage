@@ -24,7 +24,7 @@ extension Store {
     ///
     /// - `empty`: No slots are initialized
     /// - `one`: A single contiguous range of initialized slots
-    /// - `two`: Two disjoint ranges (e.g., wrapped ring buffer)
+    /// - `two`: Two disjoint ranges (for example, a wrapped ring buffer)
     ///
     /// ## Invariants
     ///

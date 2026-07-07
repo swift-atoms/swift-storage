@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Store_Primitive
 import Index_Primitives
 public import Store_Initialization_Primitives
+public import Store_Primitive
 
 extension Store {
     /// Fixed-capacity **inline** typed storage — `n` `Element` slots laid out directly in the value's
@@ -37,11 +37,14 @@ extension Store {
     @frozen
     public struct Inline<Element: ~Copyable, let n: Int>: ~Copyable {
         /// `[MEM-SAFE-027]` — forces non-trivial destruction so `deinit` is not skipped cross-package.
+        ///
         /// MUST precede the `@_rawLayout` storage. Always `nil`.
         @usableFromInline
         internal var _deinitWorkaround: AnyObject? = nil
 
-        /// The initialization ledger. The deinit oracle destroys exactly these slots.
+        /// The initialization ledger.
+        ///
+        /// The deinit oracle destroys exactly these slots.
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
 
@@ -65,7 +68,9 @@ extension Store {
             self._storage = _Raw()
         }
 
-        /// **The deinit oracle.** Destroys exactly the live elements per the ledger, in place — the
+        /// **The deinit oracle.**
+        ///
+        /// Destroys exactly the live elements per the ledger, in place — the
         /// base is recomputed inside this borrow (never cached), so the inline bytes are addressed at
         /// their current footprint.
         deinit {

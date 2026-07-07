@@ -9,14 +9,14 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Memory_Primitive
-public import Memory_Region_Primitives
+public import Index_Primitives
 public import Memory_Address_Primitives
 public import Memory_Alignment_Primitives
 public import Memory_Allocator_Primitive
 public import Memory_Allocator_Protocol_Primitives
 public import Memory_Heap_Primitives
-public import Index_Primitives
+public import Memory_Primitive
+public import Memory_Region_Primitives
 public import Store_Initialization_Primitives
 
 // MARK: - Storage.Contiguous (the dense column) — declared via the cross-module nested-product
@@ -58,11 +58,15 @@ extension Storage where Allocation: Memory.Region & ~Copyable {
         @usableFromInline
         internal var _capacity: Index<Element>.Count
 
-        /// The initialization ledger. The deinit oracle destroys exactly these slots.
+        /// The initialization ledger.
+        ///
+        /// The deinit oracle destroys exactly these slots.
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
 
-        /// The element-free allocation (e.g. `Memory.Allocator<Memory.Heap>`). Owns the bytes;
+        /// The element-free allocation, such as `Memory.Allocator<Memory.Heap>`.
+        ///
+        /// Owns the bytes;
         /// its own `deinit` frees the region after the oracle has destroyed the live elements. The
         /// typed base is derived from `allocation.base` per access — never stored.
         ///
@@ -73,7 +77,9 @@ extension Storage where Allocation: Memory.Region & ~Copyable {
         @usableFromInline
         internal var allocation: Allocation
 
-        /// Designated initializer — adopts an allocation. The typed base is derived per access from
+        /// Designated initializer — adopts an allocation.
+        ///
+        /// The typed base is derived per access from
         /// `allocation.base`, so no base is stored or passed.
         @inlinable
         public init(
@@ -86,7 +92,9 @@ extension Storage where Allocation: Memory.Region & ~Copyable {
             self._initialization = initialization
         }
 
-        /// **The deinit oracle.** Destroys exactly the live elements per the ledger (`forEach` over the
+        /// **The deinit oracle.**
+        ///
+        /// Destroys exactly the live elements per the ledger (`forEach` over the
         /// initialized ranges — the prior `Memory.Heap.Buffer.deinit` re-homed); THEN the `allocation`
         /// field is destroyed, freeing the raw bytes. The two-phase order is automatic and correct:
         /// the bytes are raw, so freeing them never touches the already-deinitialized elements. The
@@ -145,8 +153,9 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
     @inlinable
     public var isEmpty: Bool { _initialization.isEmpty }
 
-    /// The initialization ledger — settable so a composing discipline (`Buffer.Linear`) can bulk-sync
-    /// it. The deinit oracle honors whatever is written here.
+    /// The initialization ledger — settable so a composing discipline (`Buffer.Linear`) can bulk-sync it.
+    ///
+    /// The deinit oracle honors whatever is written here.
     @inlinable
     public var initialization: Store.Initialization<Element> {
         get { _initialization }
@@ -186,7 +195,9 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
 // MARK: - Explicit copy (the Q2 transformation of the prior conditional Copyable)
 
 extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, Element: Copyable {
-    /// Explicit deep copy. A Model-2 storage (unconditionally `~Copyable`, deinit oracle) cannot
+    /// Explicit deep copy.
+    ///
+    /// A Model-2 storage (unconditionally `~Copyable`, deinit oracle) cannot
     /// auto-derive `Copyable` (a type with a `deinit` is noncopyable), so the prior conditional
     /// `Copyable where Element: Copyable` is preserved as an explicit op: allocate a fresh region and
     /// copy the live prefix `[0, count)`.

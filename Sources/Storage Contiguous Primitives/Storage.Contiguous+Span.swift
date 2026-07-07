@@ -15,9 +15,9 @@
 // constraint is honored: Span / OutputSpan live around the Storage seam, never below the allocator.
 
 public import Index_Primitives
-public import Store_Initialization_Primitives
-public import Span_Protocol_Primitives
 public import Memory_Region_Primitives
+public import Span_Protocol_Primitives
+public import Store_Initialization_Primitives
 
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// Safe, bounds-checked read access over the initialized prefix `[0, count)`.
@@ -40,8 +40,9 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         }
     }
 
-    /// A whole-region `OutputSpan` over `[0, capacity)` for appending into the uninitialized tail; on
-    /// `defer` it `finalize`s and commits the new count into the ledger (`.linear(count:)`). The
+    /// A whole-region `OutputSpan` over `[0, capacity)` for appending into the uninitialized tail.
+    ///
+    /// On `defer` it `finalize`s and commits the new count into the ledger (`.linear(count:)`). The
     /// `defer` runs on both normal and throwing exit, so a throwing initializer commits whatever it
     /// appended and never double-deinitializes.
     @inlinable

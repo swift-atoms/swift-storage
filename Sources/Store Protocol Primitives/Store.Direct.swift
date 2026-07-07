@@ -19,7 +19,7 @@
 /// A **direct canonical column** — a buffer-discipline stack (`Buffer.Linear`, `Buffer.Ring`)
 /// or a storage-direct column — conforms to this marker. `Shared` and bounded instantiations
 /// do **NOT** conform (that absence IS the fence): an axis-CHANGING front-door alias
-/// (allocation, e.g. `Array<E>.Small<n>`) constrains its column to `Column.Direct`, so a
+/// (allocation, for example `Array<E>.Small<n>`) constrains its column to `Column.Direct`, so a
 /// cross-axis chain that would silently reset an already-set axis (`Shared`, bounded) fails
 /// to compile rather than dropping the axis without a diagnostic.
 ///
