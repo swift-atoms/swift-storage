@@ -48,8 +48,9 @@ extension Store {
         @usableFromInline
         internal var _initialization: Store.Initialization<Element>
 
-        /// Inline raw storage: exactly `n` `Element`-sized cells in the value's footprint. `@_rawLayout`
-        /// storage MUST be the LAST stored property.
+        /// Inline raw storage: exactly `n` `Element`-sized cells in the value's footprint.
+        ///
+        /// `@_rawLayout` storage MUST be the LAST stored property.
         @_rawLayout(likeArrayOf: Element, count: n)
         @usableFromInline
         internal struct _Raw: ~Copyable {
