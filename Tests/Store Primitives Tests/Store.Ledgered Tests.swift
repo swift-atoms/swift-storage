@@ -8,7 +8,9 @@ import Testing
 private struct TwoSlot: Store.Ledgered.`Protocol` {
     var slots: [Int?] = [nil, nil]
     var initialization: Store.Initialization<Int> = .empty
+}
 
+extension TwoSlot {
     var capacity: Index<Int>.Count { Index<Int>.Count(UInt(2)) }
 
     // Test-fixture contract: the caller only reads initialized slots.
@@ -40,7 +42,7 @@ private func relabel<S: Store.Ledgered.`Protocol` & ~Copyable>(
 }
 
 @Suite
-struct StoreLedgeredTests {
+struct `Store Ledgered Tests` {
 
     @Test
     func `the settable ledger requirement is generically writable and readable`() {

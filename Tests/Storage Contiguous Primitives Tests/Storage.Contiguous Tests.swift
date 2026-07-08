@@ -36,13 +36,18 @@ private final class Item: @unchecked Sendable {
         self.id = id
         self.value = value
     }
-    func bump() { value += 1 }
     deinit { Probe.recordDestroy(id) }
+}
+
+extension Item {
+    func bump() { value += 1 }
 }
 
 /// Serialized destruction recorder (safe because the suite below is `.serialized`; the
 /// `nonisolated(unsafe)` access is encapsulated here so call sites stay clean).
-private enum Probe {
+private enum Probe {}
+
+extension Probe {
     nonisolated(unsafe) static var _destroyed: [Int] = []
     static func reset() { unsafe _destroyed = [] }
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }
@@ -51,10 +56,10 @@ private enum Probe {
 }
 
 @Suite(.serialized)
-struct StorageContiguousTests {
+struct `Storage Contiguous Tests` {
 
     @Test
-    func createReportsCapacityCountEmpty() {
+    func `create reports capacity count empty`() {
         Probe.reset()
         let s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))
         let cap = s.capacity
@@ -66,7 +71,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func initializeSubscriptMutateMove() {
+    func `initialize subscript mutate move`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.initialize(at: 0, to: Item(7, value: 70))  // uninit → init (typed Index<Element>)
@@ -88,7 +93,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func spanProjectsInitializedPrefix() {
+    func `span projects initialized prefix`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.initialize(at: 0, to: Item(1, value: 10))
@@ -104,7 +109,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func mutableSpanMutatesInPlace() {
+    func `mutable span mutates in place`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.initialize(at: 0, to: Item(1, value: 10))
@@ -121,7 +126,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func outputSpanAppendCommitsLedger() {
+    func `output span append commits ledger`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.outputSpan.append(Item(1, value: 100))  // bulk-init through the OutputSpan tail
@@ -135,7 +140,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func withOutputSpanWindowsTheTailExactly() {
+    func `with output span windows the tail exactly`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
         s.initialize(at: 0, to: Item(1, value: 10))
@@ -169,7 +174,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func withOutputSpanCommitsPartialAppendsOnThrow() {
+    func `with output span commits partial appends on throw`() {
         Probe.reset()
         enum Deliberate: Swift.Error { case thrown }
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
@@ -190,7 +195,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func teardownDestroysLivePrefixOnce() {
+    func `teardown destroys live prefix once`() {
         Probe.reset()
         do {
             var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(8))
@@ -203,7 +208,7 @@ struct StorageContiguousTests {
     }
 
     @Test
-    func copyDeepCopiesLivePrefix() {
+    func `copy deep copies live prefix`() {
         Probe.reset()
         var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))
         s.initialize(at: 0, to: 7)
@@ -235,7 +240,7 @@ private struct MoveOnlyElement: ~Copyable, Sendable {
 private func requireSendable<T: Sendable & ~Copyable>(_ value: borrowing T) {}
 
 @Suite
-struct StorageContiguousSendableTests {
+struct `Storage Contiguous Sendable Tests` {
 
     @Test
     func `sendable admits move-only elements (W2-F1 regression)`() {

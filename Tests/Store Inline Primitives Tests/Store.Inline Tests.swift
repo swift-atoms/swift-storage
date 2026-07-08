@@ -24,11 +24,16 @@ private final class Item: @unchecked Sendable {
         self.id = id
         self.value = value
     }
-    func bump() { value += 1 }
     deinit { Probe.recordDestroy(id) }
 }
 
-private enum Probe {
+extension Item {
+    func bump() { value += 1 }
+}
+
+private enum Probe {}
+
+extension Probe {
     nonisolated(unsafe) static var _destroyed: [Int] = []
     static func reset() { unsafe _destroyed = [] }
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }
@@ -37,10 +42,10 @@ private enum Probe {
 }
 
 @Suite(.serialized)
-struct StoreInlineTests {
+struct `Store Inline Tests` {
 
     @Test
-    func createReportsCapacityEmpty() {
+    func `create reports capacity empty`() {
         let s = Store.Inline<Int, 4>()
         let cap = s.capacity
         let empty = s.isEmpty
@@ -49,7 +54,7 @@ struct StoreInlineTests {
     }
 
     @Test
-    func initializeSubscriptMutateMove() {
+    func `initialize subscript mutate move`() {
         Probe.reset()
         var s = Store.Inline<Item, 4>()
         s.initialize(at: 0, to: Item(7, value: 70))  // into the inline footprint
@@ -71,7 +76,7 @@ struct StoreInlineTests {
     }
 
     @Test
-    func teardownDestroysLivePrefixOnce() {
+    func `teardown destroys live prefix once`() {
         Probe.reset()
         do {
             var s = Store.Inline<Item, 8>()
@@ -84,7 +89,7 @@ struct StoreInlineTests {
     }
 
     @Test
-    func moveOnlyElementsRideTheSeam() {
+    func `move only elements ride the seam`() {
         // The ASK-I restoration (ratified 2026-06-10): the seam surface was silently
         // `Element: Copyable`-only via bare extensions; move-only elements are the
         // declaration's promise and must ride initialize/subscript/move + the oracle.
@@ -116,7 +121,9 @@ private struct MoveOnly: ~Copyable {
 
 /// Separate recorder (per-suite isolation discipline; `MoveOnly` is used only by the
 /// move-only test but a distinct recorder keeps the destruction streams independent).
-private enum Probe2 {
+private enum Probe2 {}
+
+extension Probe2 {
     nonisolated(unsafe) static var _destroyed: [Int] = []
     static func reset() { unsafe _destroyed = [] }
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }

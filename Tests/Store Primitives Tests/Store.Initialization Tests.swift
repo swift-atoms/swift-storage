@@ -13,8 +13,8 @@ import Store_Primitives
 import Store_Primitives_Test_Support
 import Testing
 
-@Suite("Store.Initialization")
-struct StoreInitializationTests {
+@Suite
+struct `Store.Initialization` {
 
     // MARK: - Factories
 
