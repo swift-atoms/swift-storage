@@ -127,13 +127,13 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
     /// the typed lift is performed HERE, at the Storage tier, honoring `Memory.Region`'s element-free
     /// invariant ([MEM-SAFE-030]).
     @inlinable
-    internal var _base: UnsafeMutablePointer<Element> {
+    package var _base: UnsafeMutablePointer<Element> {
         unsafe allocation.base.mutablePointer.assumingMemoryBound(to: Element.self)
     }
 
     /// The typed pointer to a physical slot, off the per-access-derived base.
     @inlinable
-    internal func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+    package func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
         unsafe _base + Index<Element>.Offset(fromZero: slot)
     }
 }

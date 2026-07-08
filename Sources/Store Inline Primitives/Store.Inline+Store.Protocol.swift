@@ -20,7 +20,7 @@ public import Store_Protocol_Primitives
 extension Store.Inline where Element: ~Copyable {
     /// The typed base for reading — recomputed within the caller's borrow of `self`; never cached.
     @inlinable
-    internal func _readBase() -> UnsafePointer<Element> {
+    package func _readBase() -> UnsafePointer<Element> {
         unsafe withUnsafePointer(to: _storage) {
             unsafe UnsafeRawPointer($0).assumingMemoryBound(to: Element.self)
         }
@@ -28,7 +28,7 @@ extension Store.Inline where Element: ~Copyable {
 
     /// The typed base for mutation — recomputed within the caller's exclusive `&self` access.
     @inlinable
-    internal mutating func _mutableBase() -> UnsafeMutablePointer<Element> {
+    package mutating func _mutableBase() -> UnsafeMutablePointer<Element> {
         unsafe withUnsafeMutablePointer(to: &_storage) {
             unsafe UnsafeMutableRawPointer($0).assumingMemoryBound(to: Element.self)
         }
