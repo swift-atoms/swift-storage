@@ -20,11 +20,34 @@ public import Span_Protocol_Primitives
 public import Store_Initialization_Primitives
 
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
+    /// Debug-only precondition: the ledger must be prefix-shaped (`.empty` or a single `.one`
+    /// range starting at slot zero).
+    ///
+    /// Every accessor in this file presents (or derives from) the region as ONE contiguous run
+    /// starting at `_base`, sized `count` (or `capacity`) — that is only a truthful view of the
+    /// region when `_initialization.isPrefixShaped`. A composing discipline whose occupancy is
+    /// NOT linear (`Buffer.Ring`'s wrapped `.two` shape) bulk-syncs a non-prefix ledger via
+    /// `Store.Ledgered.Protocol`; such a discipline must not reach for `span` / `mutableSpan` /
+    /// `outputSpan` / `withOutputSpan` / `mutableSpan(count:)` — doing so would silently present
+    /// the wrong bytes as "live." Debug-only (`assert`, not `precondition`): the ledger discipline
+    /// is a documented contract between composing dispositions, not something worth paying for
+    /// in release builds.
+    @inlinable
+    package func _assertPrefixShapedLedger(_ function: StaticString = #function) {
+        assert(
+            _initialization.isPrefixShaped,
+            "\(function): requires a prefix-shaped ledger ([0, count)); the current ledger is "
+                + "wrapped or offset — a composing discipline synced a non-prefix shape "
+                + "(e.g. Buffer.Ring) and must not use this accessor"
+        )
+    }
+
     /// Safe, bounds-checked read access over the initialized prefix `[0, count)`.
     @inlinable
     public var span: Swift.Span<Element> {
         @_lifetime(borrow self)
         get {
+            _assertPrefixShapedLedger()
             let span = unsafe Swift.Span(_unsafeStart: _base, count: Int(bitPattern: count))
             return unsafe _overrideLifetime(span, borrowing: self)
         }
@@ -35,6 +58,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
     public var mutableSpan: Swift.MutableSpan<Element> {
         @_lifetime(&self)
         mutating get {
+            _assertPrefixShapedLedger()
             let span = unsafe Swift.MutableSpan(_unsafeStart: _base, count: Int(bitPattern: count))
             return unsafe _overrideLifetime(span, mutating: &self)
         }
@@ -49,6 +73,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
     public var outputSpan: Swift.OutputSpan<Element> {
         @_lifetime(&self)
         _modify {
+            _assertPrefixShapedLedger()
             let cap = Int(bitPattern: _capacity)
             var output = unsafe Swift.OutputSpan(
                 buffer: unsafe UnsafeMutableBufferPointer(start: _base, count: cap),
@@ -65,6 +90,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         }
         @_lifetime(borrow self)
         _read {
+            _assertPrefixShapedLedger()
             let cap = Int(bitPattern: _capacity)
             var output = unsafe Swift.OutputSpan(
                 buffer: unsafe UnsafeMutableBufferPointer(start: _base, count: cap),
@@ -93,6 +119,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         addingCapacity budget: Index<Element>.Count,
         _ body: (inout Swift.OutputSpan<Element>) throws(Failure) -> R
     ) throws(Failure) -> R {
+        _assertPrefixShapedLedger()
         let frontier = Int(bitPattern: count)
         let window = Int(bitPattern: budget)
         precondition(
@@ -131,6 +158,7 @@ extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: Memory.R
     @_lifetime(&self)
     @inlinable
     public mutating func mutableSpan(count: Index<Element>.Count) -> Swift.MutableSpan<Element> {
+        _assertPrefixShapedLedger()
         let span = unsafe Swift.MutableSpan(_unsafeStart: _base, count: Int(bitPattern: count))
         return unsafe _overrideLifetime(span, mutating: &self)
     }

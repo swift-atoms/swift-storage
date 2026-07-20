@@ -258,6 +258,41 @@ struct `Storage Contiguous Tests` {
         #expect(dupCount == Index<Int>.Count(2))
         #expect(src0 == 99)  // deep copy: original mutation does not leak
     }
+
+    @Test
+    func `copy preserves a non-prefix ledger shape (F-002 regression: Buffer.Ring-style wrapped occupancy)`() {
+        // F-002: copy() assumed `_initialization` was always prefix-shaped ([0, count), offset 0
+        // in both source and destination) -- an assumption `Store.Ledgered.Protocol` explicitly
+        // permits to be false. A composing discipline whose occupancy is not linear (a
+        // Buffer.Ring-style wrap) bulk-syncs a `.two` shape via the settable `initialization`
+        // ledger (exactly as `Store Ledgered Tests.swift`'s `relabel` helper demonstrates for the
+        // seam in general). All 6 physical slots are populated up front (with plain Ints, so
+        // reading a ledger-"dead" slot cannot crash or leak) before the ledger is relabeled to a
+        // wrapped .two shape describing physical slots {4,5,0,1} as live and {2,3} as dead.
+        Probe.reset()
+        var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(6))
+        for i in 0..<6 {
+            s.initialize(at: Index<Int>(Ordinal(UInt(i))), to: i)
+        }
+        let wrapped = Store.Initialization<Int>.two(
+            first: Index<Int>(Ordinal(UInt(4)))..<Index<Int>(Ordinal(UInt(6))),
+            second: Index<Int>(Ordinal(UInt(0)))..<Index<Int>(Ordinal(UInt(2)))
+        )
+        s.initialization = wrapped
+        let dup = s.copy()
+        let dupInitialization = dup.initialization
+        let dupCount = dup.count
+        #expect(dupInitialization == wrapped)  // shape preserved, not re-linearized to [0, 4)
+        #expect(dupCount == Index<Int>.Count(4))
+        let dup4 = dup[Index<Int>(Ordinal(UInt(4)))]
+        let dup5 = dup[Index<Int>(Ordinal(UInt(5)))]
+        let dup0 = dup[Index<Int>(Ordinal(UInt(0)))]
+        let dup1 = dup[Index<Int>(Ordinal(UInt(1)))]
+        #expect(dup4 == 4)
+        #expect(dup5 == 5)
+        #expect(dup0 == 0)
+        #expect(dup1 == 1)
+    }
 }
 
 // MARK: - Sendable surface (the W2-F1 regression lock)

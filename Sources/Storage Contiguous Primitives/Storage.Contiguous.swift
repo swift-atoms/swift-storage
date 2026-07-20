@@ -199,16 +199,30 @@ extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, 
     ///
     /// A Model-2 storage (unconditionally `~Copyable`, deinit oracle) cannot
     /// auto-derive `Copyable` (a type with a `deinit` is noncopyable), so the prior conditional
-    /// `Copyable where Element: Copyable` is preserved as an explicit op: allocate a fresh region and
-    /// copy the live prefix `[0, count)`.
+    /// `Copyable where Element: Copyable` is preserved as an explicit op: allocate a fresh region
+    /// and copy-initialize exactly the live ranges the ledger reports, AT THEIR OWN slot
+    /// positions — mirroring the deinit oracle's range walk (`Storage.Contiguous.swift`'s
+    /// `deinit`, above).
+    ///
+    /// The prior implementation assumed `_initialization` was always prefix-shaped
+    /// (`[0, count)`, offset 0 in both source and destination) — an assumption the
+    /// `Store.Ledgered.Protocol` seam explicitly permits to be false: a composing discipline
+    /// whose occupancy is NOT linear (`Buffer.Ring`'s wrapped `.two` shape, or any `.one` range
+    /// not starting at zero) bulk-syncs `initialization` to a non-prefix shape. Copying `count`
+    /// elements from offset 0 in that case would copy the WRONG bytes (some live slots outside
+    /// `[0, count)` are skipped; some dead slots inside `[0, count)` are read as if live) and then
+    /// mislabel the destination as `.linear(count: n)`, which does not match what was actually
+    /// copied. Walking `_initialization.forEach` and preserving the exact same ledger shape on
+    /// `out` is correct for every shape, prefix or not.
     @inlinable
     public borrowing func copy() -> Self {
         var out = Self.create(minimumCapacity: _capacity)
-        let n = count
-        if n > .zero {
-            unsafe out._base.initialize(from: _base, count: Int(bitPattern: n))
-            out._initialization = .linear(count: n)
+        _initialization.forEach { range in
+            guard !range.isEmpty else { return }
+            let offset = Index<Element>.Offset(fromZero: range.lowerBound)
+            unsafe (out._base + offset).initialize(from: _base + offset, count: range.count)
         }
+        out._initialization = _initialization
         return out
     }
 }
