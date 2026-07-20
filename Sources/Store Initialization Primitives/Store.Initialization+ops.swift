@@ -46,6 +46,37 @@ extension Store.Initialization where Element: ~Copyable & ~Escapable {
     }
 }
 
+// MARK: - Prefix Shape
+
+extension Store.Initialization where Element: ~Copyable & ~Escapable {
+    /// Whether this ledger describes a single contiguous run starting at slot zero
+    /// (or is empty).
+    ///
+    /// `Storage.Contiguous`'s span family (`span`, `mutableSpan`, `outputSpan`,
+    /// `withOutputSpan`, `mutableSpan(count:)`, `copy()`) and the `Store.`Protocol``
+    /// seam's self-maintained `initialize(at:to:)` / `move(at:)` arithmetic both
+    /// assume this shape — they treat the live region as exactly `[0, count)`. A
+    /// `.two` (wrapped) shape, or a `.one` range that does not start at zero, is the
+    /// NON-prefix shape a composing discipline whose occupancy is not linear
+    /// (`Buffer.Ring`) bulk-syncs via the settable `initialization` ledger
+    /// (`Store.Ledgered.Protocol`, ratified 2026-06-10). Consumers that present or
+    /// derive-from the region as a single contiguous run must not do so while this
+    /// is `false`.
+    @inlinable
+    public var isPrefixShaped: Bool {
+        switch self {
+        case .empty:
+            return true
+
+        case .one(let range):
+            return range.lowerBound == .zero
+
+        case .two:
+            return false
+        }
+    }
+}
+
 // MARK: - Range Iteration
 
 extension Store.Initialization where Element: ~Copyable & ~Escapable {

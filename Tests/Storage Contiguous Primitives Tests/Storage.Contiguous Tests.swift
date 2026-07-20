@@ -208,6 +208,40 @@ struct `Storage Contiguous Tests` {
     }
 
     @Test
+    func `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`() {
+        // Mirrors the Store.Inline regression (F-004): deinitialize(at:)/deinitialize(range:)
+        // are built only on move(at:), whose self-maintained ledger arithmetic is truthful only
+        // for tail (LIFO) removal. This exercises the new debug-guard decision logic directly.
+        Probe.reset()
+        var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))
+        s.initialize(at: 0, to: 10)
+        s.initialize(at: 1, to: 11)
+        s.initialize(at: 2, to: 12)
+        // Ledger is .one(0..<3) — prefix-shaped; the tail is slot 2.
+        let tail = Swift.Range<Index<Int>>(start: 2, count: .one)
+        let notTail0 = Swift.Range<Index<Int>>(start: 0, count: .one)
+        let notTail1 = Swift.Range<Index<Int>>(start: 1, count: .one)
+        let tailIsValid = s._isValidPrefixTailRemoval(range: tail)
+        let notTail0IsValid = s._isValidPrefixTailRemoval(range: notTail0)
+        let notTail1IsValid = s._isValidPrefixTailRemoval(range: notTail1)
+        #expect(tailIsValid)
+        #expect(!notTail0IsValid)
+        #expect(!notTail1IsValid)
+        // Once the ledger is no longer (currently) prefix-shaped, the guard steps aside.
+        s.initialization = .two(
+            first: Swift.Range<Index<Int>>(start: 2, count: .one),
+            second: Swift.Range<Index<Int>>(start: 0, count: .one)
+        )
+        let notTail0IsValidWhenWrapped = s._isValidPrefixTailRemoval(range: notTail0)
+        #expect(notTail0IsValidWhenWrapped)
+        // Clean up without tripping any guard.
+        s.initialization = .linear(count: 3)
+        _ = s.move(at: 2)
+        _ = s.move(at: 1)
+        _ = s.move(at: 0)
+    }
+
+    @Test
     func `copy deep copies live prefix`() {
         Probe.reset()
         var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))

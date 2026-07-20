@@ -30,6 +30,25 @@ extension __StoreProtocol where Self: ~Copyable {
     /// `move`-then-drop: the moved element is discarded, which runs its
     /// deinitializer (if any) and clears the slot.
     ///
+    /// ## Ledger consequence — LIFO/tail-only (conformers that self-maintain a ledger)
+    ///
+    /// A conformer whose `move(at:)` self-maintains an initialization ledger with UNCONDITIONAL
+    /// linear-prefix arithmetic (decrementing the live count by exactly one, as `Store.Inline`
+    /// and `Storage.Contiguous` both do) keeps that ledger truthful ONLY when `slot` is its
+    /// CURRENT tail — the LIFO discipline. Calling this generic derivation at any OTHER slot
+    /// silently falsifies the ledger: the just-vacated slot re-appears as "initialized," and the
+    /// real (untouched) tail slot silently drops off as "uninitialized." The conformer's own
+    /// deinit oracle honors that falsified ledger, so a non-tail call here is a drop-time UB
+    /// footgun (double-deinitialize of already-uninitialized memory, or a leaked live element)
+    /// even though the precondition below was honestly satisfied. `Store.Inline` and
+    /// `Storage.Contiguous` both expose debug-asserted, ledger-aware overrides of this same
+    /// entry point (see `Store.Inline+Store.Protocol.swift` / `Storage.Contiguous+Store.Protocol.swift`)
+    /// that catch a non-tail call while their ledger is currently prefix-shaped; those overrides
+    /// are chosen automatically for direct calls against the concrete type, but a generic caller
+    /// constrained only to this bare `__StoreProtocol` seam resolves to THIS unguarded body — a
+    /// discipline that removes at a non-tail slot must re-sync `initialization` itself afterward
+    /// (`Store.Ledgered.Protocol`).
+    ///
     /// - Parameter slot: The physical slot coordinate.
     /// - Precondition: The element at `slot` must be initialized.
     @inlinable
@@ -42,6 +61,10 @@ extension __StoreProtocol where Self: ~Copyable {
     /// Element-wise forward `move`-then-drop over the half-open range. Correct for
     /// `~Copyable` elements; the bulk path stays a concrete per-discipline
     /// capability (plan §4).
+    ///
+    /// See ``deinitialize(at:)`` for the same ledger-truthfulness (LIFO/tail-only) constraint —
+    /// it applies per element as this walks forward, so it is honored only when `range` is
+    /// exactly the ledger's current tail range.
     ///
     /// - Parameter range: The contiguous range of slots to deinitialize.
     /// - Precondition: Every slot in `range` must be initialized.

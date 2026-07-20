@@ -28,6 +28,18 @@ extension __StoreProtocol where Self: ~Copyable {
     ///
     /// No-op when `i == j`. Count unchanged.
     ///
+    /// ## Ledger consequence — why this stays truthful despite touching non-tail slots
+    ///
+    /// Unlike `deinitialize(at:)` (see its doc), `swapAt` never leaves a self-maintaining
+    /// conformer's ledger falsified: every `move(at:)` here is immediately paired with a
+    /// corresponding `initialize(at:to:)` that restores the count each decremented (two
+    /// `move`s, then two `initialize`s — net count unchanged). The INTERMEDIATE ledger states
+    /// between those four calls are transiently wrong (exactly like `deinitialize(at:)`'s
+    /// falsification), but nothing observes the ledger mid-sequence — this is a plain,
+    /// synchronous, non-throwing mutating function with no suspension point — so only the
+    /// FINAL state matters, and it is correct whenever `i` and `j` were both within the
+    /// ledger's live region to begin with.
+    ///
     /// - Parameters:
     ///   - i: The first physical slot coordinate.
     ///   - j: The second physical slot coordinate.
@@ -46,6 +58,10 @@ extension __StoreProtocol where Self: ~Copyable {
     /// After the call `source` is uninitialized and `destination` is initialized.
     /// No-op when `source == destination`.
     ///
+    /// Ledger-safe by the same pairing argument as ``swapAt(_:_:)``: the single `move(at:)`
+    /// is immediately paired with `initialize(at:to:)`, so the net count is unchanged and the
+    /// final ledger is truthful whenever both slots were already within the live region.
+    ///
     /// - Parameters:
     ///   - source: The physical slot to move from (must be initialized).
     ///   - destination: The physical slot to move into (must be uninitialized).
@@ -62,6 +78,12 @@ extension __StoreProtocol where Self: ~Copyable {
     /// shift) the loop runs **backward** so an as-yet-unmoved source slot is never
     /// overwritten; otherwise (left shift / disjoint) it runs **forward**. This
     /// matches `memmove` semantics over a `~Copyable` element domain.
+    ///
+    /// Ledger-safe by the same pairing argument as ``swapAt(_:_:)`` / ``move(from:to:)``: each
+    /// step is one `move(from:to:)` call, itself one paired `move(at:)` + `initialize(at:to:)`,
+    /// so the net live count is unchanged after every step and the final ledger is truthful
+    /// whenever `[source, source + count)` and `[destination, destination + count)` were
+    /// already within the live region.
     ///
     /// - Parameters:
     ///   - source: The first source physical slot coordinate.

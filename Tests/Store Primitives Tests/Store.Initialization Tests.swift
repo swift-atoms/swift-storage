@@ -52,6 +52,35 @@ struct `Store.Initialization` {
         #expect(ledger.count == .zero)
     }
 
+    // MARK: - Prefix shape (F-004 regression: the copy() / deinitialize(at:) ledger-falsification fix)
+
+    @Test("isPrefixShaped is true for .empty")
+    func isPrefixShapedEmpty() {
+        let ledger = Store.Initialization<Int>.empty
+        #expect(ledger.isPrefixShaped)
+    }
+
+    @Test("isPrefixShaped is true for .one starting at zero")
+    func isPrefixShapedOneAtZero() {
+        let ledger = Store.Initialization<Int>.linear(count: 3)
+        #expect(ledger.isPrefixShaped)
+    }
+
+    @Test("isPrefixShaped is false for .one NOT starting at zero")
+    func isPrefixShapedOneOffset() {
+        let range = Swift.Range<Index<Int>>(start: Index<Int>(2), count: 3)
+        let ledger = Store.Initialization<Int>.one(range)
+        #expect(!ledger.isPrefixShaped)
+    }
+
+    @Test("isPrefixShaped is false for .two (wrapped)")
+    func isPrefixShapedTwo() {
+        let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
+        let second = Swift.Range<Index<Int>>(start: .zero, count: 3)
+        let ledger = Store.Initialization<Int>.two(first: first, second: second)
+        #expect(!ledger.isPrefixShaped)
+    }
+
     // MARK: - Range iteration
 
     @Test("forEach visits ranges in order")

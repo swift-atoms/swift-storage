@@ -126,6 +126,42 @@ struct `Store Inline Tests` {
     }
 
     @Test
+    func `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`() {
+        // F-004: deinitialize(at:)/deinitialize(range:) are built only on move(at:), which
+        // self-maintains the ledger with unconditional linear-prefix arithmetic — truthful only
+        // when the removed slot is the CURRENT tail. This directly exercises the new debug-guard
+        // decision logic (`_isValidPrefixTailRemoval`) that catches a non-tail removal before it
+        // can silently falsify the ledger.
+        var s = Store.Inline<Int, 4>()
+        s.initialize(at: 0, to: 10)
+        s.initialize(at: 1, to: 11)
+        s.initialize(at: 2, to: 12)
+        // Ledger is .one(0..<3) — prefix-shaped; the tail is slot 2.
+        let tail = Swift.Range<Index<Int>>(start: 2, count: .one)
+        let notTail0 = Swift.Range<Index<Int>>(start: 0, count: .one)
+        let notTail1 = Swift.Range<Index<Int>>(start: 1, count: .one)
+        let tailIsValid = s._isValidPrefixTailRemoval(range: tail)
+        let notTail0IsValid = s._isValidPrefixTailRemoval(range: notTail0)
+        let notTail1IsValid = s._isValidPrefixTailRemoval(range: notTail1)
+        #expect(tailIsValid)
+        #expect(!notTail0IsValid)
+        #expect(!notTail1IsValid)
+        // Once the ledger is no longer (currently) prefix-shaped, the guard steps aside — a
+        // composing discipline that already bulk-synced a non-prefix shape owns its own resync.
+        s.initialization = .two(
+            first: Swift.Range<Index<Int>>(start: 2, count: .one),
+            second: Swift.Range<Index<Int>>(start: 0, count: .one)
+        )
+        let notTail0IsValidWhenWrapped = s._isValidPrefixTailRemoval(range: notTail0)
+        #expect(notTail0IsValidWhenWrapped)
+        // Clean up without tripping any guard: reset to a plain prefix and drain from the tail.
+        s.initialization = .linear(count: 3)
+        _ = s.move(at: 2)
+        _ = s.move(at: 1)
+        _ = s.move(at: 0)
+    }
+
+    @Test
     func `move only elements ride the seam`() {
         // The ASK-I restoration (ratified 2026-06-10): the seam surface was silently
         // `Element: Copyable`-only via bare extensions; move-only elements are the
