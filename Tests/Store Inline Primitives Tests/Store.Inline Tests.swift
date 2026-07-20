@@ -89,6 +89,43 @@ struct `Store Inline Tests` {
     }
 
     @Test
+    func `move at every slot round trips without leaking or double freeing (F-001 pointer-escape regression)`() {
+        // F-001: `move(at:)` computed its typed base via a helper (`_mutableBase()`) that
+        // returned the pointer FROM `withUnsafeMutablePointer`'s closure — the escape the
+        // package's own `inline-storage-read-pointer-escape.md` DECISION forbids. The fix moves
+        // `move(at:)`'s pointer arithmetic AND dereference fully inside the closure (mirroring
+        // the deinit oracle), so the pointer never leaves `withUnsafeMutablePointer`'s scope.
+        // This exercises `move(at:)` at every physical slot (first, middle, last) with a
+        // heap-referencing element: if the restructured pointer computation ever addressed the
+        // wrong slot, this would show up as a wrong id moved, a double-destroy, or a leak (an id
+        // missing from `destroyedSorted`).
+        Probe.reset()
+        var s = Store.Inline<Item, 4>()
+        s.initialize(at: 0, to: Item(101))
+        s.initialize(at: 1, to: Item(102))
+        s.initialize(at: 2, to: Item(103))
+        s.initialize(at: 3, to: Item(104))
+        // Move out of every slot in a non-sequential order to stress the per-op base
+        // recomputation (never cached across calls).
+        let m3 = s.move(at: 3)
+        let m0 = s.move(at: 0)
+        let m2 = s.move(at: 2)
+        let m1 = s.move(at: 1)
+        let ids = [m3.id, m0.id, m2.id, m1.id]
+        #expect(ids == [104, 101, 103, 102])
+        let emptyBeforeDrop = Probe.destroyed.isEmpty  // moved out, not yet destroyed
+        #expect(emptyBeforeDrop)
+        _ = consume m3
+        _ = consume m0
+        _ = consume m2
+        _ = consume m1
+        let destroyedAfterConsume = Probe.destroyedSorted
+        #expect(destroyedAfterConsume == [101, 102, 103, 104])  // exactly once each, no leaks
+        let cnt = s.count
+        #expect(cnt == .zero)
+    }
+
+    @Test
     func `move only elements ride the seam`() {
         // The ASK-I restoration (ratified 2026-06-10): the seam surface was silently
         // `Element: Copyable`-only via bare extensions; move-only elements are the

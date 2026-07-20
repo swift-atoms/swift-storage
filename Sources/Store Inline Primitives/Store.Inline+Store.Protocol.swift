@@ -15,26 +15,6 @@ import Ordinal_Primitives_Standard_Library_Integration
 public import Store_Initialization_Primitives
 public import Store_Protocol_Primitives
 
-// MARK: - In-place base (per-op, never cached — the inline bytes move with the value)
-
-extension Store.Inline where Element: ~Copyable {
-    /// The typed base for reading — recomputed within the caller's borrow of `self`; never cached.
-    @inlinable
-    package func _readBase() -> UnsafePointer<Element> {
-        unsafe withUnsafePointer(to: _storage) {
-            unsafe UnsafeRawPointer($0).assumingMemoryBound(to: Element.self)
-        }
-    }
-
-    /// The typed base for mutation — recomputed within the caller's exclusive `&self` access.
-    @inlinable
-    package mutating func _mutableBase() -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafeMutablePointer(to: &_storage) {
-            unsafe UnsafeMutableRawPointer($0).assumingMemoryBound(to: Element.self)
-        }
-    }
-}
-
 // MARK: - Properties
 
 extension Store.Inline where Element: ~Copyable {
@@ -58,6 +38,56 @@ extension Store.Inline where Element: ~Copyable {
     }
 }
 
+// MARK: - In-place base for the coroutine subscript ONLY (per-op, never cached)
+
+// `initialize(at:to:)` / `move(at:)` below do ALL of their pointer arithmetic and dereference
+// INSIDE the `withUnsafeMutablePointer` closure directly — the ratified
+// `inline-storage-read-pointer-escape.md` pattern, mirroring the deinit oracle
+// (`Store.Inline.swift:77-87`) — so those two ops have NO pointer escape at all.
+//
+// `subscript`'s `_read`/`_modify` cannot follow the same shape: Swift's coroutine `yield` is only
+// recognized in the accessor's own immediate lexical body, not inside a nested closure literal —
+// `unsafe withUnsafePointer(to: _storage) { raw in yield raw.pointee }` fails to compile
+// ("cannot find 'yield' in scope"), confirmed against this toolchain while fixing this finding.
+// `_read`/`_modify` are required here (not plain `get`/`set`) because the seam must support
+// `~Copyable` `Element` without copying, so there is no closure-only alternative for the
+// coroutine case. `_readBase()` / `_mutableBase()` therefore remain — narrowed to this ONE call
+// site — as a bounded, DOCUMENTED exception: `withUnsafePointer(to:_:)` states "the pointer
+// argument is valid only during the execution of withUnsafePointer(to:_:). Do not store or
+// return the pointer for later use," and returning it here is against that letter. It is sound
+// in practice because (1) `subscript`'s `_read`/`_modify` borrow `self` (shared or exclusive)
+// for the coroutine's ENTIRE duration — Swift's own exclusivity enforcement forbids `self` from
+// moving while suspended at `yield` — so the inline bytes' address cannot change between this
+// call returning and the immediate dereference in the same accessor body; (2) the pointer is
+// used exactly once, immediately, and is never cached across separate calls (recomputed fresh
+// per access, per `Store.Inline.swift`'s documented invariant). This mirrors the DECISION
+// document's own conclusion for the structurally-identical mutating `pointer(at:)` case ("this is
+// still technically undefined behavior per Swift's documentation—it just happens to work in
+// practice because... the caller typically uses the pointer immediately").
+extension Store.Inline where Element: ~Copyable {
+    /// The typed base for reading — recomputed within the caller's borrow of `self`; never cached.
+    ///
+    /// See the file-level note above: this is a bounded, documented exception to the
+    /// no-escape rule, required only because `yield` cannot appear inside a nested closure.
+    @inlinable
+    package func _readBase() -> UnsafePointer<Element> {
+        unsafe withUnsafePointer(to: _storage) {
+            unsafe UnsafeRawPointer($0).assumingMemoryBound(to: Element.self)
+        }
+    }
+
+    /// The typed base for mutation — recomputed within the caller's exclusive `&self` access.
+    ///
+    /// See the file-level note above: this is a bounded, documented exception to the
+    /// no-escape rule, required only because `yield` cannot appear inside a nested closure.
+    @inlinable
+    package mutating func _mutableBase() -> UnsafeMutablePointer<Element> {
+        unsafe withUnsafeMutablePointer(to: &_storage) {
+            unsafe UnsafeMutableRawPointer($0).assumingMemoryBound(to: Element.self)
+        }
+    }
+}
+
 // MARK: - Store.Protocol seam (the 4 ops, over the in-place inline bytes)
 
 extension Store.Inline where Element: ~Copyable {
@@ -77,6 +107,16 @@ extension Store.Inline where Element: ~Copyable {
     /// Initializes the uninitialized slot at `slot` (uninit → init; extends the linear-prefix ledger).
     @inlinable
     public mutating func initialize(at slot: Index<Element>, to element: consuming Element) {
+        // NOTE: unlike `move(at:)` below, this cannot do its dereference inside the
+        // `withUnsafeMutablePointer` closure — capturing an external `consuming Element`
+        // parameter INTO a non-escaping stdlib closure hits Swift's ownership checker
+        // ("'element' is borrowed and cannot be consumed" / "missing reinitialization of
+        // closure capture 'element' after consume", both confirmed against this toolchain
+        // while fixing this finding; `Element` is generic over `~Copyable`, so there is no
+        // capture-list spelling available that both moves `element` in and satisfies the
+        // checker). `_mutableBase()` is used instead — see its documented, bounded-exception
+        // rationale above: the pointer is used exactly once, immediately, in the very next
+        // statement, under the same exclusive `&self` access `_mutableBase()` itself borrows.
         let pointer = unsafe _mutableBase() + Index<Element>.Offset(fromZero: slot)
         unsafe pointer.initialize(to: element)
         _initialization = .linear(count: count + .one)
@@ -85,8 +125,11 @@ extension Store.Inline where Element: ~Copyable {
     /// Moves the initialized element out of `slot` (init → uninit; shrinks the linear-prefix ledger).
     @inlinable
     public mutating func move(at slot: Index<Element>) -> Element {
-        let pointer = unsafe _mutableBase() + Index<Element>.Offset(fromZero: slot)
-        let element = unsafe pointer.move()
+        let element = unsafe withUnsafeMutablePointer(to: &_storage) { raw -> Element in
+            let base = unsafe UnsafeMutableRawPointer(raw).assumingMemoryBound(to: Element.self)
+            let pointer = unsafe base + Index<Element>.Offset(fromZero: slot)
+            return unsafe pointer.move()
+        }
         _initialization = .linear(count: count.subtract.saturating(.one))
         return element
     }
