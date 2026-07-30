@@ -180,7 +180,33 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
     public static func create<Resource: Memory.Growable & ~Copyable>(
         minimumCapacity: Index<Element>.Count
     ) -> Self where Allocation == Memory.Allocator<Resource> {
-        let capacityInBytes = Int(bitPattern: minimumCapacity) * MemoryLayout<Element>.stride
+        do {
+            return try Self(minimumCapacity: minimumCapacity)
+        } catch {
+            preconditionFailure(
+                "Storage.Contiguous capacity \(minimumCapacity) * stride \(MemoryLayout<Element>.stride) overflows the byte-count domain"
+            )
+        }
+    }
+
+    /// Creates contiguous storage over a fresh passthrough allocation sized for `minimumCapacity`
+    /// `Element` slots, validating the byte count.
+    ///
+    /// The throwing peer of ``create(minimumCapacity:)``: the
+    /// `capacity * stride(Element)` multiplication is checked, and a capacity
+    /// whose byte count does not fit the byte-count domain surfaces as
+    /// ``Error`` instead of trapping mid-multiplication.
+    @inlinable
+    public init<Resource: Memory.Growable & ~Copyable>(
+        minimumCapacity: Index<Element>.Count
+    ) throws(__StorageContiguousError) where Allocation == Memory.Allocator<Resource> {
+        let capacity = Int(bitPattern: minimumCapacity)
+        let (capacityInBytes, overflowed) = capacity.multipliedReportingOverflow(
+            by: MemoryLayout<Element>.stride
+        )
+        guard capacity >= 0, !overflowed else {
+            throw .overflow(capacity: capacity, stride: MemoryLayout<Element>.stride)
+        }
         let byteCount = Memory.Address.Count(UInt(capacityInBytes))
         // WHY: alignof(Element) is always a positive power of two, so the validating
         // `Memory.Alignment` initializer never throws here.
@@ -188,7 +214,7 @@ extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
         // swiftlint:disable:next force_try
         let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)
         let allocation = Memory.Allocator(Resource(byteCount: byteCount, alignment: alignment))
-        return Self(allocation: allocation, capacity: minimumCapacity)
+        self.init(allocation: allocation, capacity: minimumCapacity)
     }
 }
 

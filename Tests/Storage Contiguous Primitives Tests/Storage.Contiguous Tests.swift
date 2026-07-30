@@ -59,6 +59,40 @@ extension Probe {
 struct `Storage Contiguous Tests` {
 
     @Test
+    func `near-limit capacity throws typed overflow instead of trapping`() {
+        // Int.max slots of an 8-byte element: the byte-count multiplication
+        // overflows and must surface as the typed error before any allocation.
+        let nearLimit = Index<Int64>.Count(UInt(Int.max))
+        #expect(throws: __StorageContiguousError.overflow(capacity: Int.max, stride: 8)) {
+            _ = try DenseStorage<Int64>(minimumCapacity: nearLimit)
+        }
+    }
+
+    @Test
+    func `capacity above Int max throws typed overflow`() {
+        let aboveIntMax = Index<Int64>.Count(UInt(Int.max) + 1)
+        #expect(throws: __StorageContiguousError.self) {
+            _ = try DenseStorage<Int64>(minimumCapacity: aboveIntMax)
+        }
+    }
+
+    @Test
+    func `throwing creation succeeds for a valid capacity`() throws {
+        let s = try DenseStorage<Int>(minimumCapacity: Index<Int>.Count(4))
+        let cap = s.capacity
+        let empty = s.isEmpty
+        #expect(cap == Index<Int>.Count(4))
+        #expect(empty)
+    }
+
+    @Test
+    func `create traps on byte-count overflow instead of overflowing arithmetic`() async {
+        await #expect(processExitsWith: .failure) {
+            _ = DenseStorage<Int64>.create(minimumCapacity: Index<Int64>.Count(UInt(Int.max)))
+        }
+    }
+
+    @Test
     func `create reports capacity count empty`() {
         Probe.reset()
         let s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))
