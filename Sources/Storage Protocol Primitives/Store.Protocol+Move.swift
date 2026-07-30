@@ -26,19 +26,29 @@ extension __StoreProtocol where Self: ~Copyable {
 
     /// Exchanges the initialized elements at `i` and `j` in place.
     ///
-    /// No-op when `i == j`. Count unchanged.
+    /// No-op when `i == j`. Count unchanged. This is the **default witness** for the
+    /// `swapAt(_:_:)` requirement; a conformer whose ledger is merely maintained
+    /// (never inspected mid-sequence) can rely on it unchanged.
     ///
-    /// ## Ledger consequence — why this stays truthful despite touching non-tail slots
+    /// ## Ledger consequence — truthful for a maintaining ledger, not for a guarding one
     ///
-    /// Unlike `deinitialize(at:)` (see its doc), `swapAt` never leaves a self-maintaining
-    /// conformer's ledger falsified: every `move(at:)` here is immediately paired with a
-    /// corresponding `initialize(at:to:)` that restores the count each decremented (two
-    /// `move`s, then two `initialize`s — net count unchanged). The INTERMEDIATE ledger states
-    /// between those four calls are transiently wrong (exactly like `deinitialize(at:)`'s
-    /// falsification), but nothing observes the ledger mid-sequence — this is a plain,
-    /// synchronous, non-throwing mutating function with no suspension point — so only the
-    /// FINAL state matters, and it is correct whenever `i` and `j` were both within the
-    /// ledger's live region to begin with.
+    /// Unlike `deinitialize(at:)` (see its doc), this default never leaves a
+    /// self-maintaining conformer's ledger falsified: every `move(at:)` here is
+    /// immediately paired with a corresponding `initialize(at:to:)` that restores the
+    /// count each decremented (two `move`s, then two `initialize`s — net count
+    /// unchanged). The INTERMEDIATE ledger states between those four calls are
+    /// transiently wrong (exactly like `deinitialize(at:)`'s falsification), and for a
+    /// conformer that only *maintains* its ledger — never observing it mid-sequence,
+    /// because this is a plain, synchronous, non-throwing mutating function with no
+    /// suspension point — only the FINAL state matters, which is correct whenever `i`
+    /// and `j` were both within the ledger's live region to begin with.
+    ///
+    /// That argument is **not truthful for a conformer that *guards* its ledger** —
+    /// one whose other operations (e.g. an off-discipline `move(at:)`) precondition on
+    /// intermediate state rather than only the final count. Such a conformer MUST
+    /// override this requirement with its own lawful witness instead of inheriting
+    /// this default; that is why `swapAt(_:_:)` is a protocol requirement rather than
+    /// an extension-only member.
     ///
     /// - Parameters:
     ///   - i: The first physical slot coordinate.
@@ -58,9 +68,12 @@ extension __StoreProtocol where Self: ~Copyable {
     /// After the call `source` is uninitialized and `destination` is initialized.
     /// No-op when `source == destination`.
     ///
-    /// Ledger-safe by the same pairing argument as ``swapAt(_:_:)``: the single `move(at:)`
-    /// is immediately paired with `initialize(at:to:)`, so the net count is unchanged and the
-    /// final ledger is truthful whenever both slots were already within the live region.
+    /// Ledger-safe by the same pairing argument as the default ``swapAt(_:_:)`` witness: the
+    /// single `move(at:)` is immediately paired with `initialize(at:to:)`, so the net count is
+    /// unchanged and the final ledger is truthful whenever both slots were already within the
+    /// live region — truthful for a conformer that merely *maintains* its ledger. A conformer
+    /// that *guards* its ledger (preconditions on intermediate state, not only the final count)
+    /// must not rely on this argument without its own override.
     ///
     /// - Parameters:
     ///   - source: The physical slot to move from (must be initialized).
@@ -79,11 +92,14 @@ extension __StoreProtocol where Self: ~Copyable {
     /// overwritten; otherwise (left shift / disjoint) it runs **forward**. This
     /// matches `memmove` semantics over a `~Copyable` element domain.
     ///
-    /// Ledger-safe by the same pairing argument as ``swapAt(_:_:)`` / ``move(from:to:)``: each
-    /// step is one `move(from:to:)` call, itself one paired `move(at:)` + `initialize(at:to:)`,
-    /// so the net live count is unchanged after every step and the final ledger is truthful
-    /// whenever `[source, source + count)` and `[destination, destination + count)` were
-    /// already within the live region.
+    /// Ledger-safe by the same pairing argument as the default ``swapAt(_:_:)`` witness /
+    /// ``move(from:to:)``: each step is one `move(from:to:)` call, itself one paired
+    /// `move(at:)` + `initialize(at:to:)`, so the net live count is unchanged after every step
+    /// and the final ledger is truthful whenever `[source, source + count)` and
+    /// `[destination, destination + count)` were already within the live region — truthful for
+    /// a conformer that merely *maintains* its ledger. A conformer that *guards* its ledger
+    /// (preconditions on intermediate state, not only the final count) must not rely on this
+    /// argument without its own override.
     ///
     /// - Parameters:
     ///   - source: The first source physical slot coordinate.

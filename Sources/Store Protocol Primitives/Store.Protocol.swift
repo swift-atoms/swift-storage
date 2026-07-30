@@ -67,6 +67,23 @@ public protocol __StoreProtocol: ~Copyable {
     /// - Precondition: The element at `slot` must be initialized and within capacity.
     mutating func move(at slot: Index<Element>) -> Element
 
+    /// Exchanges the initialized elements at `i` and `j` in place (defaulted).
+    ///
+    /// A protocol requirement rather than a plain extension member so a conformer
+    /// that guards its ledger against off-discipline mutation — one whose `move(at:)`
+    /// preconditions observe intermediate state, not merely the final count — can
+    /// supply its own lawful witness. Generic member lookup resolves a requirement
+    /// against the conformer's witness; it resolves an extension-only member against
+    /// the declared constraint, so only promotion to a requirement makes the
+    /// conformer's override reachable through the seam. See the default's doc
+    /// (`Store.Protocol+Move.swift`) for the full ledger argument and its limits.
+    ///
+    /// - Parameters:
+    ///   - i: The first physical slot coordinate.
+    ///   - j: The second physical slot coordinate.
+    /// - Precondition: Both slots must be initialized.
+    mutating func swapAt(_ i: Index<Element>, _ j: Index<Element>)
+
     /// The semantic mutation gate (W4 amendment; defaulted).
     ///
     /// Generic code MUST call this before its first write through the seam in any
