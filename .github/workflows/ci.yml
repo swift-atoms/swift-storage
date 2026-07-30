@@ -21,8 +21,9 @@ jobs:
     uses: swift-primitives/.github/.github/workflows/swift-ci.yml@main
     secrets: inherit
 
-  # DocC umbrella-catalog pipeline per [DOC-019a] — see
-  # swift-institute/.github/.github/workflows/swift-docs.yml
+  # DocC umbrella-catalog pipeline per [DOC-019a] — routed via the layer
+  # wrapper for cross-org secret transport ([CI-004a]/[CI-109]); see
+  # swift-primitives/.github/.github/workflows/swift-docs.yml
   docs:
-    uses: swift-institute/.github/.github/workflows/swift-docs.yml@main
+    uses: swift-primitives/.github/.github/workflows/swift-docs.yml@main
     secrets: inherit
