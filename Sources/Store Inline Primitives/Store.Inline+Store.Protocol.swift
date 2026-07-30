@@ -139,7 +139,7 @@ extension Store.Inline where Element: ~Copyable {
 
 // `Store.Protocol+Deinitialize.swift`'s generic `deinitialize(at:)` / `deinitialize(range:)`
 // derivations are built ONLY on `move(at:)`, which self-maintains the ledger with
-// UNCONDITIONAL linear-prefix arithmetic (`_initialization = .linear(count: count - 1)`) —
+// UNCONDITIONAL linear-prefix arithmetic (`_initialization = .linear(count: count.subtract.saturating(.one))`) —
 // truthful ONLY when the removed slot is the CURRENT tail of a prefix-shaped ledger (the LIFO
 // discipline `swapAt`/`move(from:to:)`/`moveInitialize` rely on too, but those always pair every
 // `move(at:)` with a corresponding `initialize(at:to:)` that restores the count, so their NET
