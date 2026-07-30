@@ -24,44 +24,11 @@ public import Store_Protocol_Primitives
 
 extension __StoreProtocol where Self: ~Copyable {
 
-    /// Exchanges the initialized elements at `i` and `j` in place.
-    ///
-    /// No-op when `i == j`. Count unchanged. This is the **default witness** for the
-    /// `swapAt(_:_:)` requirement; a conformer whose ledger is merely maintained
-    /// (never inspected mid-sequence) can rely on it unchanged.
-    ///
-    /// ## Ledger consequence — truthful for a maintaining ledger, not for a guarding one
-    ///
-    /// Unlike `deinitialize(at:)` (see its doc), this default never leaves a
-    /// self-maintaining conformer's ledger falsified: every `move(at:)` here is
-    /// immediately paired with a corresponding `initialize(at:to:)` that restores the
-    /// count each decremented (two `move`s, then two `initialize`s — net count
-    /// unchanged). The INTERMEDIATE ledger states between those four calls are
-    /// transiently wrong (exactly like `deinitialize(at:)`'s falsification), and for a
-    /// conformer that only *maintains* its ledger — never observing it mid-sequence,
-    /// because this is a plain, synchronous, non-throwing mutating function with no
-    /// suspension point — only the FINAL state matters, which is correct whenever `i`
-    /// and `j` were both within the ledger's live region to begin with.
-    ///
-    /// That argument is **not truthful for a conformer that *guards* its ledger** —
-    /// one whose other operations (e.g. an off-discipline `move(at:)`) precondition on
-    /// intermediate state rather than only the final count. Such a conformer MUST
-    /// override this requirement with its own lawful witness instead of inheriting
-    /// this default; that is why `swapAt(_:_:)` is a protocol requirement rather than
-    /// an extension-only member.
-    ///
-    /// - Parameters:
-    ///   - i: The first physical slot coordinate.
-    ///   - j: The second physical slot coordinate.
-    /// - Precondition: Both slots must be initialized.
-    @inlinable
-    public mutating func swapAt(_ i: Index<Element>, _ j: Index<Element>) {
-        guard i != j else { return }
-        let a = move(at: i)
-        let b = move(at: j)
-        initialize(at: i, to: b)
-        initialize(at: j, to: a)
-    }
+    // `swapAt(_:_:)`'s default witness lives in `Store_Protocol_Primitives`
+    // (`Store.Protocol.swift`, alongside `unshare()`'s), not here: it is a protocol
+    // requirement, so its default must sit in the same target as the protocol
+    // declaration itself to stay visible to every conformer, including ones that
+    // (correctly) do not depend on this target's generic move derivations.
 
     /// Moves the initialized element from `source` into the uninitialized slot `destination`.
     ///

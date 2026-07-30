@@ -106,6 +106,52 @@ extension __StoreProtocol where Self: ~Copyable {
     public mutating func unshare() {}
 }
 
+// MARK: - Default (pairing swap)
+
+extension __StoreProtocol where Self: ~Copyable {
+    /// Exchanges the initialized elements at `i` and `j` in place.
+    ///
+    /// No-op when `i == j`. Count unchanged. This is the **default witness** for the
+    /// `swapAt(_:_:)` requirement; a conformer whose ledger is merely maintained
+    /// (never inspected mid-sequence) can rely on it unchanged.
+    ///
+    /// Declared in this same target (rather than alongside its sibling derivations in
+    /// `Storage Protocol Primitives`) so every conformer of `__StoreProtocol` — which
+    /// depends on this target for the protocol itself — automatically has a witness
+    /// in scope without needing to import a downstream target for it.
+    ///
+    /// ## Ledger consequence — truthful for a maintaining ledger, not for a guarding one
+    ///
+    /// Every `move(at:)` here is immediately paired with a corresponding
+    /// `initialize(at:to:)` that restores the count each decremented (two `move`s,
+    /// then two `initialize`s — net count unchanged). The INTERMEDIATE ledger states
+    /// between those four calls are transiently wrong, and for a conformer that only
+    /// *maintains* its ledger — never observing it mid-sequence, because this is a
+    /// plain, synchronous, non-throwing mutating function with no suspension point —
+    /// only the FINAL state matters, which is correct whenever `i` and `j` were both
+    /// within the ledger's live region to begin with.
+    ///
+    /// That argument is **not truthful for a conformer that *guards* its ledger** —
+    /// one whose other operations (e.g. an off-discipline `move(at:)`) precondition on
+    /// intermediate state rather than only the final count. Such a conformer MUST
+    /// override this requirement with its own lawful witness instead of inheriting
+    /// this default; that is why `swapAt(_:_:)` is a protocol requirement rather than
+    /// an extension-only member.
+    ///
+    /// - Parameters:
+    ///   - i: The first physical slot coordinate.
+    ///   - j: The second physical slot coordinate.
+    /// - Precondition: Both slots must be initialized.
+    @inlinable
+    public mutating func swapAt(_ i: Index<Element>, _ j: Index<Element>) {
+        guard i != j else { return }
+        let a = move(at: i)
+        let b = move(at: j)
+        initialize(at: i, to: b)
+        initialize(at: j, to: a)
+    }
+}
+
 // MARK: - Namespace Typealias
 
 extension Store {
