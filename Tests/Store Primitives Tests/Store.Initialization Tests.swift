@@ -19,7 +19,7 @@ struct `Store.Initialization` {
     // MARK: - Factories
 
     @Test("linear(count:) of zero is .empty")
-    func linearZero() {
+    func `linear zero`() {
         let ledger = Store.Initialization<Int>.linear(count: .zero)
         #expect(ledger == .empty)
         #expect(ledger.isEmpty)
@@ -27,7 +27,7 @@ struct `Store.Initialization` {
     }
 
     @Test("linear(count:) covers 0..<count")
-    func linearNonZero() {
+    func `linear non zero`() {
         let ledger = Store.Initialization<Int>.linear(count: 3)
         #expect(ledger == .one(Swift.Range<Index<Int>>(start: .zero, count: 3)))
         #expect(!ledger.isEmpty)
@@ -37,7 +37,7 @@ struct `Store.Initialization` {
     // MARK: - Count / isEmpty across cases
 
     @Test(".two counts both spans")
-    func twoCounts() {
+    func `two counts`() {
         let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
         let second = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
@@ -46,7 +46,7 @@ struct `Store.Initialization` {
     }
 
     @Test(".empty is empty")
-    func emptyIsEmpty() {
+    func `empty is empty`() {
         let ledger = Store.Initialization<Int>.empty
         #expect(ledger.isEmpty)
         #expect(ledger.count == .zero)
@@ -55,26 +55,26 @@ struct `Store.Initialization` {
     // MARK: - Prefix shape (F-004 regression: the copy() / deinitialize(at:) ledger-falsification fix)
 
     @Test("isPrefixShaped is true for .empty")
-    func isPrefixShapedEmpty() {
+    func `is prefix shaped empty`() {
         let ledger = Store.Initialization<Int>.empty
         #expect(ledger.isPrefixShaped)
     }
 
     @Test("isPrefixShaped is true for .one starting at zero")
-    func isPrefixShapedOneAtZero() {
+    func `is prefix shaped one at zero`() {
         let ledger = Store.Initialization<Int>.linear(count: 3)
         #expect(ledger.isPrefixShaped)
     }
 
     @Test("isPrefixShaped is false for .one NOT starting at zero")
-    func isPrefixShapedOneOffset() {
+    func `is prefix shaped one offset`() {
         let range = Swift.Range<Index<Int>>(start: Index<Int>(2), count: 3)
         let ledger = Store.Initialization<Int>.one(range)
         #expect(!ledger.isPrefixShaped)
     }
 
     @Test("isPrefixShaped is false for .two (wrapped)")
-    func isPrefixShapedTwo() {
+    func `is prefix shaped two`() {
         let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
         let second = Swift.Range<Index<Int>>(start: .zero, count: 3)
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
@@ -84,7 +84,7 @@ struct `Store.Initialization` {
     // MARK: - Range iteration
 
     @Test("forEach visits ranges in order")
-    func forEachOrder() {
+    func `for each order`() {
         let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
         let second = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
@@ -99,7 +99,7 @@ struct `Store.Initialization` {
     }
 
     @Test("linearize packs disjoint ranges into contiguous offsets")
-    func linearizeOffsets() {
+    func `linearize offsets`() {
         // The wrapped-ring shape from the type's documentation:
         // .two(first: [6,8), second: [0,3)) — visits with offsets 0 then 2.
         let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
