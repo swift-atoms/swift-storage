@@ -117,4 +117,5 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
 
 // MARK: - Conformance (the 4-op convenience seam — `capacity` in Storage.Contiguous.swift)
 
-extension Storage.Contiguous: Store.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
+extension Storage.Contiguous: Store.`Protocol`
+where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}

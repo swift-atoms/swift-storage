@@ -89,7 +89,9 @@ struct `Store Inline Tests` {
     }
 
     @Test
-    func `move at every slot round trips without leaking or double freeing (F-001 pointer-escape regression)`() {
+    func
+        `move at every slot round trips without leaking or double freeing (F-001 pointer-escape regression)`()
+    {
         // F-001: `move(at:)` computed its typed base via a helper (`_mutableBase()`) that
         // returned the pointer FROM `withUnsafeMutablePointer`'s closure — the escape the
         // package's own `inline-storage-read-pointer-escape.md` DECISION forbids. The fix moves
@@ -126,7 +128,9 @@ struct `Store Inline Tests` {
     }
 
     @Test
-    func `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`() {
+    func
+        `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`()
+    {
         // F-004: deinitialize(at:)/deinitialize(range:) are built only on move(at:), which
         // self-maintains the ledger with unconditional linear-prefix arithmetic — truthful only
         // when the removed slot is the CURRENT tail. This directly exercises the new debug-guard

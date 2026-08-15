@@ -34,7 +34,9 @@ struct HeapStore<Element>: ~Copyable {
     @inlinable
     init(capacity: Index<Element>.Count) {
         self._capacity = capacity
-        unsafe (self._base = UnsafeMutablePointer<Element>.allocate(capacity: Int(bitPattern: capacity)))
+        unsafe (self._base = UnsafeMutablePointer<Element>.allocate(
+            capacity: Int(bitPattern: capacity)
+        ))
     }
 
     @inlinable
@@ -101,7 +103,9 @@ struct HeapStoreNC<Element: ~Copyable>: ~Copyable {
     @inlinable
     init(capacity: Index<Element>.Count) {
         self._capacity = capacity
-        unsafe (self._base = UnsafeMutablePointer<Element>.allocate(capacity: Int(bitPattern: capacity)))
+        unsafe (self._base = UnsafeMutablePointer<Element>.allocate(
+            capacity: Int(bitPattern: capacity)
+        ))
     }
 
     @inlinable

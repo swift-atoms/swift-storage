@@ -97,7 +97,9 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
                 initializedCount: Int(bitPattern: count)
             )
             defer {
-                _ = unsafe output.finalize(for: unsafe UnsafeMutableBufferPointer(start: _base, count: cap))
+                _ = unsafe output.finalize(
+                    for: unsafe UnsafeMutableBufferPointer(start: _base, count: cap)
+                )
                 output = Swift.OutputSpan()
             }
             yield output
@@ -151,9 +153,11 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
 // storage's tracked count (a count-method forwards through a constrained generic; the property does
 // not — Span.Mutable.`Protocol`'s structural gate).
 
-extension Storage.Contiguous: Span.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
+extension Storage.Contiguous: Span.`Protocol`
+where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
 
-extension Storage.Contiguous: Span.Mutable.`Protocol` where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
+extension Storage.Contiguous: Span.Mutable.`Protocol`
+where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
     /// A mutable span over the first `count` initialized elements.
     @_lifetime(&self)
     @inlinable
