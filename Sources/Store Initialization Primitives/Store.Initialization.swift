@@ -56,6 +56,9 @@ extension Store {
         /// Invariants:
         /// - `first.start < second.start`
         /// - `first.end <= second.start`
-        case two(first: Swift.Range<Index_Primitives.Index<Element>>, second: Swift.Range<Index_Primitives.Index<Element>>)
+        case two(
+            first: Swift.Range<Index_Primitives.Index<Element>>,
+            second: Swift.Range<Index_Primitives.Index<Element>>
+        )
     }
 }

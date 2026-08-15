@@ -242,7 +242,9 @@ struct `Storage Contiguous Tests` {
     }
 
     @Test
-    func `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`() {
+    func
+        `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`()
+    {
         // Mirrors the Store.Inline regression (F-004): deinitialize(at:)/deinitialize(range:)
         // are built only on move(at:), whose self-maintained ledger arithmetic is truthful only
         // for tail (LIFO) removal. This exercises the new debug-guard decision logic directly.
@@ -294,7 +296,9 @@ struct `Storage Contiguous Tests` {
     }
 
     @Test
-    func `copy preserves a non-prefix ledger shape (F-002 regression: Buffer.Ring-style wrapped occupancy)`() {
+    func
+        `copy preserves a non-prefix ledger shape (F-002 regression: Buffer.Ring-style wrapped occupancy)`()
+    {
         // F-002: copy() assumed `_initialization` was always prefix-shaped ([0, count), offset 0
         // in both source and destination) -- an assumption `Store.Ledgered.Protocol` explicitly
         // permits to be false. A composing discipline whose occupancy is not linear (a
@@ -347,7 +351,9 @@ struct `Storage Contiguous Sendable Tests` {
 
     @Test
     func `sendable admits move-only elements (W2-F1 regression)`() {
-        let moveOnly = DenseStorage<MoveOnlyElement>.create(minimumCapacity: Index<MoveOnlyElement>.Count(1))
+        let moveOnly = DenseStorage<MoveOnlyElement>.create(
+            minimumCapacity: Index<MoveOnlyElement>.Count(1)
+        )
         requireSendable(moveOnly)
         let copyable = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(1))
         requireSendable(copyable)

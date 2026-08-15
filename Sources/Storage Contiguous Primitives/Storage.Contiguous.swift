@@ -260,4 +260,5 @@ extension Storage.Contiguous where Allocation == Memory.Allocator<Memory.Heap>, 
 /// excluding move-only elements from every Sendable chain above this tier
 /// (arc-1 finding W2-F1, REPORT-arc-shared-soundness-W2 §2; fix
 /// principal-ratified 2026-06-11).
-extension Storage.Contiguous: @unchecked Sendable where Allocation: ~Copyable & Sendable, Element: ~Copyable & Sendable {}
+extension Storage.Contiguous: @unchecked Sendable
+where Allocation: ~Copyable & Sendable, Element: ~Copyable & Sendable {}
