@@ -71,7 +71,7 @@ extension Store.Inline where Element: ~Copyable {
     /// no-escape rule, required only because `yield` cannot appear inside a nested closure.
     @inlinable
     package func _readBase() -> UnsafePointer<Element> {
-        unsafe withUnsafePointer(to: _storage) {
+        withUnsafePointer(to: _storage) {
             unsafe UnsafeRawPointer($0).assumingMemoryBound(to: Element.self)
         }
     }
@@ -82,7 +82,7 @@ extension Store.Inline where Element: ~Copyable {
     /// no-escape rule, required only because `yield` cannot appear inside a nested closure.
     @inlinable
     package mutating func _mutableBase() -> UnsafeMutablePointer<Element> {
-        unsafe withUnsafeMutablePointer(to: &_storage) {
+        withUnsafeMutablePointer(to: &_storage) {
             unsafe UnsafeMutableRawPointer($0).assumingMemoryBound(to: Element.self)
         }
     }
@@ -125,7 +125,7 @@ extension Store.Inline where Element: ~Copyable {
     /// Moves the initialized element out of `slot` (init → uninit; shrinks the linear-prefix ledger).
     @inlinable
     public mutating func move(at slot: Index<Element>) -> Element {
-        let element = unsafe withUnsafeMutablePointer(to: &_storage) { raw -> Element in
+        let element = withUnsafeMutablePointer(to: &_storage) { raw -> Element in
             let base = unsafe UnsafeMutableRawPointer(raw).assumingMemoryBound(to: Element.self)
             let pointer = unsafe base + Index<Element>.Offset(fromZero: slot)
             return unsafe pointer.move()

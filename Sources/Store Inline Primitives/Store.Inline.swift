@@ -77,7 +77,7 @@ extension Store {
         deinit {
             _initialization.forEach { range in
                 guard !range.isEmpty else { return }
-                unsafe withUnsafePointer(to: _storage) { raw in
+                withUnsafePointer(to: _storage) { raw in
                     let base = unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(raw))
                         .assumingMemoryBound(to: Element.self)
                     unsafe (base + Index<Element>.Offset(fromZero: range.lowerBound))
