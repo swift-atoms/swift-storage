@@ -1,37 +1,10 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Span / MutableSpan / OutputSpan accessors — the prior `Memory.Heap+Span` / `+OutputSpan` re-homed
-// to the Storage tier (where `Element` now lives). Same lifetimes (`@_lifetime`), same
-// `_overrideLifetime` escape, same OutputSpan ledger-commit-on-`defer` contract. The architecture
-// constraint is honored: Span / OutputSpan live around the Storage seam, never below the allocator.
-
 public import Index_Primitives
 public import Memory_Region_Primitives
 public import Span_Protocol_Primitives
 public import Store_Initialization_Primitives
 
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
-    /// Debug-only precondition: the ledger must be prefix-shaped (`.empty` or a single `.one`
-    /// range starting at slot zero).
-    ///
-    /// Every accessor in this file presents (or derives from) the region as ONE contiguous run
-    /// starting at `_base`, sized `count` (or `capacity`) — that is only a truthful view of the
-    /// region when `_initialization.isPrefixShaped`. A composing discipline whose occupancy is
-    /// NOT linear (`Buffer.Ring`'s wrapped `.two` shape) bulk-syncs a non-prefix ledger via
-    /// `Store.Ledgered.Protocol`; such a discipline must not reach for `span` / `mutableSpan` /
-    /// `outputSpan` / `withOutputSpan` / `mutableSpan(count:)` — doing so would silently present
-    /// the wrong bytes as "live." Debug-only (`assert`, not `precondition`): the ledger discipline
-    /// is a documented contract between composing dispositions, not something worth paying for
-    /// in release builds.
+
     @inlinable
     package func _assertPrefixShapedLedger(_ function: StaticString = #function) {
         assert(
@@ -42,7 +15,6 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         )
     }
 
-    /// Safe, bounds-checked read access over the initialized prefix `[0, count)`.
     @inlinable
     public var span: Swift.Span<Element> {
         @_lifetime(borrow self)
@@ -53,7 +25,6 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         }
     }
 
-    /// Safe, bounds-checked mutable access over `[0, count)` under an exclusive `&self` borrow.
     @inlinable
     public var mutableSpan: Swift.MutableSpan<Element> {
         @_lifetime(&self)
@@ -64,11 +35,6 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         }
     }
 
-    /// A whole-region `OutputSpan` over `[0, capacity)` for appending into the uninitialized tail.
-    ///
-    /// On `defer` it `finalize`s and commits the new count into the ledger (`.linear(count:)`). The
-    /// `defer` runs on both normal and throwing exit, so a throwing initializer commits whatever it
-    /// appended and never double-deinitializes.
     @inlinable
     public var outputSpan: Swift.OutputSpan<Element> {
         @_lifetime(&self)
@@ -106,16 +72,6 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
         }
     }
 
-    /// Invokes `body` with an `OutputSpan` over the uninitialized TAIL WINDOW
-    /// `[count, count + addingCapacity)` — the budgeted append seam: the span's `capacity` is
-    /// exactly `addingCapacity`, `isFull` fires when the budget is exhausted, and on both normal
-    /// and throwing exit the appended elements are committed into the ledger
-    /// (`.linear(count: count + appended)`).
-    ///
-    /// This is the windowed counterpart of the whole-region `outputSpan` accessor (the prior
-    /// `Memory.Heap.withOutputSpan(addingCapacity:)` contract, restored at the Storage tier):
-    /// a growable discipline (`Buffer.Linear`) grows first, then offers its initializer exactly
-    /// the budget it promised. The window MUST fit — the caller has already ensured capacity.
     @inlinable
     public mutating func withOutputSpan<R: ~Copyable, Failure: Swift.Error>(
         addingCapacity budget: Index<Element>.Count,
@@ -144,21 +100,12 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
     }
 }
 
-// MARK: - Span.`Protocol` / Span.Mutable.`Protocol` conformances
-//
-// The Storage tier conforms the span capability protocols (the W2 deferral, realized for the W3
-// buffer consumer): the read `span` and the mutable `mutableSpan` properties above witness directly,
-// and the count-parameterized `mutableSpan(count:)` is the seam a growable discipline
-// (`Buffer.Linear`/`.Ring`) uses to vend a span bounded by its OWN header count rather than the
-// storage's tracked count (a count-method forwards through a constrained generic; the property does
-// not — Span.Mutable.`Protocol`'s structural gate).
-
 extension Storage.Contiguous: Span.`Protocol`
 where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {}
 
 extension Storage.Contiguous: Span.Mutable.`Protocol`
 where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
-    /// A mutable span over the first `count` initialized elements.
+
     @_lifetime(&self)
     @inlinable
     public mutating func mutableSpan(count: Index<Element>.Count) -> Swift.MutableSpan<Element> {

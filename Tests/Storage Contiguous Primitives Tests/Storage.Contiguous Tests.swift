@@ -1,34 +1,12 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Behavioral-preservation tests for the reshaped `Storage<Allocation>.Contiguous<Element>` — typed
-// `Index<Element>`, the `Store.Initialization` ledger, Span / MutableSpan / OutputSpan, the seam
-// (initialize / subscript / move), explicit `copy()`, and the deinit oracle.
-//
-// ONE top-level `@Suite(.serialized)` wraps the Probe-using tests so their deferred teardown drops
-// run serially against the shared destruction recorder (the binding deterministic-gate rule —
-// cross-suite parallelism would corrupt the exact destruction counts). Tower values are `~Copyable`,
-// so every property / subscript result is read into a copyable local before `#expect`.
-
 import Index_Primitives
 import Memory_Allocator_Primitive
 import Memory_Heap_Primitives
 import Storage_Contiguous_Primitives
 import Testing
 
-/// The canonical dense storage spelling: contiguous typed slots over a heap passthrough allocation.
 private typealias DenseStorage<Element: ~Copyable> =
     Storage<Memory.Allocator<Memory.Heap>>.Contiguous<Element>
 
-/// A class element whose `deinit` records its id — lets a test observe the deinit oracle.
 private final class Item: @unchecked Sendable {
     let id: Int
     var value: Int
@@ -43,8 +21,6 @@ extension Item {
     func bump() { value += 1 }
 }
 
-/// Serialized destruction recorder (safe because the suite below is `.serialized`; the
-/// `nonisolated(unsafe)` access is encapsulated here so call sites stay clean).
 private enum Probe {}
 
 extension Probe {
@@ -60,8 +36,7 @@ struct `Storage Contiguous Tests` {
 
     @Test
     func `near-limit capacity throws typed overflow instead of trapping`() {
-        // Int.max slots of an 8-byte element: the byte-count multiplication
-        // overflows and must surface as the typed error before any allocation.
+
         let nearLimit = Index<Int64>.Count(UInt(Int.max))
         #expect(throws: __StorageContiguousError.overflow(capacity: Int.max, stride: 8)) {
             _ = try DenseStorage<Int64>(minimumCapacity: nearLimit)
@@ -108,17 +83,17 @@ struct `Storage Contiguous Tests` {
     func `initialize subscript mutate move`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
-        s.initialize(at: 0, to: Item(7, value: 70))  // uninit → init (typed Index<Element>)
-        let v0 = s[0].value  // _read borrow
+        s.initialize(at: 0, to: Item(7, value: 70))
+        let v0 = s[0].value
         #expect(v0 == 70)
-        s[0].bump()  // _modify in place
+        s[0].bump()
         let v0b = s[0].value
         #expect(v0b == 71)
         let cnt = s.count
         #expect(cnt == Index<Item>.Count(1))
-        let moved = s.move(at: 0)  // init → uninit (consuming move OUT)
+        let moved = s.move(at: 0)
         let mv = moved.value
-        let dEmpty = Probe.destroyed.isEmpty  // moved out, not destroyed
+        let dEmpty = Probe.destroyed.isEmpty
         #expect(mv == 71)
         #expect(dEmpty)
         _ = consume moved
@@ -163,7 +138,7 @@ struct `Storage Contiguous Tests` {
     func `output span append commits ledger`() {
         Probe.reset()
         var s = DenseStorage<Item>.create(minimumCapacity: Index<Item>.Count(4))
-        s.outputSpan.append(Item(1, value: 100))  // bulk-init through the OutputSpan tail
+        s.outputSpan.append(Item(1, value: 100))
         s.outputSpan.append(Item(2, value: 200))
         let cnt = s.count
         let v0 = s[0].value
@@ -181,17 +156,17 @@ struct `Storage Contiguous Tests` {
         var seenCapacity = -1
         var seenIsFull = false
         s.withOutputSpan(addingCapacity: Index<Item>.Count(2)) { span in
-            seenCapacity = span.capacity  // the budget, not the whole region
+            seenCapacity = span.capacity
             span.append(Item(2, value: 20))
             span.append(Item(3, value: 30))
-            seenIsFull = span.isFull  // budget exhausted
+            seenIsFull = span.isFull
         }
         let cnt = s.count
         let v1 = s[1].value
         let v2 = s[2].value
         #expect(seenCapacity == 2)
         #expect(seenIsFull)
-        #expect(cnt == Index<Item>.Count(3))  // frontier + committed
+        #expect(cnt == Index<Item>.Count(3))
         #expect(v1 == 20)
         #expect(v2 == 30)
 
@@ -219,7 +194,7 @@ struct `Storage Contiguous Tests` {
                 throw Deliberate.thrown
             }
         } catch {
-            didThrow = true  // expected — the append must still commit
+            didThrow = true
         }
         let cnt = s.count
         let v0 = s[0].value
@@ -236,7 +211,7 @@ struct `Storage Contiguous Tests` {
             s.initialize(at: 0, to: Item(1))
             s.initialize(at: 1, to: Item(2))
             s.initialize(at: 2, to: Item(3))
-        }  // the oracle destroys [0,3) → 1,2,3; then the heap region frees once
+        }
         let ds = Probe.destroyedSorted
         #expect(ds == [1, 2, 3])
     }
@@ -245,15 +220,13 @@ struct `Storage Contiguous Tests` {
     func
         `_isValidPrefixTailRemoval accepts only the tail on a prefix-shaped ledger (F-004 regression)`()
     {
-        // Mirrors the Store.Inline regression (F-004): deinitialize(at:)/deinitialize(range:)
-        // are built only on move(at:), whose self-maintained ledger arithmetic is truthful only
-        // for tail (LIFO) removal. This exercises the new debug-guard decision logic directly.
+
         Probe.reset()
         var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(4))
         s.initialize(at: 0, to: 10)
         s.initialize(at: 1, to: 11)
         s.initialize(at: 2, to: 12)
-        // Ledger is .one(0..<3) — prefix-shaped; the tail is slot 2.
+
         let tail = Swift.Range<Index<Int>>(start: 2, count: .one)
         let notTail0 = Swift.Range<Index<Int>>(start: 0, count: .one)
         let notTail1 = Swift.Range<Index<Int>>(start: 1, count: .one)
@@ -263,14 +236,14 @@ struct `Storage Contiguous Tests` {
         #expect(tailIsValid)
         #expect(!notTail0IsValid)
         #expect(!notTail1IsValid)
-        // Once the ledger is no longer (currently) prefix-shaped, the guard steps aside.
+
         s.initialization = .two(
             first: Swift.Range<Index<Int>>(start: 2, count: .one),
             second: Swift.Range<Index<Int>>(start: 0, count: .one)
         )
         let notTail0IsValidWhenWrapped = s._isValidPrefixTailRemoval(range: notTail0)
         #expect(notTail0IsValidWhenWrapped)
-        // Clean up without tripping any guard.
+
         s.initialization = .linear(count: 3)
         _ = s.move(at: 2)
         _ = s.move(at: 1)
@@ -284,7 +257,7 @@ struct `Storage Contiguous Tests` {
         s.initialize(at: 0, to: 7)
         s.initialize(at: 1, to: 8)
         let dup = s.copy()
-        s[0] = 99  // mutate the original
+        s[0] = 99
         let dup0 = dup[0]
         let dup1 = dup[1]
         let dupCount = dup.count
@@ -292,21 +265,14 @@ struct `Storage Contiguous Tests` {
         #expect(dup0 == 7)
         #expect(dup1 == 8)
         #expect(dupCount == Index<Int>.Count(2))
-        #expect(src0 == 99)  // deep copy: original mutation does not leak
+        #expect(src0 == 99)
     }
 
     @Test
     func
         `copy preserves a non-prefix ledger shape (F-002 regression: Buffer.Ring-style wrapped occupancy)`()
     {
-        // F-002: copy() assumed `_initialization` was always prefix-shaped ([0, count), offset 0
-        // in both source and destination) -- an assumption `Store.Ledgered.Protocol` explicitly
-        // permits to be false. A composing discipline whose occupancy is not linear (a
-        // Buffer.Ring-style wrap) bulk-syncs a `.two` shape via the settable `initialization`
-        // ledger (exactly as `Store Ledgered Tests.swift`'s `relabel` helper demonstrates for the
-        // seam in general). All 6 physical slots are populated up front (with plain Ints, so
-        // reading a ledger-"dead" slot cannot crash or leak) before the ledger is relabeled to a
-        // wrapped .two shape describing physical slots {4,5,0,1} as live and {2,3} as dead.
+
         Probe.reset()
         var s = DenseStorage<Int>.create(minimumCapacity: Index<Int>.Count(6))
         for i in 0..<6 {
@@ -320,7 +286,7 @@ struct `Storage Contiguous Tests` {
         let dup = s.copy()
         let dupInitialization = dup.initialization
         let dupCount = dup.count
-        #expect(dupInitialization == wrapped)  // shape preserved, not re-linearized to [0, 4)
+        #expect(dupInitialization == wrapped)
         #expect(dupCount == Index<Int>.Count(4))
         let dup4 = dup[Index<Int>(Ordinal(UInt(4)))]
         let dup5 = dup[Index<Int>(Ordinal(UInt(5)))]
@@ -333,12 +299,6 @@ struct `Storage Contiguous Tests` {
     }
 }
 
-// MARK: - Sendable surface (the W2-F1 regression lock)
-
-/// Move-only Sendable element — exercises the `~Copyable` suppression on the
-/// Sendable clause (arc-1 finding W2-F1: the bare `Element: Sendable` spelling
-/// implicitly required `Copyable`, silently excluding move-only elements;
-/// REPORT-arc-shared-soundness-W2 §2, fix principal-ratified 2026-06-11).
 private struct MoveOnlyElement: ~Copyable, Sendable {
     let id: Int
     init(_ id: Int) { self.id = id }

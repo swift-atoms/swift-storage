@@ -1,28 +1,7 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Store_Primitives
 import Store_Primitives_Test_Support
 import Testing
 
-// MARK: - Heap-backed conformer (Element = Int, a Copyable element)
-
-/// A minimal heap-backed `~Copyable` conformer of the store protocol used to
-/// exercise the four element-store requirements end-to-end.
-///
-/// Storage is a raw
-/// `UnsafeMutablePointer<Element>` region of fixed `capacity`; the per-slot
-/// `_read` / `_modify` witnesses reach the element through the typed
-/// `Index<Element>` pointer subscript supplied by the affine standard-library
-/// integration (re-exported transitively via `Index Primitives`).
 @safe
 struct HeapStore<Element>: ~Copyable {
     @usableFromInline
@@ -70,14 +49,6 @@ extension HeapStore: Store.`Protocol` {
     }
 }
 
-// MARK: - A move-only (~Copyable) element
-
-/// A move-only payload.
-///
-/// Proves the element-store seam crosses for `~Copyable`
-/// elements: it can be `initialize`d into a slot, observed through the borrowing
-/// `_read` accessor, mutated through the exclusive `_modify` accessor, and
-/// `move`d back out — all without ever being copied.
 struct Token: ~Copyable {
     @usableFromInline
     var value: Int
@@ -86,12 +57,6 @@ struct Token: ~Copyable {
     init(_ value: Int) { self.value = value }
 }
 
-// MARK: - Heap-backed conformer over a ~Copyable element
-
-/// The same heap-backed conformer, declared independently so it can be
-/// constrained to a `~Copyable` element. (`HeapStore` above is `Copyable`-element
-/// for literal-friendly `Int` round-trips; this one carries `Element: ~Copyable`
-/// to prove the seam holds when the element itself is move-only.)
 @safe
 struct HeapStoreNC<Element: ~Copyable>: ~Copyable {
     @usableFromInline
@@ -139,14 +104,6 @@ extension HeapStoreNC: Store.`Protocol` where Element: ~Copyable {
     }
 }
 
-// MARK: - Generic functions over the capability (the cross-module mutate seam)
-
-/// A generic function constrained to the store protocol plus `~Copyable`.
-///
-/// It mutates
-/// `store` purely through the protocol surface — proving the capability is usable
-/// generically without naming any concrete conformer. `Element == Int` so the body
-/// can fabricate values to write.
 func roundTrip<S: Store.`Protocol` & ~Copyable>(
     _ store: inout S,
     at slot: Index<S.Element>,
@@ -154,18 +111,14 @@ func roundTrip<S: Store.`Protocol` & ~Copyable>(
     rewrite: S.Element
 ) -> S.Element where S.Element: Copyable & Equatable {
     store.initialize(at: slot, to: write)
-    // subscript-get (borrowing _read witness)
+
     precondition(store[slot] == write)
-    // subscript-set (exclusive _modify witness)
+
     store[slot] = rewrite
-    // move(at:) — transfers ownership out, leaving the slot uninitialized
+
     return store.move(at: slot)
 }
 
-/// A generic function over a `~Copyable` element.
-///
-/// Drives the same
-/// initialize → _modify → move arc but never copies the element.
 func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
     _ store: inout S,
     at slot: Index<S.Element>,
@@ -173,12 +126,10 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
     bump: (inout S.Element) -> Void
 ) -> S.Element {
     store.initialize(at: slot, to: consume write)
-    // exclusive _modify witness over a ~Copyable element
+
     bump(&store[slot])
     return store.move(at: slot)
 }
-
-// MARK: - Suite
 
 @Suite struct Test {
 
@@ -186,9 +137,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
 
         @Test
         func `namespace and typealias resolve`() {
-            // Store.`Protocol` is the typealias onto the hoisted __StoreProtocol.
-            // ~Copyable conformers cannot be boxed as `any`, so witness the
-            // conformance through a generic constraint instead of an existential.
+
             func witness<S: Store.`Protocol` & ~Copyable>(_: S.Type) {}
             witness(HeapStore<Int>.self)
             witness(HeapStoreNC<Token>.self)
@@ -206,7 +155,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
             let slot: Index<Int> = 2
             store.initialize(at: slot, to: 42)
             #expect(store[slot] == 42)
-            // Clean up the one initialized slot.
+
             _ = store.move(at: slot)
         }
 
@@ -227,7 +176,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
             store.initialize(at: slot, to: 5)
             let moved = store.move(at: slot)
             #expect(moved == 5)
-            // Slot is now uninitialized — reinitialize is sound.
+
             store.initialize(at: slot, to: 6)
             #expect(store[slot] == 6)
             _ = store.move(at: slot)
@@ -254,12 +203,12 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
             var store = HeapStoreNC<Token>(capacity: Index<Token>.Count(2))
             let slot: Index<Token> = 1
             store.initialize(at: slot, to: Token(11))
-            // borrowing _read over a ~Copyable element
+
             #expect(store[slot].value == 11)
-            // exclusive _modify over a ~Copyable element
+
             store[slot].value = 12
             #expect(store[slot].value == 12)
-            // move the element out
+
             let moved = store.move(at: slot)
             #expect(moved.value == 12)
         }
@@ -285,13 +234,12 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
 
         @Test
         func `generic and concrete paths agree on the moved value`() {
-            // Concrete path
+
             var concrete = HeapStore<Int>(capacity: Index<Int>.Count(2))
             concrete.initialize(at: 0, to: 3)
             concrete[0] = 4
             let concreteMoved = concrete.move(at: 0)
 
-            // Generic path through Store.`Protocol`
             var generic = HeapStore<Int>(capacity: Index<Int>.Count(2))
             let genericMoved = roundTrip(&generic, at: 0, write: 3, rewrite: 4)
 

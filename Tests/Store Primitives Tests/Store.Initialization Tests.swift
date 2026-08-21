@@ -1,22 +1,9 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Store_Primitives
 import Store_Primitives_Test_Support
 import Testing
 
 @Suite
 struct `Store.Initialization` {
-
-    // MARK: - Factories
 
     @Test
     func `linear(count:) of zero is .empty`() {
@@ -34,8 +21,6 @@ struct `Store.Initialization` {
         #expect(ledger.count == 3)
     }
 
-    // MARK: - Count / isEmpty across cases
-
     @Test
     func `.two counts both spans`() {
         let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
@@ -51,8 +36,6 @@ struct `Store.Initialization` {
         #expect(ledger.isEmpty)
         #expect(ledger.count == .zero)
     }
-
-    // MARK: - Prefix shape (F-004 regression: the copy() / deinitialize(at:) ledger-falsification fix)
 
     @Test
     func `isPrefixShaped is true for .empty`() {
@@ -81,8 +64,6 @@ struct `Store.Initialization` {
         #expect(!ledger.isPrefixShaped)
     }
 
-    // MARK: - Range iteration
-
     @Test
     func `forEach visits ranges in order`() {
         let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
@@ -100,8 +81,7 @@ struct `Store.Initialization` {
 
     @Test
     func `linearize packs disjoint ranges into contiguous offsets`() {
-        // The wrapped-ring shape from the type's documentation:
-        // .two(first: [6,8), second: [0,3)) — visits with offsets 0 then 2.
+
         let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
         let second = Swift.Range<Index<Int>>(start: .zero, count: 3)
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
@@ -115,8 +95,6 @@ struct `Store.Initialization` {
         #expect(visits[1].0 == second)
         #expect(visits[1].1 == Index<Int>(2))
     }
-
-    // MARK: - Equatable
 
     @Test("Equatable distinguishes cases and payloads")
     func equatable() {

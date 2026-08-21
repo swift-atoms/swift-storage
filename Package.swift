@@ -12,9 +12,7 @@ let package = Package(
         .visionOS(.v27),
     ],
     products: [
-        // MARK: - Seam namespace + protocol (consolidated from swift-store-primitives per [DS-027].3)
-        // The seam protocol target is kept MINIMAL (index-only deps) so seam-only consumers compile
-        // against the protocol alone.
+
         .library(name: "Store Primitive", targets: ["Store Primitive"]),
         .library(name: "Store Protocol Primitives", targets: ["Store Protocol Primitives"]),
         .library(
@@ -24,22 +22,16 @@ let package = Package(
         .library(name: "Store Ledgered Primitives", targets: ["Store Ledgered Primitives"]),
         .library(name: "Store Primitives", targets: ["Store Primitives"]),
 
-        // MARK: - Namespace (hosts the Storage<Allocation> carrier + the Contiguous primary body)
         .library(name: "Storage Primitive", targets: ["Storage Primitive"]),
 
-        // MARK: - Seam derivations (generic algorithms over the convenience Store.Protocol seam)
         .library(name: "Storage Protocol Primitives", targets: ["Storage Protocol Primitives"]),
 
-        // MARK: - Canonical storage forms
         .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
 
-        // MARK: - Inline column (Store.Inline — Allocation-independent, on the Store namespace)
         .library(name: "Store Inline Primitives", targets: ["Store Inline Primitives"]),
 
-        // MARK: - Umbrella
         .library(name: "Storage Primitives", targets: ["Storage Primitives"]),
 
-        // MARK: - Test Support
         .library(name: "Store Primitives Test Support", targets: ["Store Primitives Test Support"]),
         .library(
             name: "Storage Primitives Test Support",
@@ -67,8 +59,7 @@ let package = Package(
             url: "https://github.com/swift-primitives/swift-span-primitives.git",
             branch: "main"
         ),
-        // The W2 allocator tier (element-free allocations). The store seam was consolidated INTO this
-        // package per [DS-027].3 — no external swift-store-primitives dependency.
+
         .package(
             url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git",
             branch: "main"
@@ -80,16 +71,11 @@ let package = Package(
     ],
     targets: [
 
-        // MARK: - Store seam (consolidated from swift-store-primitives per [DS-027].3)
-
-        // MARK: Namespace (per [MOD-017])
         .target(
             name: "Store Primitive",
             dependencies: []
         ),
 
-        // MARK: Protocol (the neutral element-store capability seam) — MINIMAL: index-only deps,
-        // so seam-only consumers compile against the protocol alone.
         .target(
             name: "Store Protocol Primitives",
             dependencies: [
@@ -98,7 +84,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: Initialization (the uninit↔init ledger vocabulary)
         .target(
             name: "Store Initialization Primitives",
             dependencies: [
@@ -107,7 +92,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: Ledgered (the settable-ledger refinement beside the seam — ASK-A, ratified 2026-06-10)
         .target(
             name: "Store Ledgered Primitives",
             dependencies: [
@@ -118,7 +102,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: Umbrella (store seam)
         .target(
             name: "Store Primitives",
             dependencies: [
@@ -129,15 +112,11 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Namespace (per [MOD-017]) — the generic Storage<Allocation> carrier + Contiguous
-        // primary body (6.3.2 mechanic #1: the nested deinit-bearing product is declared here).
         .target(
             name: "Storage Primitive",
             dependencies: []
         ),
 
-        // MARK: - Protocol (Cleave-5: marker dissolved; hosts the single-region lifecycle
-        // derivations as `extension Store.Protocol` — Allocation-independent, pure 4-op seam)
         .target(
             name: "Storage Protocol Primitives",
             dependencies: [
@@ -147,7 +126,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Contiguous (the dense column — Storage<Allocation>.Contiguous<Element>)
         .target(
             name: "Storage Contiguous Primitives",
             dependencies: [
@@ -185,7 +163,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Inline column (Store.Inline — fixed-capacity inline typed storage)
         .target(
             name: "Store Inline Primitives",
             dependencies: [
@@ -205,7 +182,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Umbrella
         .target(
             name: "Storage Primitives",
             dependencies: [
@@ -216,7 +192,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Test Support
         .target(
             name: "Store Primitives Test Support",
             dependencies: [
@@ -237,7 +212,6 @@ let package = Package(
             path: "Tests/Support"
         ),
 
-        // MARK: - Tests
         .testTarget(
             name: "Store Primitives Tests",
             dependencies: [
