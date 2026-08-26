@@ -1,7 +1,7 @@
 # Storage
 
 ![Development Status](https://img.shields.io/badge/status-active--development-blue.svg)
-[![CI](https://github.com/swift/swift-storage/actions/workflows/ci.yml/badge.svg)](https://github.com/swift/swift-storage/actions/workflows/ci.yml)
+[![CI](https://github.com/swift-molecules/swift-storage/actions/workflows/ci.yml/badge.svg)](https://github.com/swift-molecules/swift-storage/actions/workflows/ci.yml)
 
 `Storage<Element>` — a low-level, manually-managed storage substrate: typed slots you `initialize`, `move`, and `deinitialize` by index, in two canonical forms behind one protocol. **`Storage.Heap`** is heap-backed and growable; **`Storage.Inline<N>`** is fixed-capacity inline storage with no heap allocation.
 
@@ -50,7 +50,7 @@ Add the dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/swift/swift-storage.git", branch: "main")
+    .package(url: "https://github.com/swift-molecules/swift-storage.git", branch: "main")
 ]
 ```
 
@@ -100,11 +100,11 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 
 
 ## Related Packages
 
-- [`swift-memory`](https://github.com/swift/swift-memory) — `Memory.Address` / `Memory.Allocator`, the allocation and layout substrate `Storage.Heap` builds on.
-- [`swift-index`](https://github.com/swift/swift-index) — `Index<Element>`, the typed slot positions.
-- [`swift-finite`](https://github.com/swift/swift-finite) — `Index.Bounded`, the capacity-bounded index `Storage.Inline` uses.
-- [`swift-property`](https://github.com/swift/swift-property) — `Property.Inout`, backing the fluent `initialize` / `move` accessors.
-- [`swift-bit-vector`](https://github.com/swift/swift-bit-vector) — bit-vector tracking used by `Storage.Inline`'s initialization map.
+- [`swift-memory`](https://github.com/swift-molecules/swift-memory) — `Memory.Address` / `Memory.Allocator`, the allocation and layout substrate `Storage.Heap` builds on.
+- [`swift-index`](https://github.com/swift-molecules/swift-index) — `Index<Element>`, the typed slot positions.
+- [`swift-finite`](https://github.com/swift-molecules/swift-finite) — `Index.Bounded`, the capacity-bounded index `Storage.Inline` uses.
+- [`swift-property`](https://github.com/swift-molecules/swift-property) — `Property.Inout`, backing the fluent `initialize` / `move` accessors.
+- [`swift-bit-vector`](https://github.com/swift-molecules/swift-bit-vector) — bit-vector tracking used by `Storage.Inline`'s initialization map.
 
 ---
 

@@ -40,32 +40,32 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/swift/swift-index.git",
+            url: "https://github.com/swift-molecules/swift-index.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift/swift-memory.git",
+            url: "https://github.com/swift-molecules/swift-memory.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift/swift-affine.git",
+            url: "https://github.com/swift-molecules/swift-affine.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift/swift-ordinal.git",
+            url: "https://github.com/swift-molecules/swift-ordinal.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift/swift-span.git",
+            url: "https://github.com/swift-molecules/swift-span.git",
             branch: "main"
         ),
 
         .package(
-            url: "https://github.com/swift/swift-memory-heap.git",
+            url: "https://github.com/swift-molecules/swift-memory-heap.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift/swift-memory-allocation.git",
+            url: "https://github.com/swift-molecules/swift-memory-allocation.git",
             branch: "main"
         ),
     ],
