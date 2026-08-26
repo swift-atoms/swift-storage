@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "swift-storage-primitives",
+    name: "swift-storage",
     platforms: [
         .macOS(.v27),
         .iOS(.v27),
@@ -14,58 +14,58 @@ let package = Package(
     products: [
 
         .library(name: "Store Primitive", targets: ["Store Primitive"]),
-        .library(name: "Store Protocol Primitives", targets: ["Store Protocol Primitives"]),
+        .library(name: "Store Protocol", targets: ["Store Protocol"]),
         .library(
-            name: "Store Initialization Primitives",
-            targets: ["Store Initialization Primitives"]
+            name: "Store Initialization",
+            targets: ["Store Initialization"]
         ),
-        .library(name: "Store Ledgered Primitives", targets: ["Store Ledgered Primitives"]),
-        .library(name: "Store Primitives", targets: ["Store Primitives"]),
+        .library(name: "Store Ledgered", targets: ["Store Ledgered"]),
+        .library(name: "Store", targets: ["Store"]),
 
         .library(name: "Storage Primitive", targets: ["Storage Primitive"]),
 
-        .library(name: "Storage Protocol Primitives", targets: ["Storage Protocol Primitives"]),
+        .library(name: "Storage Protocol", targets: ["Storage Protocol"]),
 
-        .library(name: "Storage Contiguous Primitives", targets: ["Storage Contiguous Primitives"]),
+        .library(name: "Storage Contiguous", targets: ["Storage Contiguous"]),
 
-        .library(name: "Store Inline Primitives", targets: ["Store Inline Primitives"]),
+        .library(name: "Store Inline", targets: ["Store Inline"]),
 
-        .library(name: "Storage Primitives", targets: ["Storage Primitives"]),
+        .library(name: "Storage", targets: ["Storage"]),
 
-        .library(name: "Store Primitives Test Support", targets: ["Store Primitives Test Support"]),
+        .library(name: "Store Test Support", targets: ["Store Test Support"]),
         .library(
-            name: "Storage Primitives Test Support",
-            targets: ["Storage Primitives Test Support"]
+            name: "Storage Test Support",
+            targets: ["Storage Test Support"]
         ),
     ],
     dependencies: [
         .package(
-            url: "https://github.com/swift-primitives/swift-index-primitives.git",
+            url: "https://github.com/swift/swift-index.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-primitives/swift-memory-primitives.git",
+            url: "https://github.com/swift/swift-memory.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-primitives/swift-affine-primitives.git",
+            url: "https://github.com/swift/swift-affine.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-primitives/swift-ordinal-primitives.git",
+            url: "https://github.com/swift/swift-ordinal.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-primitives/swift-span-primitives.git",
+            url: "https://github.com/swift/swift-span.git",
             branch: "main"
         ),
 
         .package(
-            url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git",
+            url: "https://github.com/swift/swift-memory-heap.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-primitives/swift-memory-allocation-primitives.git",
+            url: "https://github.com/swift/swift-memory-allocation.git",
             branch: "main"
         ),
     ],
@@ -77,38 +77,38 @@ let package = Package(
         ),
 
         .target(
-            name: "Store Protocol Primitives",
+            name: "Store Protocol",
             dependencies: [
                 "Store Primitive",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Index", package: "swift-index"),
             ]
         ),
 
         .target(
-            name: "Store Initialization Primitives",
+            name: "Store Initialization",
             dependencies: [
                 "Store Primitive",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                .product(name: "Index", package: "swift-index"),
             ]
         ),
 
         .target(
-            name: "Store Ledgered Primitives",
+            name: "Store Ledgered",
             dependencies: [
                 "Store Primitive",
-                "Store Protocol Primitives",
-                "Store Initialization Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                "Store Protocol",
+                "Store Initialization",
+                .product(name: "Index", package: "swift-index"),
             ]
         ),
 
         .target(
-            name: "Store Primitives",
+            name: "Store",
             dependencies: [
                 "Store Primitive",
-                "Store Protocol Primitives",
-                "Store Initialization Primitives",
-                "Store Ledgered Primitives",
+                "Store Protocol",
+                "Store Initialization",
+                "Store Ledgered",
             ]
         ),
 
@@ -118,118 +118,118 @@ let package = Package(
         ),
 
         .target(
-            name: "Storage Protocol Primitives",
+            name: "Storage Protocol",
             dependencies: [
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                "Store Protocol Primitives",
-                .product(name: "Affine Primitives", package: "swift-affine-primitives"),
+                .product(name: "Index", package: "swift-index"),
+                "Store Protocol",
+                .product(name: "Affine", package: "swift-affine"),
             ]
         ),
 
         .target(
-            name: "Storage Contiguous Primitives",
+            name: "Storage Contiguous",
             dependencies: [
                 "Storage Primitive",
-                .product(name: "Memory Primitive", package: "swift-memory-primitives"),
-                .product(name: "Memory Region Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Address Primitives", package: "swift-memory-primitives"),
-                .product(name: "Memory Alignment Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Primitive", package: "swift-memory"),
+                .product(name: "Memory Region", package: "swift-memory"),
+                .product(name: "Memory Address", package: "swift-memory"),
+                .product(name: "Memory Alignment", package: "swift-memory"),
                 .product(
-                    name: "Memory Primitives Standard Library Integration",
-                    package: "swift-memory-primitives"
+                    name: "Memory Standard Library Integration",
+                    package: "swift-memory"
                 ),
                 .product(
                     name: "Memory Allocator Primitive",
-                    package: "swift-memory-allocation-primitives"
+                    package: "swift-memory-allocation"
                 ),
                 .product(
-                    name: "Memory Allocator Protocol Primitives",
-                    package: "swift-memory-allocation-primitives"
+                    name: "Memory Allocator Protocol",
+                    package: "swift-memory-allocation"
                 ),
-                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
-                "Store Initialization Primitives",
-                "Store Protocol Primitives",
-                "Store Ledgered Primitives",
-                .product(name: "Span Protocol Primitives", package: "swift-span-primitives"),
+                .product(name: "Memory Heap", package: "swift-memory-heap"),
+                .product(name: "Index", package: "swift-index"),
+                "Store Initialization",
+                "Store Protocol",
+                "Store Ledgered",
+                .product(name: "Span Protocol", package: "swift-span"),
                 .product(
-                    name: "Affine Primitives Standard Library Integration",
-                    package: "swift-affine-primitives"
+                    name: "Affine Standard Library Integration",
+                    package: "swift-affine"
                 ),
                 .product(
-                    name: "Ordinal Primitives Standard Library Integration",
-                    package: "swift-ordinal-primitives"
+                    name: "Ordinal Standard Library Integration",
+                    package: "swift-ordinal"
                 ),
             ]
         ),
 
         .target(
-            name: "Store Inline Primitives",
+            name: "Store Inline",
             dependencies: [
                 "Store Primitive",
-                "Store Protocol Primitives",
-                "Store Initialization Primitives",
-                "Store Ledgered Primitives",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                "Store Protocol",
+                "Store Initialization",
+                "Store Ledgered",
+                .product(name: "Index", package: "swift-index"),
                 .product(
-                    name: "Affine Primitives Standard Library Integration",
-                    package: "swift-affine-primitives"
+                    name: "Affine Standard Library Integration",
+                    package: "swift-affine"
                 ),
                 .product(
-                    name: "Ordinal Primitives Standard Library Integration",
-                    package: "swift-ordinal-primitives"
+                    name: "Ordinal Standard Library Integration",
+                    package: "swift-ordinal"
                 ),
             ]
         ),
 
         .target(
-            name: "Storage Primitives",
+            name: "Storage",
             dependencies: [
                 "Storage Primitive",
-                "Storage Protocol Primitives",
-                "Storage Contiguous Primitives",
-                "Store Inline Primitives",
+                "Storage Protocol",
+                "Storage Contiguous",
+                "Store Inline",
             ]
         ),
 
         .target(
-            name: "Store Primitives Test Support",
+            name: "Store Test Support",
             dependencies: [
-                "Store Primitives",
-                .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
+                "Store",
+                .product(name: "Index Test Support", package: "swift-index"),
             ],
             path: "Tests/Store Support"
         ),
         .target(
-            name: "Storage Primitives Test Support",
+            name: "Storage Test Support",
             dependencies: [
-                "Storage Primitives",
+                "Storage",
                 .product(
-                    name: "Memory Primitives Test Support",
-                    package: "swift-memory-primitives"
+                    name: "Memory Test Support",
+                    package: "swift-memory"
                 ),
             ],
             path: "Tests/Support"
         ),
 
         .testTarget(
-            name: "Store Primitives Tests",
+            name: "Store Tests",
             dependencies: [
-                "Store Primitives",
-                "Store Primitives Test Support",
+                "Store",
+                "Store Test Support",
             ]
         ),
         .testTarget(
-            name: "Storage Contiguous Primitives Tests",
+            name: "Storage Contiguous Tests",
             dependencies: [
-                "Storage Contiguous Primitives",
-                "Storage Primitives Test Support",
+                "Storage Contiguous",
+                "Storage Test Support",
             ]
         ),
         .testTarget(
-            name: "Store Inline Primitives Tests",
+            name: "Store Inline Tests",
             dependencies: [
-                "Store Inline Primitives"
+                "Store Inline"
             ]
         ),
     ],

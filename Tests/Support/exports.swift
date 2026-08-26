@@ -1,2 +1,2 @@
-@_exported import Memory_Primitives_Test_Support
-@_exported import Storage_Primitives
+@_exported import Memory_Test_Support
+@_exported import Storage

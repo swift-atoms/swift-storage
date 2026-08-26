@@ -1,7 +1,7 @@
-# Storage Primitives
+# Storage
 
 ![Development Status](https://img.shields.io/badge/status-active--development-blue.svg)
-[![CI](https://github.com/swift-primitives/swift-storage-primitives/actions/workflows/ci.yml/badge.svg)](https://github.com/swift-primitives/swift-storage-primitives/actions/workflows/ci.yml)
+[![CI](https://github.com/swift/swift-storage/actions/workflows/ci.yml/badge.svg)](https://github.com/swift/swift-storage/actions/workflows/ci.yml)
 
 `Storage<Element>` — a low-level, manually-managed storage substrate: typed slots you `initialize`, `move`, and `deinitialize` by index, in two canonical forms behind one protocol. **`Storage.Heap`** is heap-backed and growable; **`Storage.Inline<N>`** is fixed-capacity inline storage with no heap allocation.
 
@@ -14,7 +14,7 @@ This is the layer *beneath* collections — the thing you build a `Vector`, `Deq
 - **Two storage forms, one protocol** — `Storage.Heap` (heap-backed, growable) and `Storage.Inline<N>` (inline, fixed capacity, no heap) both satisfy `Storage.Protocol`, so code can be generic over the backing.
 - **Manual slot lifecycle** — `initialize`, `move` (moves the element out), and `deinitialize` give precise, copy-free control; `Storage.Initialization` tracks which slots are live so `count` / `isEmpty` stay honest.
 - **`~Copyable` elements** — slots hold move-only elements without forcing a copy; `move` transfers ownership out of the slot.
-- **Typed indexing** — slots are addressed by typed `Index` / `Finite.Bounded` positions rather than bare `Int`, and layout facts come from `swift-memory-primitives`.
+- **Typed indexing** — slots are addressed by typed `Index` / `Finite.Bounded` positions rather than bare `Int`, and layout facts come from `swift-memory`.
 
 ---
 
@@ -23,7 +23,7 @@ This is the layer *beneath* collections — the thing you build a `Vector`, `Deq
 Inline, fixed-capacity storage — lives entirely in the value, no heap:
 
 ```swift
-import Storage_Primitives
+import Storage
 
 var inline = Storage<Int>.Inline<8>()
 inline.initialize(to: 42, at: 0)
@@ -50,7 +50,7 @@ Add the dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/swift-primitives/swift-storage-primitives.git", branch: "main")
+    .package(url: "https://github.com/swift/swift-storage.git", branch: "main")
 ]
 ```
 
@@ -60,12 +60,12 @@ Add the umbrella product to your target:
 .target(
     name: "App",
     dependencies: [
-        .product(name: "Storage Primitives", package: "swift-storage-primitives")
+        .product(name: "Storage", package: "swift-storage")
     ]
 )
 ```
 
-Or depend on a narrower product (e.g. `Storage Heap Primitives`, `Storage Inline Primitives`, or `Storage Protocol Primitives` for just the discipline) — see Architecture.
+Or depend on a narrower product (e.g. `Storage Heap`, `Storage Inline`, or `Storage Protocol` for just the discipline) — see Architecture.
 
 Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 (or the corresponding Linux / Windows toolchain).
 
@@ -75,14 +75,14 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 
 
 | Product | Contents | When to import |
 |---------|----------|----------------|
-| `Storage Primitives` | Umbrella — re-exports every sub-namespace below | Most consumers |
-| `Storage Heap Primitives` | `Storage.Heap` — heap-backed, growable storage | Dynamic / unknown size |
-| `Storage Inline Primitives` | `Storage.Inline<N>` — fixed-capacity inline storage | Small fixed capacity, no heap |
-| `Storage Protocol Primitives` | `Storage.Protocol` — the shared initialize/move/deinitialize discipline | Writing code generic over the backing |
-| `Storage Initialization Primitives` | `Storage.Initialization` — live-slot tracking | Custom storage conformers |
-| `Storage Field Primitives` | `Storage.Field` — physical layout truth (slots, capacity) | Custom storage conformers |
-| `Storage Accessor Primitives` / `Storage Error Primitives` | Accessor tags and the typed error surface | Transitive |
-| `Storage Primitives Test Support` | Re-exports for downstream test targets | Test target only |
+| `Storage` | Umbrella — re-exports every sub-namespace below | Most consumers |
+| `Storage Heap` | `Storage.Heap` — heap-backed, growable storage | Dynamic / unknown size |
+| `Storage Inline` | `Storage.Inline<N>` — fixed-capacity inline storage | Small fixed capacity, no heap |
+| `Storage Protocol` | `Storage.Protocol` — the shared initialize/move/deinitialize discipline | Writing code generic over the backing |
+| `Storage Initialization` | `Storage.Initialization` — live-slot tracking | Custom storage conformers |
+| `Storage Field` | `Storage.Field` — physical layout truth (slots, capacity) | Custom storage conformers |
+| `Storage Accessor` / `Storage Error` | Accessor tags and the typed error surface | Transitive |
+| `Storage Test Support` | Re-exports for downstream test targets | Test target only |
 
 ---
 
@@ -100,11 +100,11 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 
 
 ## Related Packages
 
-- [`swift-memory-primitives`](https://github.com/swift-primitives/swift-memory-primitives) — `Memory.Address` / `Memory.Allocator`, the allocation and layout substrate `Storage.Heap` builds on.
-- [`swift-index-primitives`](https://github.com/swift-primitives/swift-index-primitives) — `Index<Element>`, the typed slot positions.
-- [`swift-finite-primitives`](https://github.com/swift-primitives/swift-finite-primitives) — `Index.Bounded`, the capacity-bounded index `Storage.Inline` uses.
-- [`swift-property-primitives`](https://github.com/swift-primitives/swift-property-primitives) — `Property.Inout`, backing the fluent `initialize` / `move` accessors.
-- [`swift-bit-vector-primitives`](https://github.com/swift-primitives/swift-bit-vector-primitives) — bit-vector tracking used by `Storage.Inline`'s initialization map.
+- [`swift-memory`](https://github.com/swift/swift-memory) — `Memory.Address` / `Memory.Allocator`, the allocation and layout substrate `Storage.Heap` builds on.
+- [`swift-index`](https://github.com/swift/swift-index) — `Index<Element>`, the typed slot positions.
+- [`swift-finite`](https://github.com/swift/swift-finite) — `Index.Bounded`, the capacity-bounded index `Storage.Inline` uses.
+- [`swift-property`](https://github.com/swift/swift-property) — `Property.Inout`, backing the fluent `initialize` / `move` accessors.
+- [`swift-bit-vector`](https://github.com/swift/swift-bit-vector) — bit-vector tracking used by `Storage.Inline`'s initialization map.
 
 ---
 
