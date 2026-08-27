@@ -1,6 +1,4 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension __StoreProtocol where Self: ~Copyable {
 
@@ -10,9 +8,10 @@ extension __StoreProtocol where Self: ~Copyable {
     }
 
     @inlinable
-    public mutating func deinitialize(range: Swift.Range<Index<Element>>) {
+    public mutating func deinitialize(range: Store.Span<Element>) {
         var slot = range.lowerBound
-        while slot < range.upperBound {
+        let upper = range.upperBound
+        while slot < upper {
             _ = move(at: slot)
             slot += .one
         }
@@ -20,8 +19,7 @@ extension __StoreProtocol where Self: ~Copyable {
 
     @inlinable
     public mutating func clear() {
-        let upper: Index<Element> = capacity.map(Ordinal.init)
-        deinitialize(range: .zero..<upper)
+        deinitialize(range: Store.Span(start: .zero, count: capacity))
     }
 
     @inlinable

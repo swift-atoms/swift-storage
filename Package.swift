@@ -31,11 +31,15 @@ let package = Package(
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-atoms/swift-affine.git",
+            url: "https://github.com/swift-atoms/swift-ordinal.git",
             branch: "main"
         ),
         .package(
-            url: "https://github.com/swift-atoms/swift-ordinal.git",
+            url: "https://github.com/swift-atoms/swift-cardinal.git",
+            branch: "main"
+        ),
+        .package(
+            url: "https://github.com/swift-atoms/swift-tagged.git",
             branch: "main"
         ),
     ],
@@ -44,14 +48,9 @@ let package = Package(
             name: "Storage",
             dependencies: [
                 .product(name: "Index", package: "swift-index"),
-                .product(
-                    name: "Affine Standard Library Integration",
-                    package: "swift-affine"
-                ),
-                .product(
-                    name: "Ordinal Standard Library Integration",
-                    package: "swift-ordinal"
-                ),
+                .product(name: "Ordinal", package: "swift-ordinal"),
+                .product(name: "Cardinal", package: "swift-cardinal"),
+                .product(name: "Tagged", package: "swift-tagged"),
             ]
         ),
         .target(

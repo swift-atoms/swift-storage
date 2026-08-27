@@ -6,11 +6,11 @@ extension Store {
 
         case empty
 
-        case one(Swift.Range<Index.Index<Element>>)
+        case one(Store.Span<Element>)
 
         case two(
-            first: Swift.Range<Index.Index<Element>>,
-            second: Swift.Range<Index.Index<Element>>
+            first: Store.Span<Element>,
+            second: Store.Span<Element>
         )
     }
 }

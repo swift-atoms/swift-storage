@@ -1,6 +1,4 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension __StoreProtocol where Self: ~Copyable {
 
@@ -21,12 +19,11 @@ extension __StoreProtocol where Self: ~Copyable {
 
             var remaining: Index<Element>.Count = count
             while remaining > .zero {
-                let step: Index<Element>.Count = remaining.subtract.saturating(.one)
-                let offset = Index<Element>.Offset(fromZero: step.map(Ordinal.init))
+                let step: Index<Element>.Count = remaining.subtracting(saturating: .one)
 
-                let sourceSlot = try! source + offset
+                let sourceSlot = source.advanced(by: step)
 
-                let destinationSlot = try! destination + offset
+                let destinationSlot = destination.advanced(by: step)
                 move(from: sourceSlot, to: destinationSlot)
                 remaining = step
             }
@@ -39,7 +36,7 @@ extension __StoreProtocol where Self: ~Copyable {
                 move(from: sourceSlot, to: destinationSlot)
                 sourceSlot += .one
                 destinationSlot += .one
-                step = step.add.saturating(.one)
+                step = step.adding(saturating: .one)
             }
         }
     }

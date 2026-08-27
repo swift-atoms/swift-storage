@@ -42,15 +42,15 @@ struct `Store Inline Tests` {
     func `initialize subscript mutate move`() {
         Probe.reset()
         var s = Store.Inline<Item, 4>()
-        s.initialize(at: 0, to: Item(7, value: 70))
-        let v0 = s[0].value
+        s.initialize(at: Index(0), to: Item(7, value: 70))
+        let v0 = s[Index(0)].value
         #expect(v0 == 70)
-        s[0].bump()
-        let v0b = s[0].value
+        s[Index(0)].bump()
+        let v0b = s[Index(0)].value
         #expect(v0b == 71)
         let cnt = s.count
         #expect(cnt == Index<Item>.Count(1))
-        let moved = s.move(at: 0)
+        let moved = s.move(at: Index(0))
         let mv = moved.value
         let dEmpty = Probe.destroyed.isEmpty
         #expect(mv == 71)
@@ -65,9 +65,9 @@ struct `Store Inline Tests` {
         Probe.reset()
         do {
             var s = Store.Inline<Item, 8>()
-            s.initialize(at: 0, to: Item(1))
-            s.initialize(at: 1, to: Item(2))
-            s.initialize(at: 2, to: Item(3))
+            s.initialize(at: Index(0), to: Item(1))
+            s.initialize(at: Index(1), to: Item(2))
+            s.initialize(at: Index(2), to: Item(3))
         }
         let ds = Probe.destroyedSorted
         #expect(ds == [1, 2, 3])
@@ -80,15 +80,15 @@ struct `Store Inline Tests` {
 
         Probe.reset()
         var s = Store.Inline<Item, 4>()
-        s.initialize(at: 0, to: Item(101))
-        s.initialize(at: 1, to: Item(102))
-        s.initialize(at: 2, to: Item(103))
-        s.initialize(at: 3, to: Item(104))
+        s.initialize(at: Index(0), to: Item(101))
+        s.initialize(at: Index(1), to: Item(102))
+        s.initialize(at: Index(2), to: Item(103))
+        s.initialize(at: Index(3), to: Item(104))
 
-        let m3 = s.move(at: 3)
-        let m0 = s.move(at: 0)
-        let m2 = s.move(at: 2)
-        let m1 = s.move(at: 1)
+        let m3 = s.move(at: Index(3))
+        let m0 = s.move(at: Index(0))
+        let m2 = s.move(at: Index(2))
+        let m1 = s.move(at: Index(1))
         let ids = [m3.id, m0.id, m2.id, m1.id]
         #expect(ids == [104, 101, 103, 102])
         let emptyBeforeDrop = Probe.destroyed.isEmpty
@@ -109,13 +109,13 @@ struct `Store Inline Tests` {
     {
 
         var s = Store.Inline<Int, 4>()
-        s.initialize(at: 0, to: 10)
-        s.initialize(at: 1, to: 11)
-        s.initialize(at: 2, to: 12)
+        s.initialize(at: Index(0), to: 10)
+        s.initialize(at: Index(1), to: 11)
+        s.initialize(at: Index(2), to: 12)
 
-        let tail = Swift.Range<Index<Int>>(start: 2, count: .one)
-        let notTail0 = Swift.Range<Index<Int>>(start: 0, count: .one)
-        let notTail1 = Swift.Range<Index<Int>>(start: 1, count: .one)
+        let tail = Store.Span<Int>(start: Index(2), count: .one)
+        let notTail0 = Store.Span<Int>(start: Index(0), count: .one)
+        let notTail1 = Store.Span<Int>(start: Index(1), count: .one)
         let tailIsValid = s._isValidPrefixTailRemoval(range: tail)
         let notTail0IsValid = s._isValidPrefixTailRemoval(range: notTail0)
         let notTail1IsValid = s._isValidPrefixTailRemoval(range: notTail1)
@@ -124,16 +124,16 @@ struct `Store Inline Tests` {
         #expect(!notTail1IsValid)
 
         s.initialization = .two(
-            first: Swift.Range<Index<Int>>(start: 2, count: .one),
-            second: Swift.Range<Index<Int>>(start: 0, count: .one)
+            first: Store.Span<Int>(start: Index(2), count: .one),
+            second: Store.Span<Int>(start: Index(0), count: .one)
         )
         let notTail0IsValidWhenWrapped = s._isValidPrefixTailRemoval(range: notTail0)
         #expect(notTail0IsValidWhenWrapped)
 
-        s.initialization = .linear(count: 3)
-        _ = s.move(at: 2)
-        _ = s.move(at: 1)
-        _ = s.move(at: 0)
+        s.initialization = .linear(count: Index<Int>.Count(3))
+        _ = s.move(at: Index(2))
+        _ = s.move(at: Index(1))
+        _ = s.move(at: Index(0))
     }
 
     @Test
@@ -142,13 +142,13 @@ struct `Store Inline Tests` {
         Probe2.reset()
         do {
             var s = Store.Inline<MoveOnly, 4>()
-            s.initialize(at: 0, to: MoveOnly(id: 1))
-            s.initialize(at: 1, to: MoveOnly(id: 2))
-            let borrowedID = s[0].id
+            s.initialize(at: Index(0), to: MoveOnly(id: 1))
+            s.initialize(at: Index(1), to: MoveOnly(id: 2))
+            let borrowedID = s[Index(0)].id
             #expect(borrowedID == 1)
             let cnt = s.count
             #expect(cnt == Index<MoveOnly>.Count(2))
-            let moved = s.move(at: 1)
+            let moved = s.move(at: Index(1))
             let movedID = moved.id
             #expect(movedID == 2)
             _ = consume moved

@@ -1,6 +1,4 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension Store.Inline where Element: ~Copyable {
 
@@ -42,11 +40,11 @@ extension Store.Inline where Element: ~Copyable {
     @inlinable
     public subscript(slot: Index<Element>) -> Element {
         _read {
-            let pointer = unsafe _readBase() + Index<Element>.Offset(fromZero: slot)
+            let pointer = unsafe _readBase() + slot
             yield unsafe pointer.pointee
         }
         _modify {
-            let pointer = unsafe _mutableBase() + Index<Element>.Offset(fromZero: slot)
+            let pointer = unsafe _mutableBase() + slot
             yield &(unsafe pointer.pointee)
         }
     }
@@ -54,7 +52,7 @@ extension Store.Inline where Element: ~Copyable {
     @inlinable
     public mutating func initialize(at slot: Index<Element>, to element: consuming Element) {
 
-        let pointer = unsafe _mutableBase() + Index<Element>.Offset(fromZero: slot)
+        let pointer = unsafe _mutableBase() + slot
         unsafe pointer.initialize(to: element)
         _initialization = .linear(count: count + .one)
     }
@@ -63,10 +61,10 @@ extension Store.Inline where Element: ~Copyable {
     public mutating func move(at slot: Index<Element>) -> Element {
         let element = withUnsafeMutablePointer(to: &_storage) { raw -> Element in
             let base = unsafe UnsafeMutableRawPointer(raw).assumingMemoryBound(to: Element.self)
-            let pointer = unsafe base + Index<Element>.Offset(fromZero: slot)
+            let pointer = unsafe base + slot
             return unsafe pointer.move()
         }
-        _initialization = .linear(count: count.subtract.saturating(.one))
+        _initialization = .linear(count: count.subtracting(saturating: .one))
         return element
     }
 }
@@ -74,14 +72,14 @@ extension Store.Inline where Element: ~Copyable {
 extension Store.Inline where Element: ~Copyable {
 
     @inlinable
-    package func _isValidPrefixTailRemoval(range removed: Swift.Range<Index<Element>>) -> Bool {
+    package func _isValidPrefixTailRemoval(range removed: Store.Span<Element>) -> Bool {
         guard initialization.isPrefixShaped, !removed.isEmpty else { return true }
-        return removed.upperBound == initialization.count.map(Ordinal.init)
+        return removed.upperBound == Index<Element>(initialization.count)
     }
 
     @inlinable
     public mutating func deinitialize(at slot: Index<Element>) {
-        let removed = Swift.Range<Index<Element>>(start: slot, count: .one)
+        let removed = Store.Span<Element>(start: slot, count: .one)
         assert(
             _isValidPrefixTailRemoval(range: removed),
             "Store.Inline.deinitialize(at:): slot is not the ledger's tail — move(at:)'s "
@@ -93,7 +91,7 @@ extension Store.Inline where Element: ~Copyable {
     }
 
     @inlinable
-    public mutating func deinitialize(range: Swift.Range<Index<Element>>) {
+    public mutating func deinitialize(range: Store.Span<Element>) {
         assert(
             _isValidPrefixTailRemoval(range: range),
             "Store.Inline.deinitialize(range:): range is not the ledger's tail range — "

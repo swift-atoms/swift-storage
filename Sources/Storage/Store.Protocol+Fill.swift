@@ -1,13 +1,12 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
     @inlinable
-    public mutating func fill(range: Swift.Range<Index<Element>>, with element: borrowing Element) {
+    public mutating func fill(range: Store.Span<Element>, with element: borrowing Element) {
         var slot = range.lowerBound
-        while slot < range.upperBound {
+        let upper = range.upperBound
+        while slot < upper {
             initialize(at: slot, to: copy element)
             slot += .one
         }
@@ -15,7 +14,6 @@ extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
     @inlinable
     public mutating func fill(with element: borrowing Element) {
-        let upper: Index<Element> = capacity.map(Ordinal.init)
-        fill(range: .zero..<upper, with: element)
+        fill(range: Store.Span(start: .zero, count: capacity), with: element)
     }
 }
