@@ -1,6 +1,4 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
@@ -12,7 +10,7 @@ extension __StoreProtocol where Self: ~Copyable, Element: Copyable {
 
         let limit: Index<Element>.Count = count ?? capacity
         var slot: Index<Element> = .zero
-        let upper: Index<Element> = limit.map(Ordinal.init)
+        let upper = Index<Element>(limit)
         while slot < upper {
             destination.initialize(at: slot, to: self[slot])
             slot += .one

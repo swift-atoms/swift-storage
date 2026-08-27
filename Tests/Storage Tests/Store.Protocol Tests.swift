@@ -14,7 +14,7 @@ struct HeapStore<Element>: ~Copyable {
     init(capacity: Index<Element>.Count) {
         self._capacity = capacity
         unsafe (self._base = UnsafeMutablePointer<Element>.allocate(
-            capacity: Int(bitPattern: capacity)
+            capacity: Int(bitPattern: capacity.rawValue)
         ))
     }
 
@@ -31,21 +31,21 @@ extension HeapStore: Store.`Protocol` {
     @inlinable
     subscript(slot: Index<Element>) -> Element {
         _read {
-            yield unsafe _base[slot]
+            yield unsafe (_base + slot).pointee
         }
         _modify {
-            yield &(unsafe _base[slot])
+            yield &(unsafe (_base + slot).pointee)
         }
     }
 
     @inlinable
     mutating func initialize(at slot: Index<Element>, to element: consuming Element) {
-        unsafe (_base + Index<Element>.Offset(_unchecked: (), slot)).initialize(to: consume element)
+        unsafe (_base + slot).initialize(to: consume element)
     }
 
     @inlinable
     mutating func move(at slot: Index<Element>) -> Element {
-        unsafe (_base + Index<Element>.Offset(_unchecked: (), slot)).move()
+        unsafe (_base + slot).move()
     }
 }
 
@@ -69,7 +69,7 @@ struct HeapStoreNC<Element: ~Copyable>: ~Copyable {
     init(capacity: Index<Element>.Count) {
         self._capacity = capacity
         unsafe (self._base = UnsafeMutablePointer<Element>.allocate(
-            capacity: Int(bitPattern: capacity)
+            capacity: Int(bitPattern: capacity.rawValue)
         ))
     }
 
@@ -86,21 +86,21 @@ extension HeapStoreNC: Store.`Protocol` where Element: ~Copyable {
     @inlinable
     subscript(slot: Index<Element>) -> Element {
         _read {
-            yield unsafe _base[slot]
+            yield unsafe (_base + slot).pointee
         }
         _modify {
-            yield &(unsafe _base[slot])
+            yield &(unsafe (_base + slot).pointee)
         }
     }
 
     @inlinable
     mutating func initialize(at slot: Index<Element>, to element: consuming Element) {
-        unsafe (_base + Index<Element>.Offset(_unchecked: (), slot)).initialize(to: consume element)
+        unsafe (_base + slot).initialize(to: consume element)
     }
 
     @inlinable
     mutating func move(at slot: Index<Element>) -> Element {
-        unsafe (_base + Index<Element>.Offset(_unchecked: (), slot)).move()
+        unsafe (_base + slot).move()
     }
 }
 
@@ -152,7 +152,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `initialize then subscript-get reads the written element`() {
             var store = HeapStore<Int>(capacity: Index<Int>.Count(4))
-            let slot: Index<Int> = 2
+            let slot: Index<Int> = Index(2)
             store.initialize(at: slot, to: 42)
             #expect(store[slot] == 42)
 
@@ -162,7 +162,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `subscript-set via _modify overwrites in place`() {
             var store = HeapStore<Int>(capacity: Index<Int>.Count(4))
-            let slot: Index<Int> = 1
+            let slot: Index<Int> = Index(1)
             store.initialize(at: slot, to: 7)
             store[slot] = 99
             #expect(store[slot] == 99)
@@ -172,7 +172,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `move returns the element and leaves the slot reusable`() {
             var store = HeapStore<Int>(capacity: Index<Int>.Count(4))
-            let slot: Index<Int> = 0
+            let slot: Index<Int> = Index(0)
             store.initialize(at: slot, to: 5)
             let moved = store.move(at: slot)
             #expect(moved == 5)
@@ -188,8 +188,8 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `first and last slots round-trip`() {
             var store = HeapStore<Int>(capacity: Index<Int>.Count(3))
-            let first: Index<Int> = 0
-            let last: Index<Int> = 2
+            let first: Index<Int> = Index(0)
+            let last: Index<Int> = Index(2)
             store.initialize(at: first, to: 100)
             store.initialize(at: last, to: 300)
             #expect(store[first] == 100)
@@ -201,7 +201,7 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `move-only element crosses the seam without copying`() {
             var store = HeapStoreNC<Token>(capacity: Index<Token>.Count(2))
-            let slot: Index<Token> = 1
+            let slot: Index<Token> = Index(1)
             store.initialize(at: slot, to: Token(11))
 
             #expect(store[slot].value == 11)
@@ -219,14 +219,14 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         @Test
         func `generic function over the capability round-trips (Int element)`() {
             var store = HeapStore<Int>(capacity: Index<Int>.Count(4))
-            let moved = roundTrip(&store, at: 3, write: 10, rewrite: 20)
+            let moved = roundTrip(&store, at: Index(3), write: 10, rewrite: 20)
             #expect(moved == 20)
         }
 
         @Test
         func `generic function drives the seam for a ~Copyable element`() {
             var store = HeapStoreNC<Token>(capacity: Index<Token>.Count(4))
-            let moved = driveTokenSeam(&store, at: 2, write: Token(1)) { token in
+            let moved = driveTokenSeam(&store, at: Index(2), write: Token(1)) { token in
                 token.value += 41
             }
             #expect(moved.value == 42)
@@ -236,12 +236,12 @@ func driveTokenSeam<S: Store.`Protocol` & ~Copyable>(
         func `generic and concrete paths agree on the moved value`() {
 
             var concrete = HeapStore<Int>(capacity: Index<Int>.Count(2))
-            concrete.initialize(at: 0, to: 3)
-            concrete[0] = 4
-            let concreteMoved = concrete.move(at: 0)
+            concrete.initialize(at: Index(0), to: 3)
+            concrete[Index(0)] = 4
+            let concreteMoved = concrete.move(at: Index(0))
 
             var generic = HeapStore<Int>(capacity: Index<Int>.Count(2))
-            let genericMoved = roundTrip(&generic, at: 0, write: 3, rewrite: 4)
+            let genericMoved = roundTrip(&generic, at: Index(0), write: 3, rewrite: 4)
 
             #expect(concreteMoved == genericMoved)
             #expect(genericMoved == 4)

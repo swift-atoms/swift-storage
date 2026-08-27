@@ -15,18 +15,18 @@ struct `Store.Initialization` {
 
     @Test
     func `linear(count:) covers 0..<count`() {
-        let ledger = Store.Initialization<Int>.linear(count: 3)
-        #expect(ledger == .one(Swift.Range<Index<Int>>(start: .zero, count: 3)))
+        let ledger = Store.Initialization<Int>.linear(count: Index<Int>.Count(3))
+        #expect(ledger == .one(Store.Span<Int>(start: .zero, count: Index<Int>.Count(3))))
         #expect(!ledger.isEmpty)
-        #expect(ledger.count == 3)
+        #expect(ledger.count == Index<Int>.Count(3))
     }
 
     @Test
     func `.two counts both spans`() {
-        let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
-        let second = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
+        let first = Store.Span<Int>(start: .zero, count: Index<Int>.Count(3))
+        let second = Store.Span<Int>(start: Index<Int>(6), count: Index<Int>.Count(2))
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
-        #expect(ledger.count == 5)
+        #expect(ledger.count == Index<Int>.Count(5))
         #expect(!ledger.isEmpty)
     }
 
@@ -45,32 +45,32 @@ struct `Store.Initialization` {
 
     @Test
     func `isPrefixShaped is true for .one starting at zero`() {
-        let ledger = Store.Initialization<Int>.linear(count: 3)
+        let ledger = Store.Initialization<Int>.linear(count: Index<Int>.Count(3))
         #expect(ledger.isPrefixShaped)
     }
 
     @Test
     func `isPrefixShaped is false for .one NOT starting at zero`() {
-        let range = Swift.Range<Index<Int>>(start: Index<Int>(2), count: 3)
+        let range = Store.Span<Int>(start: Index<Int>(2), count: Index<Int>.Count(3))
         let ledger = Store.Initialization<Int>.one(range)
         #expect(!ledger.isPrefixShaped)
     }
 
     @Test
     func `isPrefixShaped is false for .two (wrapped)`() {
-        let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
-        let second = Swift.Range<Index<Int>>(start: .zero, count: 3)
+        let first = Store.Span<Int>(start: Index<Int>(6), count: Index<Int>.Count(2))
+        let second = Store.Span<Int>(start: .zero, count: Index<Int>.Count(3))
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
         #expect(!ledger.isPrefixShaped)
     }
 
     @Test
     func `forEach visits ranges in order`() {
-        let first = Swift.Range<Index<Int>>(start: .zero, count: 3)
-        let second = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
+        let first = Store.Span<Int>(start: .zero, count: Index<Int>.Count(3))
+        let second = Store.Span<Int>(start: Index<Int>(6), count: Index<Int>.Count(2))
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
 
-        var visited: [Swift.Range<Index<Int>>] = []
+        var visited: [Store.Span<Int>] = []
         ledger.forEach { visited.append($0) }
         #expect(visited == [first, second])
 
@@ -82,11 +82,11 @@ struct `Store.Initialization` {
     @Test
     func `linearize packs disjoint ranges into contiguous offsets`() {
 
-        let first = Swift.Range<Index<Int>>(start: Index<Int>(6), count: 2)
-        let second = Swift.Range<Index<Int>>(start: .zero, count: 3)
+        let first = Store.Span<Int>(start: Index<Int>(6), count: Index<Int>.Count(2))
+        let second = Store.Span<Int>(start: .zero, count: Index<Int>.Count(3))
         let ledger = Store.Initialization<Int>.two(first: first, second: second)
 
-        var visits: [(Swift.Range<Index<Int>>, Index<Int>)] = []
+        var visits: [(Store.Span<Int>, Index<Int>)] = []
         ledger.linearize { range, offset in visits.append((range, offset)) }
 
         #expect(visits.count == 2)
@@ -98,9 +98,9 @@ struct `Store.Initialization` {
 
     @Test("Equatable distinguishes cases and payloads")
     func equatable() {
-        let a = Store.Initialization<Int>.linear(count: 3)
-        let b = Store.Initialization<Int>.linear(count: 3)
-        let c = Store.Initialization<Int>.linear(count: 4)
+        let a = Store.Initialization<Int>.linear(count: Index<Int>.Count(3))
+        let b = Store.Initialization<Int>.linear(count: Index<Int>.Count(3))
+        let c = Store.Initialization<Int>.linear(count: Index<Int>.Count(4))
         #expect(a == b)
         #expect(a != c)
         #expect(Store.Initialization<Int>.empty != a)

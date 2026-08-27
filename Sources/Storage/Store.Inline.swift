@@ -34,8 +34,8 @@ extension Store {
                 withUnsafePointer(to: _storage) { raw in
                     let base = unsafe UnsafeMutableRawPointer(mutating: UnsafeRawPointer(raw))
                         .assumingMemoryBound(to: Element.self)
-                    unsafe (base + Index<Element>.Offset(fromZero: range.lowerBound))
-                        .deinitialize(count: range.count)
+                    unsafe (base + range.lowerBound)
+                        .deinitialize(count: Int(bitPattern: range.count.rawValue))
                 }
             }
         }

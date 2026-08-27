@@ -1,6 +1,4 @@
-import Affine_Standard_Library_Integration
 public import Index
-import Ordinal_Standard_Library_Integration
 
 extension __StoreProtocol where Self: ~Copyable {
 
@@ -9,7 +7,7 @@ extension __StoreProtocol where Self: ~Copyable {
         _ body: (borrowing Element) throws(E) -> Void
     ) throws(E) {
         var slot: Index<Element> = .zero
-        let upper: Index<Element> = capacity.map(Ordinal.init)
+        let upper = Index<Element>(capacity)
         while slot < upper {
             try body(self[slot])
             slot += .one
@@ -23,7 +21,7 @@ extension __StoreProtocol where Self: ~Copyable {
     ) throws(E) -> Result {
         var result = initialResult
         var slot: Index<Element> = .zero
-        let upper: Index<Element> = capacity.map(Ordinal.init)
+        let upper = Index<Element>(capacity)
         while slot < upper {
             try accumulate(&result, self[slot])
             slot += .one
@@ -36,7 +34,7 @@ extension __StoreProtocol where Self: ~Copyable {
         where predicate: (borrowing Element) throws(E) -> Bool
     ) throws(E) -> Bool {
         var slot: Index<Element> = .zero
-        let upper: Index<Element> = capacity.map(Ordinal.init)
+        let upper = Index<Element>(capacity)
         while slot < upper {
             if try predicate(self[slot]) { return true }
             slot += .one
@@ -51,7 +49,7 @@ extension __StoreProtocol where Self: ~Copyable, Element: Equatable {
     public func contains(_ element: borrowing Element) -> Bool {
 
         var slot: Index<Element> = .zero
-        let upper: Index<Element> = capacity.map(Ordinal.init)
+        let upper = Index<Element>(capacity)
         while slot < upper {
             if self[slot] == element { return true }
             slot += .one
