@@ -13,19 +13,56 @@ let package = Package(
     ],
     products: [
         .library(name: "Storage", targets: ["Storage"]),
+        .library(name: "Storage Standard Library Integration", targets: ["Storage Standard Library Integration"]),
+        .library(name: "Storage Foundation Library Integration", targets: ["Storage Foundation Library Integration"]),
+        .library(name: "Storage Test Support", targets: ["Storage Test Support"]),
     ],
     dependencies: [],
     targets: [
         .target(
             name: "Storage",
-            dependencies: []
+            dependencies: [
+            ],
+            path: "Sources/Storage"
+        ),
+        .target(
+            name: "Storage Standard Library Integration",
+            dependencies: [
+                .target(name: "Storage"),
+            ],
+            path: "Sources/Storage Standard Library Integration"
+        ),
+        .target(
+            name: "Storage Foundation Library Integration",
+            dependencies: [
+                .target(name: "Storage"),
+                .target(name: "Storage Standard Library Integration"),
+            ],
+            path: "Sources/Storage Foundation Library Integration"
+        ),
+        .target(
+            name: "Storage Test Support",
+            dependencies: [
+                .target(name: "Storage"),
+            ],
+            path: "Tests/Support"
+        ),
+        .testTarget(
+            name: "Storage Tests",
+            dependencies: [
+                .target(name: "Storage"),
+                .target(name: "Storage Test Support"),
+                .target(name: "Storage Standard Library Integration"),
+                .target(name: "Storage Foundation Library Integration"),
+            ],
+            path: "Tests/Storage Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
 )
 
-for target in package.targets where ![.system, .binary, .plugin, .macro].contains(target.type) {
-    let ecosystem: [SwiftSetting] = [
+for target in package.targets {
+    target.swiftSettings = [
         .strictMemorySafety(),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
@@ -34,8 +71,4 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableExperimentalFeature("Lifetimes"),
         .enableUpcomingFeature("InferIsolatedConformances"),
     ]
-
-    let package: [SwiftSetting] = []
-
-    target.swiftSettings = (target.swiftSettings ?? []) + ecosystem + package
 }
