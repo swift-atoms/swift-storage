@@ -13,8 +13,8 @@ let package = Package(
     ],
     products: [
         .library(name: "Storage", targets: ["Storage"]),
-        .library(name: "Storage Standard Library Integration", targets: ["Storage Standard Library Integration"]),
-        .library(name: "Storage Foundation Library Integration", targets: ["Storage Foundation Library Integration"]),
+
+        .library(name: "Storage Foundation Integration", targets: ["Storage Foundation Integration"]),
         .library(name: "Storage Test Support", targets: ["Storage Test Support"]),
     ],
     dependencies: [],
@@ -25,20 +25,13 @@ let package = Package(
             ],
             path: "Sources/Storage"
         ),
+        
         .target(
-            name: "Storage Standard Library Integration",
+            name: "Storage Foundation Integration",
             dependencies: [
                 .target(name: "Storage"),
             ],
-            path: "Sources/Storage Standard Library Integration"
-        ),
-        .target(
-            name: "Storage Foundation Library Integration",
-            dependencies: [
-                .target(name: "Storage"),
-                .target(name: "Storage Standard Library Integration"),
-            ],
-            path: "Sources/Storage Foundation Library Integration"
+            path: "Sources/Storage Foundation Integration"
         ),
         .target(
             name: "Storage Test Support",
@@ -52,8 +45,7 @@ let package = Package(
             dependencies: [
                 .target(name: "Storage"),
                 .target(name: "Storage Test Support"),
-                .target(name: "Storage Standard Library Integration"),
-                .target(name: "Storage Foundation Library Integration"),
+                .target(name: "Storage Foundation Integration"),
             ],
             path: "Tests/Storage Tests"
         ),
