@@ -1,4 +1,4 @@
 import Testing
 import Storage
 
-@Test func moduleIsAvailable() {}
+@Test func `module is available`() {}
