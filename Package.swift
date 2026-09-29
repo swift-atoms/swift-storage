@@ -23,7 +23,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-atoms/swift-buffer.git", branch: "main"),
-        .package(url: "https://github.com/swift-molecules/swift-memory-allocation.git", branch: "main", traits: [.trait(name: "MemorySmall", condition: .when(traits: ["Memory"]))]),
+        .package(url: "https://github.com/swift-molecules/swift-memory-allocation.git", branch: "main", traits: [.trait(name: "MemorySmall", condition: .when(traits: ["Memory", "MemoryAllocatorArena", "MemoryInline"]))]),
         .package(url: "https://github.com/swift-atoms/swift-span.git", branch: "main"),
         .package(url: "https://github.com/swift-atoms/swift-carrier.git", branch: "main"),
         .package(url: "https://github.com/swift-atoms/swift-tagged.git", branch: "main"),
