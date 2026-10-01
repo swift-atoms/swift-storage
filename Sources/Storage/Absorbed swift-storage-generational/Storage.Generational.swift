@@ -165,12 +165,12 @@ extension Storage.Generational where Allocation: ~Copyable, Element: ~Copyable {
         _read {
             precondition(contains(handle), "Storage.Generational: stale or invalid handle")
             let pointer = unsafe _ptr(at: handle.index)
-            yield pointer.pointee
+            yield unsafe pointer.pointee
         }
         _modify {
             precondition(contains(handle), "Storage.Generational: stale or invalid handle")
             let pointer = unsafe _ptr(at: handle.index)
-            yield &( pointer.pointee)
+            yield unsafe &( pointer.pointee)
         }
     }
 }
