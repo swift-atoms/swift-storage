@@ -193,7 +193,7 @@ struct `Storage Contiguous Tests` {
     @Test
     func `with output span commits partial appends on throw`() {
         Probe.reset()
-        enum Deliberate: Swift.Error { case thrown }
+        enum Deliberate: Swift::Error { case thrown }
         var s = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(4))
         var didThrow = false
         do {

@@ -77,19 +77,19 @@ extension Storage.Generational where Allocation: ~Copyable, Element: ~Copyable {
     }
 
     @inlinable
-    package var _tokenSpan: Swift.Span<Int> {
+    package var _tokenSpan: Swift::Span<Int> {
         @_lifetime(borrow self)
         get {
-            let span = unsafe Swift.Span(_unsafeStart: _tokenPtr(), count: _slotCount)
+            let span = unsafe Swift::Span(_unsafeStart: _tokenPtr(), count: _slotCount)
             return unsafe _overrideLifetime(span, borrowing: self)
         }
     }
 
     @inlinable
-    package var _tokenMutableSpan: Swift.MutableSpan<Int> {
+    package var _tokenMutableSpan: Swift::MutableSpan<Int> {
         @_lifetime(&self)
         mutating get {
-            let span = unsafe Swift.MutableSpan(_unsafeStart: _tokenPtr(), count: _slotCount)
+            let span = unsafe Swift::MutableSpan(_unsafeStart: _tokenPtr(), count: _slotCount)
             return unsafe _overrideLifetime(span, mutating: &self)
         }
     }
@@ -184,7 +184,7 @@ where Allocation == Memory.Allocator<Memory.Heap>.Pool, Element: ~Copyable {
         let slotCount = Int(bitPattern: slotCapacity)
         let elementStride = MemoryLayout<Element>.stride
         let minSlot = MemoryLayout<Index<Memory.Pool.Slot>>.size
-        let slotSizeBytes = Swift.max(elementStride, minSlot)
+        let slotSizeBytes = Swift::max(elementStride, minSlot)
         let slotSize = Memory.Address.Count(_unchecked: Cardinal(UInt(slotSizeBytes)))
 
         let alignment = try! Memory.Alignment(MemoryLayout<Element>.alignment)

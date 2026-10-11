@@ -22,7 +22,7 @@ private struct Reference {
     var stale: [(handle: Handle, id: Int)] = []
 
     init(capacity: Int) {
-        self.slots = Swift.Array(repeating: Slot(), count: capacity)
+        self.slots = Swift::Array(repeating: Slot(), count: capacity)
     }
 }
 
@@ -76,7 +76,7 @@ extension Reference {
     }
 
     mutating func grow(to capacity: Int) {
-        slots.append(contentsOf: Swift.Array(repeating: Slot(), count: capacity - slots.count))
+        slots.append(contentsOf: Swift::Array(repeating: Slot(), count: capacity - slots.count))
     }
 
     private mutating func addStale(_ entry: (handle: Handle, id: Int)) {

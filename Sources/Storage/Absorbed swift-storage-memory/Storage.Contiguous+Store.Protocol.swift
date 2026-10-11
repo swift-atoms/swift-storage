@@ -38,7 +38,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
 extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
 
     @inlinable
-    package func _isValidPrefixTailRemoval(range removed: Swift.Range<Index<Element>>) -> Bool {
+    package func _isValidPrefixTailRemoval(range removed: Swift::Range<Index<Element>>) -> Bool {
         guard initialization.isPrefixShaped, !removed.isEmpty else { return true }
         return removed.upperBound == Index<Element>(_unchecked: Ordinal(initialization.count.underlying))
     }
@@ -57,7 +57,7 @@ extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Elemen
     }
 
     @inlinable
-    public mutating func deinitialize(range: Swift.Range<Index<Element>>) {
+    public mutating func deinitialize(range: Swift::Range<Index<Element>>) {
         assert(
             _isValidPrefixTailRemoval(range: range),
             "Storage.Contiguous.deinitialize(range:): range is not the ledger's tail range — "

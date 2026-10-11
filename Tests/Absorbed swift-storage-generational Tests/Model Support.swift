@@ -47,21 +47,24 @@ extension Model {
     final class Census {
         private(set) var born: [Int] = []
         private(set) var died: [Int] = []
-
-        func mint() -> Int {
-            let serial = born.count
-            born.append(serial)
-            return serial
-        }
-
-        func record(death serial: Int) {
-            died.append(serial)
-        }
-
-        var isExact: Bool { born.sorted() == died.sorted() }
     }
 
     enum Element {}
+}
+
+extension Model.Census {
+
+    func mint() -> Int {
+        let serial = born.count
+        born.append(serial)
+        return serial
+    }
+
+    func record(death serial: Int) {
+        died.append(serial)
+    }
+
+    var isExact: Bool { born.sorted() == died.sorted() }
 }
 
 extension Model.Random {
