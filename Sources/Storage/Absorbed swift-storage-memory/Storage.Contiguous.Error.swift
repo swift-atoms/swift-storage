@@ -1,14 +1,14 @@
 #if Memory
-import Store
+    import Store
 
-@_documentation(visibility: public)
-public enum __StorageContiguousError: Swift::Error, Sendable, Equatable {
+    @_documentation(visibility: public)
+    public enum __StorageContiguousError: Swift::Error, Sendable, Equatable {
 
-    case overflow(capacity: Int, stride: Int)
-}
+        case overflow(capacity: Int, stride: Int)
+    }
 
-extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
+    extension Storage.Contiguous where Allocation: ~Copyable, Element: ~Copyable {
 
-    public typealias Error = __StorageContiguousError
-}
+        public typealias Error = __StorageContiguousError
+    }
 #endif

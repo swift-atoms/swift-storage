@@ -23,7 +23,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-atoms/swift-buffer.git", branch: "main"),
-        .package(url: "https://github.com/swift-molecules/swift-memory-allocation.git", branch: "main", traits: [.trait(name: "MemorySmall", condition: .when(traits: ["Memory"])), .trait(name: "MemoryInline", condition: .when(traits: ["Memory"])), .trait(name: "MemoryAllocatorArena", condition: .when(traits: ["Memory"]))]),
+        .package(
+            url: "https://github.com/swift-molecules/swift-memory-allocation.git",
+            branch: "main",
+            traits: [
+                .trait(name: "MemorySmall", condition: .when(traits: ["Memory"])), .trait(name: "MemoryInline", condition: .when(traits: ["Memory"])),
+                .trait(name: "MemoryAllocatorArena", condition: .when(traits: ["Memory"])),
+            ]
+        ),
         .package(url: "https://github.com/swift-atoms/swift-span.git", branch: "main"),
         .package(url: "https://github.com/swift-atoms/swift-carrier.git", branch: "main"),
         .package(url: "https://github.com/swift-atoms/swift-tagged.git", branch: "main"),
@@ -87,14 +94,14 @@ let package = Package(
         .target(
             name: "Storage Foundation Integration",
             dependencies: [
-                .target(name: "Storage"),
+                .target(name: "Storage")
             ],
             path: "Sources/Storage Foundation Integration"
         ),
         .target(
             name: "Storage Test Support",
             dependencies: [
-                .target(name: "Storage"),
+                .target(name: "Storage")
             ],
             path: "Tests/Support"
         ),
@@ -107,20 +114,30 @@ let package = Package(
             path: "Tests/Storage Tests"
         ),
 
-        .testTarget(name: "Decision Column Integration Tests", dependencies: [.target(name: "Storage", condition: .when(traits: ["Generational"])), .product(name: "Memory Allocator Pool", package: "swift-memory-allocation", condition: .when(traits: ["Generational"])), .product(name: "Memory Allocator", package: "swift-memory-allocation", condition: .when(traits: ["Generational"])), .product(name: "Memory", package: "swift-memory", condition: .when(traits: ["Generational"]))], path: "Tests/Decision Column Integration Tests"),
+        .testTarget(
+            name: "Decision Column Integration Tests",
+            dependencies: [
+                .target(name: "Storage", condition: .when(traits: ["Generational"])),
+                .product(name: "Memory Allocator Pool", package: "swift-memory-allocation", condition: .when(traits: ["Generational"])),
+                .product(name: "Memory Allocator", package: "swift-memory-allocation", condition: .when(traits: ["Generational"])),
+                .product(name: "Memory", package: "swift-memory", condition: .when(traits: ["Generational"])),
+            ],
+            path: "Tests/Decision Column Integration Tests"
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
 
 for target in package.targets where ![.system, .binary, .plugin, .macro].contains(target.type) {
-    target.swiftSettings = (target.swiftSettings ?? []) + [
-        .strictMemorySafety(),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault"),
-        .enableUpcomingFeature("MemberImportVisibility"),
-        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
-        .enableUpcomingFeature("InferIsolatedConformances"),
-        .enableExperimentalFeature("Lifetimes"),
-        .treatAllWarnings(as: .error),
-    ]
+    target.swiftSettings =
+        (target.swiftSettings ?? []) + [
+            .strictMemorySafety(),
+            .enableUpcomingFeature("ExistentialAny"),
+            .enableUpcomingFeature("InternalImportsByDefault"),
+            .enableUpcomingFeature("MemberImportVisibility"),
+            .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+            .enableUpcomingFeature("InferIsolatedConformances"),
+            .enableExperimentalFeature("Lifetimes"),
+            .treatAllWarnings(as: .error),
+        ]
 }
