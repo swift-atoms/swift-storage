@@ -144,6 +144,12 @@
         private static func environment(_ name: String) -> String? {
             #if hasFeature(Embedded)
                 return nil
+            #elseif os(Windows)
+                var duplicate: UnsafeMutablePointer<CChar>? = nil
+                var length = 0
+                guard unsafe _dupenv_s(&duplicate, &length, name) == 0, let duplicate = unsafe duplicate else { return nil }
+                defer { unsafe free(duplicate) }
+                return unsafe String(validatingCString: duplicate)
             #else
                 guard let pointer = unsafe getenv(name) else { return nil }
                 return unsafe String(validatingCString: pointer)
