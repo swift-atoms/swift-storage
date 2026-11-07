@@ -285,7 +285,7 @@
 
             Probe.reset()
             var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(6))
-            for i in 0..<6 {
+            (0..<6).forEach { i in
                 s.initialize(at: Index<Int>(_unchecked: Ordinal(UInt(i))), to: i)
             }
             let wrapped = Store.Initialization<Int>.two(
