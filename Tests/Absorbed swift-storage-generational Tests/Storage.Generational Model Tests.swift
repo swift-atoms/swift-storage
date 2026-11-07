@@ -676,14 +676,18 @@
         return verdict
     }
 
-    @Suite
-    struct `Storage.Generational Model` {
-        @Suite struct Unit {}
-        @Suite struct `Edge Case` {}
-        @Suite struct Integration {}
-    }
+enum `Storage.Generational Model Tests` {}
 
-    extension `Storage.Generational Model`.Integration {
+extension `Storage.Generational Model Tests` {
+        @Suite
+        struct `Storage.Generational Model` {
+            @Suite struct Unit {}
+            @Suite struct `Edge Case` {}
+            @Suite struct Integration {}
+        }
+}
+
+    extension `Storage.Generational Model Tests`.`Storage.Generational Model`.Integration {
         @Test(arguments: Model.seeds(default: [0x6E4E_2A71, 0x0A2E_4A01, 0x5107_3A92]))
         func `trivial ledger stream matches the (occupied, generation) reference`(seed: UInt64) {
             let verdict = runTrivialStream(seed: seed)
@@ -703,7 +707,7 @@
         }
     }
 
-    extension `Storage.Generational Model`.Unit {
+    extension `Storage.Generational Model Tests`.`Storage.Generational Model`.Unit {
         @Test
         func `grow preserves live handles, stale handles, and the incarnation history`() {
             var store = Slots<Int>.create(slotCapacity: typedCount(3))
@@ -761,7 +765,7 @@
         }
     }
 
-    extension `Storage.Generational Model`.`Edge Case` {
+    extension `Storage.Generational Model Tests`.`Storage.Generational Model`.`Edge Case` {
         @Test
         func `a stale handle over a REUSED slot never aliases the new occupant`() {
             let census = Model.Census()
