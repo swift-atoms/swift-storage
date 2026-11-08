@@ -676,16 +676,16 @@
         return verdict
     }
 
-enum `Storage.Generational Model Tests` {}
+    enum `Storage.Generational Model Tests` {}
 
-extension `Storage.Generational Model Tests` {
+    extension `Storage.Generational Model Tests` {
         @Suite
         struct `Storage.Generational Model` {
             @Suite struct Unit {}
             @Suite struct `Edge Case` {}
             @Suite struct Integration {}
         }
-}
+    }
 
     extension `Storage.Generational Model Tests`.`Storage.Generational Model`.Integration {
         @Test(arguments: Model.seeds(default: [0x6E4E_2A71, 0x0A2E_4A01, 0x5107_3A92]))

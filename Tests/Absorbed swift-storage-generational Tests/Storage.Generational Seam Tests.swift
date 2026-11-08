@@ -13,9 +13,9 @@
     private typealias Slots<E: ~Copyable> =
         Storage<Memory.Allocator<Memory.Heap>.Pool>.Generational<E>
 
-enum `Storage.Generational Seam Tests` {}
+    enum `Storage.Generational Seam Tests` {}
 
-extension `Storage.Generational Seam Tests` {
+    extension `Storage.Generational Seam Tests` {
         @Suite
         struct `Generational Seam Law Tests` {
             @Suite struct Unit {}
@@ -53,9 +53,9 @@ extension `Storage.Generational Seam Tests` {
                 #expect(h2.index == 2)
             }
         }
-}
+    }
 
-extension `Storage.Generational Seam Tests` {
+    extension `Storage.Generational Seam Tests` {
         @Suite
         struct `Generational Seam Tests` {
             @Suite struct Unit {}
@@ -94,9 +94,9 @@ extension `Storage.Generational Seam Tests` {
                 #expect(live)
             }
         }
-}
+    }
 
-extension `Storage.Generational Seam Tests` {
+    extension `Storage.Generational Seam Tests` {
         @Suite
         struct `Generational Clone Tests` {
             @Suite struct Unit {}
@@ -140,5 +140,5 @@ extension `Storage.Generational Seam Tests` {
                 #expect(survivor == 2)
             }
         }
-}
+    }
 #endif

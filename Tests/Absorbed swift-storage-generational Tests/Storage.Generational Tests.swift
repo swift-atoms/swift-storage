@@ -38,9 +38,9 @@
         static var sorted: [Int] { unsafe _destroyed.sorted() }
     }
 
-enum `Storage.Generational Tests` {}
+    enum `Storage.Generational Tests` {}
 
-extension `Storage.Generational Tests` {
+    extension `Storage.Generational Tests` {
         @Suite(.serialized)
         struct `Storage Generational Tests` {
             @Suite struct Unit {}
@@ -145,7 +145,7 @@ extension `Storage.Generational Tests` {
                 #expect(ds == [1, 2, 3])
             }
         }
-}
+    }
 
     extension `Storage.Generational Tests`.`Storage Generational Tests` {
         @Test

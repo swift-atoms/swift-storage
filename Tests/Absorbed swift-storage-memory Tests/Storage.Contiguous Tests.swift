@@ -37,9 +37,9 @@
         static var destroyedSorted: [Int] { unsafe _destroyed.sorted() }
     }
 
-enum `Storage.Contiguous Tests` {}
+    enum `Storage.Contiguous Tests` {}
 
-extension `Storage.Contiguous Tests` {
+    extension `Storage.Contiguous Tests` {
         @Suite(.serialized)
         struct `Storage Contiguous Tests` {
 
@@ -311,7 +311,7 @@ extension `Storage.Contiguous Tests` {
                 #expect(dup1 == 1)
             }
         }
-}
+    }
 
     private struct MoveOnlyElement: ~Copyable, Sendable {
         let id: Int
@@ -320,7 +320,7 @@ extension `Storage.Contiguous Tests` {
 
     private func requireSendable<T: Sendable & ~Copyable>(_ value: borrowing T) {}
 
-extension `Storage.Contiguous Tests` {
+    extension `Storage.Contiguous Tests` {
         @Suite
         struct `Storage Contiguous Sendable Tests` {
 
@@ -335,5 +335,5 @@ extension `Storage.Contiguous Tests` {
                 #expect(Bool(true))
             }
         }
-}
+    }
 #endif
