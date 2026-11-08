@@ -1,5 +1,5 @@
 #if Generational
-    public import Memory_Pool
-    public import Memory_Allocator
-    public import Memory
+    import Memory_Pool
+    import Memory_Allocator
+    import Memory
 #endif
