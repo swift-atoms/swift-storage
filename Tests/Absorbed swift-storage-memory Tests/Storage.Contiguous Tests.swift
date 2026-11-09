@@ -336,4 +336,68 @@
             }
         }
     }
+    extension `Storage.Contiguous Tests` {
+        @Suite
+        struct `Storage Contiguous Precondition Tests` {
+
+            @Test
+            func `subscript traps on a slot outside the capacity`() async {
+                await #expect(processExitsWith: .failure) {
+                    let s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    _ = s[Index<Int>(_unchecked: Ordinal(2))]
+                }
+            }
+
+            @Test
+            func `initialize traps on a slot outside the capacity`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    s.initialize(at: Index<Int>(_unchecked: Ordinal(2)), to: 1)
+                }
+            }
+
+            @Test
+            func `move traps on a slot outside the capacity`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    s.initialization = .linear(count: 2)
+                    _ = s.move(at: Index<Int>(_unchecked: Ordinal(2)))
+                }
+            }
+
+            @Test
+            func `mutable span with a count beyond the capacity traps`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    _ = s.mutableSpan(count: Tagged<Int, Cardinal>(3)).count
+                }
+            }
+
+            @Test
+            func `span traps on a wrapped ledger`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                    s.initialize(at: 0, to: 0)
+                    s.initialize(at: 1, to: 1)
+                    s.initialize(at: 2, to: 2)
+                    s.initialize(at: 3, to: 3)
+                    s.initialization = .two(
+                        first: Index<Int>(_unchecked: Ordinal(3))..<Index<Int>(_unchecked: Ordinal(4)),
+                        second: Index<Int>(_unchecked: Ordinal(0))..<Index<Int>(_unchecked: Ordinal(1))
+                    )
+                    _ = s.span.count
+                }
+            }
+
+            @Test
+            func `deinitialize traps on a slot that is not the ledger's tail`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                    s.initialize(at: 0, to: 0)
+                    s.initialize(at: 1, to: 1)
+                    s.deinitialize(at: 0)
+                }
+            }
+        }
+    }
 #endif

@@ -8,8 +8,8 @@ Use this package when you need the raw element column under a container: typed s
 
 - The `initialization` ledger is the only record of which slots hold elements. Teardown deinitializes exactly the ranges it names, and `copy()` copies exactly those ranges and keeps the ledger's shape, including a wrapped one.
 - `initialize(at:to:)` and `move(at:)` keep the ledger correct only as a linear prefix `[0, count)`: they set it to one more or one fewer element without checking where the slot is. They are correct for appending at the tail and removing from the tail. Any other pattern, such as removing from the middle or wrapping like `Buffer.Ring`, must set `initialization` itself afterwards.
-- The subscript, `initialize(at:to:)` and `move(at:)` do not check the slot against the capacity or the ledger.
-- `span`, `mutableSpan`, `outputSpan` and `withOutputSpan(addingCapacity:_:)` require a prefix-shaped ledger. On a prefix-shaped ledger, `deinitialize(at:)` and `deinitialize(range:)` also require the removal to be the ledger's tail. Both are checked only by `assert`, so only in debug builds.
+- The subscript, `initialize(at:to:)` and `move(at:)` trap on a slot outside the capacity, and `mutableSpan(count:)` traps on a count beyond it. They do not check the slot against the ledger.
+- `span`, `mutableSpan`, `outputSpan` and `withOutputSpan(addingCapacity:_:)` require a prefix-shaped ledger. On a prefix-shaped ledger, `deinitialize(at:)` and `deinitialize(range:)` also require the removal to be the ledger's tail. Both are preconditions, so they trap in release builds too.
 - `outputSpan` and `withOutputSpan(addingCapacity:_:)` write back to the ledger whatever was appended, even when the body throws. The `withOutputSpan` window starts at `count` and must fit within the capacity.
 - Capacity is exactly the requested count and never changes. The throwing initializer fails when capacity × stride overflows, and `create(minimumCapacity:)` traps in the same case.
 

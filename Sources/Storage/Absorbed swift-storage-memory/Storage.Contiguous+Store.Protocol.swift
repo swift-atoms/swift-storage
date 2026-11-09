@@ -46,7 +46,7 @@
         @inlinable
         public mutating func deinitialize(at slot: Index<Element>) {
             let removed = slot..<slot + Tagged<Element, Cardinal>.one
-            assert(
+            precondition(
                 _isValidPrefixTailRemoval(range: removed),
                 "Storage.Contiguous.deinitialize(at:): slot is not the ledger's tail — move(at:)'s "
                     + "linear-prefix self-maintenance is truthful only for LIFO (tail) removal; a "
@@ -58,7 +58,7 @@
 
         @inlinable
         public mutating func deinitialize(range: Swift::Range<Index<Element>>) {
-            assert(
+            precondition(
                 _isValidPrefixTailRemoval(range: range),
                 "Storage.Contiguous.deinitialize(range:): range is not the ledger's tail range — "
                     + "move(at:)'s linear-prefix self-maintenance is truthful only for LIFO (tail) "

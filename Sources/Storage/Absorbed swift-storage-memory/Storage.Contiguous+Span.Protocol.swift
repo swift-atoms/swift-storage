@@ -8,8 +8,8 @@
     extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: ~Copyable {
 
         @inlinable
-        package func _assertPrefixShapedLedger(_ function: StaticString = #function) {
-            assert(
+        package func _requirePrefixShapedLedger(_ function: StaticString = #function) {
+            precondition(
                 _initialization.isPrefixShaped,
                 "\(function): requires a prefix-shaped ledger ([0, count)); the current ledger is "
                     + "wrapped or offset — a composing discipline synced a non-prefix shape "
@@ -21,7 +21,7 @@
         public var span: Swift::Span<Element> {
             @_lifetime(borrow self)
             get {
-                _assertPrefixShapedLedger()
+                _requirePrefixShapedLedger()
                 let span = unsafe Swift::Span(
                     _unsafeStart: _base,
                     count: Int(bitPattern: count.underlying.rawValue)
@@ -34,7 +34,7 @@
         public var mutableSpan: Swift::MutableSpan<Element> {
             @_lifetime(&self)
             mutating get {
-                _assertPrefixShapedLedger()
+                _requirePrefixShapedLedger()
                 let span = unsafe Swift::MutableSpan(
                     _unsafeStart: _base,
                     count: Int(bitPattern: count.underlying.rawValue)
@@ -47,7 +47,7 @@
         public var outputSpan: Swift::OutputSpan<Element> {
             @_lifetime(&self)
             _modify {
-                _assertPrefixShapedLedger()
+                _requirePrefixShapedLedger()
                 let cap = Int(bitPattern: _capacity.underlying.rawValue)
                 var output = unsafe Swift::OutputSpan<Element>(
                     buffer: unsafe UnsafeMutableBufferPointer(start: _base, count: cap),
@@ -64,7 +64,7 @@
             }
             @_lifetime(borrow self)
             _read {
-                _assertPrefixShapedLedger()
+                _requirePrefixShapedLedger()
                 let cap = Int(bitPattern: _capacity.underlying.rawValue)
                 var output = unsafe Swift::OutputSpan<Element>(
                     buffer: unsafe UnsafeMutableBufferPointer(start: _base, count: cap),
@@ -85,7 +85,7 @@
             addingCapacity budget: Tagged<Element, Cardinal>,
             _ body: (inout Swift::OutputSpan<Element>) throws(Failure) -> R
         ) throws(Failure) -> R {
-            _assertPrefixShapedLedger()
+            _requirePrefixShapedLedger()
             let frontier = Int(bitPattern: count.underlying.rawValue)
             let window = Int(bitPattern: budget.underlying.rawValue)
             precondition(
@@ -117,7 +117,11 @@
         @_lifetime(&self)
         @inlinable
         public mutating func mutableSpan(count: Tagged<Element, Cardinal>) -> Swift::MutableSpan<Element> {
-            _assertPrefixShapedLedger()
+            _requirePrefixShapedLedger()
+            precondition(
+                count <= _capacity,
+                "Storage.Contiguous.mutableSpan(count:): count exceeds capacity"
+            )
             let span = unsafe Swift::MutableSpan(
                 _unsafeStart: _base,
                 count: Int(bitPattern: count.underlying.rawValue)
