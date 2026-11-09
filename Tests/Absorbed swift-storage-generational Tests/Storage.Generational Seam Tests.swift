@@ -141,4 +141,39 @@
             }
         }
     }
+    extension `Storage.Generational Seam Tests` {
+        @Suite
+        struct `Generational Trap Tests` {
+
+            @Test
+            func `insert traps when every slot is full`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = Slots<Int>.create(slotCapacity: typedCount(2))
+                    _ = s.insert(1)
+                    _ = s.insert(2)
+                    _ = s.insert(3)
+                }
+            }
+
+            @Test
+            func `initialize traps at a slot other than the pool's next one`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = Slots<Int>.create(slotCapacity: typedCount(4))
+                    s.initialize(at: typedIndex(2), to: 10)
+                }
+            }
+
+            @Test
+            func `initialize at the pool's next slot after a removal reuses that slot`() {
+                var s = Slots<Int>.create(slotCapacity: typedCount(4))
+                _ = s.insert(1)
+                let h1 = s.insert(2)
+                _ = s.insert(3)
+                _ = s.remove(h1)
+                s.initialize(at: typedIndex(1), to: 20)
+                let read = s[typedIndex(1)]
+                #expect(read == 20)
+            }
+        }
+    }
 #endif
