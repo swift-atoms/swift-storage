@@ -54,7 +54,7 @@
         @inlinable
         package func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
             precondition(
-                slot.ordinal.rawValue < _capacity.underlying.rawValue,
+                slot < _capacity.map(Ordinal.init),
                 "Storage.Contiguous: slot is outside the capacity"
             )
             return unsafe _base + Int(bitPattern: slot.ordinal.rawValue)
