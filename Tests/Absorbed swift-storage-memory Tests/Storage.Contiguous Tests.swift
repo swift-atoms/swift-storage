@@ -280,6 +280,103 @@
             }
 
             @Test
+            func `fill shares one element among every slot and destroys it once`() {
+                Probe.reset()
+                do {
+                    var s = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(3))
+
+                    s.fill(with: Item(1))
+
+                    let ledger = s.initialization
+                    #expect(ledger == .linear(count: 3))
+                    let sharesOneElement = s[0] === s[1] && s[1] === s[2]
+                    #expect(sharesOneElement)
+                    let destroyedByFilling = Probe.destroyed
+                    #expect(destroyedByFilling == [])
+                }
+                let destroyedInAll = Probe.destroyed
+                #expect(destroyedInAll == [1])
+            }
+
+            @Test
+            func `fill writes the element into every slot of a vacant storage`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(5))
+
+                s.fill(with: 7)
+
+                let ledger = s.initialization
+                #expect(ledger == .linear(count: 5))
+                let values = [s[0], s[1], s[2], s[3], s[4]]
+                #expect(values == [7, 7, 7, 7, 7])
+            }
+
+            @Test
+            func `fill of a storage without capacity writes nothing`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(0))
+
+                s.fill(with: 7)
+
+                let isEmpty = s.isEmpty
+                #expect(isEmpty)
+            }
+
+            @Test
+            func `copy to another storage copies the leading slots and leaves the source whole`() {
+                Probe.reset()
+                do {
+                    var source = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(4))
+                    source.initialize(at: 0, to: Item(1))
+                    source.initialize(at: 1, to: Item(2))
+                    source.initialize(at: 2, to: Item(3))
+                    do {
+                        var destination = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(8))
+
+                        source.copy(to: &destination, count: 2)
+
+                        let ledger = destination.initialization
+                        #expect(ledger == .linear(count: 2))
+                        let ids = [destination[0].id, destination[1].id]
+                        #expect(ids == [1, 2])
+                        let sharesTheElements = destination[0] === source[0] && destination[1] === source[1]
+                        #expect(sharesTheElements)
+                    }
+                    let destroyedWithTheCopy = Probe.destroyed
+                    #expect(destroyedWithTheCopy == [])
+                    let sourceLedger = source.initialization
+                    #expect(sourceLedger == .linear(count: 3))
+                }
+                let destroyedInAll = Probe.destroyedSorted
+                #expect(destroyedInAll == [1, 2, 3])
+            }
+
+            @Test
+            func `move to another storage carries the leading slots across and leaves the source vacant`() {
+                Probe.reset()
+                do {
+                    var destination = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(8))
+                    do {
+                        var source = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(4))
+                        source.initialize(at: 0, to: Item(1))
+                        source.initialize(at: 1, to: Item(2))
+                        source.initialize(at: 2, to: Item(3))
+
+                        source.move(to: &destination, count: 3)
+
+                        let sourceIsEmpty = source.isEmpty
+                        #expect(sourceIsEmpty)
+                    }
+                    let destroyedWithTheSource = Probe.destroyed
+                    #expect(destroyedWithTheSource == [])
+                    let ledger = destination.initialization
+                    #expect(ledger == .linear(count: 3))
+                    let ids = [destination[0].id, destination[1].id, destination[2].id]
+                    #expect(ids == [1, 2, 3])
+                }
+                let destroyedInAll = Probe.destroyedSorted
+                #expect(destroyedInAll == [1, 2, 3])
+            }
+
+            @Test
             func `teardown destroys live prefix once`() {
                 Probe.reset()
                 do {
@@ -433,6 +530,46 @@
                 await #expect(processExitsWith: .failure) {
                     var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
                     _ = s.mutableSpan(count: Tagged<Int, Cardinal>(3)).count
+                }
+            }
+
+            @Test
+            func `deinitialize range traps on a range outside the capacity`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    s.initialization = .linear(count: 4)
+                    s.deinitialize(range: Index<Int>(_unchecked: Ordinal(2))..<Index<Int>(_unchecked: Ordinal(4)))
+                }
+            }
+
+            @Test
+            func `fill traps on a storage that is not vacant`() async {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    s.initialize(at: 0, to: 1)
+                    s.fill(with: 7)
+                }
+            }
+
+            @Test
+            func `copy to a storage too small for the count traps`() async {
+                await #expect(processExitsWith: .failure) {
+                    var source = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                    source.fill(with: 7)
+                    var destination = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    source.copy(to: &destination, count: Tagged<Int, Cardinal>(3))
+                    destination.initialization = .empty
+                }
+            }
+
+            @Test
+            func `move to a storage too small for the count traps`() async {
+                await #expect(processExitsWith: .failure) {
+                    var source = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                    source.fill(with: 7)
+                    var destination = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    source.move(to: &destination, count: Tagged<Int, Cardinal>(3))
+                    destination.initialization = .empty
                 }
             }
 

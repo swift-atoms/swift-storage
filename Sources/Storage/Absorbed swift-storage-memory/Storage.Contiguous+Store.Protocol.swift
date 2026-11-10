@@ -65,13 +65,39 @@
                     + "removal; a non-tail removal must re-sync `initialization` explicitly "
                     + "(Store.Ledgered.Protocol)"
             )
-            guard !range.isEmpty else { return }
-            precondition(
-                range.upperBound <= _capacity.map(Ordinal.init),
-                "Storage.Contiguous: slot is outside the capacity"
-            )
-            unsafe _ptr(at: range.lowerBound).deinitialize(count: Int(bitPattern: range.count.underlying))
+            unsafe _slots(range).deinitialize()
             _initialization = .linear(count: count.subtract.saturating(range.count))
+        }
+
+        /// Moves the elements in slots `0..<count` into the same slots of `destination`, in one pass.
+        ///
+        /// Both ledgers end as if each element had left through `move(at:)` and arrived through
+        /// `initialize(at:to:)`.
+        @inlinable
+        public mutating func move(to destination: inout Self, count: Index<Element>.Count) {
+            _ = unsafe destination._slots(first: count).moveInitialize(fromContentsOf: _slots(first: count))
+            _initialization = .linear(count: self.count.subtract.saturating(count))
+            destination._initialization = .linear(count: destination.count + count)
+        }
+    }
+
+    extension Storage.Contiguous where Allocation: Memory.Region & ~Copyable, Element: Copyable {
+
+        /// Writes `element` into every slot of a vacant storage, in one pass.
+        @inlinable
+        public mutating func fill(with element: borrowing Element) {
+            precondition(isEmpty, "Storage.Contiguous.fill(with:): the storage must be vacant")
+            unsafe _slots(first: _capacity).initialize(repeating: copy element)
+            _initialization = .linear(count: _capacity)
+        }
+
+        /// Copies the elements in slots `0..<count` into the same slots of `destination`, in one pass.
+        ///
+        /// The destination's ledger ends as if each element had arrived through `initialize(at:to:)`.
+        @inlinable
+        public func copy(to destination: inout Self, count: Index<Element>.Count) {
+            _ = unsafe destination._slots(first: count).initialize(fromContentsOf: _slots(first: count))
+            destination._initialization = .linear(count: destination.count + count)
         }
     }
 

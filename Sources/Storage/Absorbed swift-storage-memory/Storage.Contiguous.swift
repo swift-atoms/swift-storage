@@ -36,9 +36,7 @@
 
             deinit {
                 _initialization.forEach { range in
-                    guard !range.isEmpty else { return }
-                    unsafe (_base + Int(bitPattern: range.lowerBound.ordinal.rawValue))
-                        .deinitialize(count: Int(bitPattern: range.count.underlying.rawValue))
+                    unsafe _slots(range).deinitialize()
                 }
             }
         }
@@ -58,6 +56,36 @@
                 "Storage.Contiguous: slot is outside the capacity"
             )
             return unsafe _base + Int(bitPattern: slot.ordinal.rawValue)
+        }
+
+        /// The run of slots `range` covers.
+        ///
+        /// The bulk operations reach their slots through this and `_slots(first:)`, so the step from typed slots
+        /// and counts to a pointer and a length is taken here and nowhere else.
+        ///
+        /// - Precondition: a non-empty `range` lies within the capacity.
+        @inlinable
+        package func _slots(_ range: Swift::Range<Index<Element>>) -> UnsafeMutableBufferPointer<Element> {
+            let lower = Int(bitPattern: range.lowerBound.ordinal.rawValue)
+            let upper = Int(bitPattern: range.upperBound.ordinal.rawValue)
+            precondition(
+                lower == upper || upper <= Int(bitPattern: _capacity.underlying.rawValue),
+                "Storage.Contiguous: slot is outside the capacity"
+            )
+            return unsafe UnsafeMutableBufferPointer(start: _base + lower, count: upper - lower)
+        }
+
+        /// The run of the first `count` slots.
+        ///
+        /// - Precondition: `count` does not exceed the capacity.
+        @inlinable
+        package func _slots(first count: Index<Element>.Count) -> UnsafeMutableBufferPointer<Element> {
+            let length = Int(bitPattern: count.underlying.rawValue)
+            precondition(
+                length <= Int(bitPattern: _capacity.underlying.rawValue),
+                "Storage.Contiguous: slot is outside the capacity"
+            )
+            return unsafe UnsafeMutableBufferPointer(start: _base, count: length)
         }
     }
 
@@ -125,12 +153,7 @@
         where Allocation == Memory.Allocator<Resource> {
             var out = Self.create(minimumCapacity: _capacity)
             _initialization.forEach { range in
-                guard !range.isEmpty else { return }
-                let count = Int(bitPattern: range.count.underlying.rawValue)
-                unsafe (out._base + Int(bitPattern: range.lowerBound.ordinal.rawValue)).initialize(
-                    from: _base + Int(bitPattern: range.lowerBound.ordinal.rawValue),
-                    count: count
-                )
+                _ = unsafe out._slots(range).initialize(fromContentsOf: _slots(range))
             }
             out._initialization = _initialization
             return out
