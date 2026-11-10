@@ -65,11 +65,13 @@
                     + "removal; a non-tail removal must re-sync `initialization` explicitly "
                     + "(Store.Ledgered.Protocol)"
             )
-            var slot = range.lowerBound
-            while slot < range.upperBound {
-                _ = move(at: slot)
-                slot += Tagged<Element, Cardinal>.one
-            }
+            guard !range.isEmpty else { return }
+            precondition(
+                range.upperBound <= _capacity.map(Ordinal.init),
+                "Storage.Contiguous: slot is outside the capacity"
+            )
+            unsafe _ptr(at: range.lowerBound).deinitialize(count: Int(bitPattern: range.count.underlying))
+            _initialization = .linear(count: count.subtract.saturating(range.count))
         }
     }
 

@@ -217,6 +217,69 @@
             }
 
             @Test
+            func `deinitialize range destroys each element of the tail once and shortens the ledger`() {
+                Probe.reset()
+                do {
+                    var s = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(8))
+                    s.initialize(at: 0, to: Item(1))
+                    s.initialize(at: 1, to: Item(2))
+                    s.initialize(at: 2, to: Item(3))
+                    s.initialize(at: 3, to: Item(4))
+                    s.initialize(at: 4, to: Item(5))
+
+                    s.deinitialize(range: Index<Item>(_unchecked: Ordinal(2))..<Index<Item>(_unchecked: Ordinal(5)))
+
+                    let destroyedByRange = Probe.destroyedSorted
+                    #expect(destroyedByRange == [3, 4, 5])
+                    let count = s.count
+                    #expect(count == Tagged<Item, Cardinal>(2))
+                    let ledger = s.initialization
+                    #expect(ledger == .linear(count: 2))
+                    let first = s[0].id
+                    let second = s[1].id
+                    #expect(first == 1)
+                    #expect(second == 2)
+                }
+                let destroyedInAll = Probe.destroyedSorted
+                #expect(destroyedInAll == [1, 2, 3, 4, 5])
+            }
+
+            @Test
+            func `deinitialize range over the whole prefix leaves the storage vacant and reusable`() {
+                Probe.reset()
+                var s = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(4))
+                s.initialize(at: 0, to: Item(1))
+                s.initialize(at: 1, to: Item(2))
+
+                s.deinitialize(range: Index<Item>(_unchecked: Ordinal(0))..<Index<Item>(_unchecked: Ordinal(2)))
+
+                let destroyed = Probe.destroyedSorted
+                #expect(destroyed == [1, 2])
+                let isEmpty = s.isEmpty
+                #expect(isEmpty)
+
+                s.initialize(at: 0, to: Item(3))
+                let count = s.count
+                #expect(count == Tagged<Item, Cardinal>(1))
+                _ = s.move(at: 0)
+            }
+
+            @Test
+            func `deinitialize of an empty range destroys nothing`() {
+                Probe.reset()
+                var s = DenseStorage<Item>.create(minimumCapacity: Tagged<Item, Cardinal>(4))
+                s.initialize(at: 0, to: Item(1))
+
+                s.deinitialize(range: Index<Item>(_unchecked: Ordinal(1))..<Index<Item>(_unchecked: Ordinal(1)))
+
+                let destroyed = Probe.destroyed
+                #expect(destroyed == [])
+                let count = s.count
+                #expect(count == Tagged<Item, Cardinal>(1))
+                _ = s.move(at: 0)
+            }
+
+            @Test
             func `teardown destroys live prefix once`() {
                 Probe.reset()
                 do {
