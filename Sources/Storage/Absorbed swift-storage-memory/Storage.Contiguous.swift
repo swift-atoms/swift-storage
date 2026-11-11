@@ -51,11 +51,64 @@
 
         @inlinable
         package func _ptr(at slot: Index<Element>) -> UnsafeMutablePointer<Element> {
+            let offset = Self._number(slot)
             precondition(
-                slot < _capacity.map(Ordinal.init),
+                offset >= 0 && offset < Self._number(_capacity),
                 "Storage.Contiguous: slot is outside the capacity"
             )
-            return unsafe _base + Int(bitPattern: slot.ordinal.rawValue)
+            return unsafe _base + offset
+        }
+
+        /// A slot's number as a plain integer.
+        ///
+        /// This and `_number(_:)` for a count are the only places the storage steps from a typed slot or count
+        /// to an integer.
+        @inlinable
+        package static func _number(_ slot: Index<Element>) -> Int {
+            Int(bitPattern: slot.ordinal.rawValue)
+        }
+
+        /// A count of slots as a plain integer.
+        @inlinable
+        package static func _number(_ count: Index<Element>.Count) -> Int {
+            Int(bitPattern: count.underlying.rawValue)
+        }
+
+        /// How many slots the ledger counts as initialized, as a plain integer.
+        ///
+        /// The single-element operations step the ledger through this and `_prefix(_:)`, so each costs a few
+        /// integer operations in an unoptimised build instead of a chain of generic calls.
+        @inlinable
+        package var _initialized: Int {
+            switch _initialization {
+            case .empty:
+                return 0
+
+            case .one(let range):
+                return Self._length(range)
+
+            case .two(let first, let second):
+                return Self._length(first) + Self._length(second)
+            }
+        }
+
+        @inlinable
+        package static func _length(_ range: Swift::Range<Index<Element>>) -> Int {
+            _number(range.upperBound) - _number(range.lowerBound)
+        }
+
+        /// The ledger of a storage whose first `length` slots are initialized; empty when `length` is not positive.
+        @inlinable
+        package static func _prefix(_ length: Int) -> Store.Initialization<Element> {
+            guard length > 0 else { return .empty }
+            return unsafe .one(
+                Swift::Range(
+                    uncheckedBounds: (
+                        lower: Index<Element>(_unchecked: Ordinal(UInt(0))),
+                        upper: Index<Element>(_unchecked: Ordinal(UInt(bitPattern: length)))
+                    )
+                )
+            )
         }
 
         /// The run of slots `range` covers.
@@ -66,10 +119,10 @@
         /// - Precondition: a non-empty `range` lies within the capacity.
         @inlinable
         package func _slots(_ range: Swift::Range<Index<Element>>) -> UnsafeMutableBufferPointer<Element> {
-            let lower = Int(bitPattern: range.lowerBound.ordinal.rawValue)
-            let upper = Int(bitPattern: range.upperBound.ordinal.rawValue)
+            let lower = Self._number(range.lowerBound)
+            let upper = Self._number(range.upperBound)
             precondition(
-                lower == upper || upper <= Int(bitPattern: _capacity.underlying.rawValue),
+                lower == upper || upper <= Self._number(_capacity),
                 "Storage.Contiguous: slot is outside the capacity"
             )
             return unsafe UnsafeMutableBufferPointer(start: _base + lower, count: upper - lower)
@@ -80,9 +133,9 @@
         /// - Precondition: `count` does not exceed the capacity.
         @inlinable
         package func _slots(first count: Index<Element>.Count) -> UnsafeMutableBufferPointer<Element> {
-            let length = Int(bitPattern: count.underlying.rawValue)
+            let length = Self._number(count)
             precondition(
-                length <= Int(bitPattern: _capacity.underlying.rawValue),
+                length <= Self._number(_capacity),
                 "Storage.Contiguous: slot is outside the capacity"
             )
             return unsafe UnsafeMutableBufferPointer(start: _base, count: length)

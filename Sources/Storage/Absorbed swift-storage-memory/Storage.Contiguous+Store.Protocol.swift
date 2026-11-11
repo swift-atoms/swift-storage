@@ -24,13 +24,13 @@
         @inlinable
         public mutating func initialize(at slot: Index<Element>, to element: consuming Element) {
             unsafe _ptr(at: slot).initialize(to: element)
-            _initialization = .linear(count: count + .one)
+            _initialization = Self._prefix(_initialized + 1)
         }
 
         @inlinable
         public mutating func move(at slot: Index<Element>) -> Element {
             let element = unsafe _ptr(at: slot).move()
-            _initialization = .linear(count: count.subtract.saturating(.one))
+            _initialization = Self._prefix(_initialized - 1)
             return element
         }
     }

@@ -600,4 +600,101 @@
             }
         }
     }
+    extension `Storage.Contiguous Tests` {
+        @Suite
+        struct `Storage Contiguous Ledger Step Tests` {
+
+            @Test
+            func `each initialize adds one slot to the ledger and each move takes one away`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(5))
+                var grown: [Store.Initialization<Int>] = []
+                (0..<5).forEach { slot in
+                    s.initialize(at: Index<Int>(_unchecked: Ordinal(UInt(slot))), to: slot)
+                    grown.append(s.initialization)
+                }
+                #expect(grown == (1...5).map { .linear(count: Tagged<Int, Cardinal>(UInt($0))) })
+
+                var shrunk: [Store.Initialization<Int>] = []
+                var moved: [Int] = []
+                (0..<5).reversed().forEach { slot in
+                    moved.append(s.move(at: Index<Int>(_unchecked: Ordinal(UInt(slot)))))
+                    shrunk.append(s.initialization)
+                }
+                #expect(moved == [4, 3, 2, 1, 0])
+                #expect(shrunk == (0..<5).reversed().map { .linear(count: Tagged<Int, Cardinal>(UInt($0))) })
+                #expect(s.initialization == .empty)
+            }
+
+            @Test
+            func `a move out of a storage whose ledger is empty leaves the ledger empty`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                s.initialize(at: 0, to: 9)
+                s.initialization = .empty
+
+                let moved = s.move(at: 0)
+
+                #expect(moved == 9)
+                #expect(s.initialization == .empty)
+            }
+
+            @Test
+            func `initialize on a ledger of two ranges counts the slots of both`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                s.initialize(at: 0, to: 0)
+                s.initialize(at: 1, to: 1)
+                s.initialize(at: 2, to: 2)
+                s.initialization = .two(
+                    first: Index<Int>(_unchecked: Ordinal(2))..<Index<Int>(_unchecked: Ordinal(3)),
+                    second: Index<Int>(_unchecked: Ordinal(0))..<Index<Int>(_unchecked: Ordinal(1))
+                )
+
+                s.initialize(at: 1, to: 1)
+
+                #expect(s.initialization == .linear(count: Tagged<Int, Cardinal>(3)))
+            }
+
+            @Test
+            func `a move on a ledger whose range does not start at the first slot counts only that range`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                (0..<4).forEach { slot in
+                    s.initialize(at: Index<Int>(_unchecked: Ordinal(UInt(slot))), to: slot)
+                }
+                s.initialization = .one(Index<Int>(_unchecked: Ordinal(2))..<Index<Int>(_unchecked: Ordinal(4)))
+
+                _ = s.move(at: 3)
+
+                #expect(s.initialization == .linear(count: Tagged<Int, Cardinal>(1)))
+            }
+        }
+    }
+    extension `Storage.Contiguous Tests` {
+        @Suite
+        struct `Storage Contiguous Slot Number Tests` {
+
+            @Test
+            func `the last slot within the capacity is reachable`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                s.initialize(at: 0, to: 10)
+                s.initialize(at: 1, to: 11)
+                let last = s[Index<Int>(_unchecked: Ordinal(1))]
+                #expect(last == 11)
+            }
+
+            @Test
+            func `subscript traps on a slot number too large for a signed integer`() async {
+                await #expect(processExitsWith: .failure) {
+                    let s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(2))
+                    _ = s[Index<Int>(_unchecked: Ordinal(UInt.max))]
+                }
+            }
+
+            @Test
+            func `a storage without capacity traps on its first slot`() async {
+                await #expect(processExitsWith: .failure) {
+                    let s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(0))
+                    _ = s[Index<Int>(_unchecked: Ordinal(0))]
+                }
+            }
+        }
+    }
 #endif
