@@ -697,4 +697,47 @@
             }
         }
     }
+    private func deinitializeThroughTheProtocol<S: Store.`Protocol` & ~Copyable>(
+        _ store: inout S,
+        range: Swift::Range<Index<S.Element>>
+    ) {
+        store.deinitialize(range: range)
+    }
+
+    extension `Storage.Contiguous Tests` {
+        @Suite
+        struct `Storage Contiguous Protocol Dispatch Tests` {
+
+            @Test
+            func `generic code deinitializing the ledger's tail empties those slots and shortens the ledger`() {
+                var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                (0..<4).forEach { slot in
+                    s.initialize(at: Index<Int>(_unchecked: Ordinal(UInt(slot))), to: slot)
+                }
+
+                deinitializeThroughTheProtocol(
+                    &s,
+                    range: Index<Int>(_unchecked: Ordinal(1))..<Index<Int>(_unchecked: Ordinal(4))
+                )
+
+                #expect(s.initialization == .linear(count: Tagged<Int, Cardinal>(1)))
+            }
+
+            @Test
+            func `generic code reaches the storage's own range deinitialization, which traps on a range that is not the tail`()
+                async
+            {
+                await #expect(processExitsWith: .failure) {
+                    var s = DenseStorage<Int>.create(minimumCapacity: Tagged<Int, Cardinal>(4))
+                    (0..<4).forEach { slot in
+                        s.initialize(at: Index<Int>(_unchecked: Ordinal(UInt(slot))), to: slot)
+                    }
+                    deinitializeThroughTheProtocol(
+                        &s,
+                        range: Index<Int>(_unchecked: Ordinal(0))..<Index<Int>(_unchecked: Ordinal(2))
+                    )
+                }
+            }
+        }
+    }
 #endif
